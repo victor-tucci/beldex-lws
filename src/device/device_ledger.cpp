@@ -518,6 +518,25 @@ namespace hw {
 
       return sw;
     }
+      unsigned int device_ledger::exchange_wait_on_input(unsigned int ok, unsigned int mask) {
+      logCMD();
+     unsigned int deny = 0;
+     this->length_recv = hw_device.exchange(this->buffer_send, this->length_send, this->buffer_recv, BUFFER_SEND_SIZE, true);
+     CHECK_AND_ASSERT_THROW_MES(this->length_recv>=2, "Communication error, less than two bytes received");
+
+     this->length_recv -= 2;
+     this->sw = (this->buffer_recv[length_recv]<<8) | this->buffer_recv[length_recv+1];
+     if (this->sw == IO_SW_DENY) {
+     // cancel on device
+     deny = 1;
+     } else {
+     CHECK_AND_ASSERT_THROW_MES(this->sw,ok);
+     }
+
+     logRESP();
+     return deny;
+    }
+
 
     void device_ledger::reset_buffer() {
       length_send = 0;
@@ -1765,7 +1784,7 @@ namespace hw {
         offset += 1;
 
         //type
-        uint8_t type = data[0];
+        auto type = static_cast<rct::RCTType>(data[0]);
         this->buffer_send[offset] = data[0];
         offset += 1;
 
@@ -1786,7 +1805,7 @@ namespace hw {
         CHECK_AND_ASSERT_THROW_MES(this->exchange_wait_on_input() == 0, "Fee denied on device.");
 
         //pseudoOuts
-        if (type == rct::RCTTypeSimple) {
+        if (type == rct::RCTType::Simple) {
           for ( i = 0; i < inputs_size; i++) {
             offset = set_command_header(INS_VALIDATE, 0x01, i+2);
             //options
@@ -1805,7 +1824,7 @@ namespace hw {
 
         // ======  Aout, Bout, AKout, C, v, k ======
         kv_offset = data_offset;
-        if (type==rct::RCTTypeBulletproof2 || type==rct::RCTTypeCLSAG) {
+        if (type==rct::RCTType::Bulletproof2 || type==rct::RCTType::CLSAG) {
           C_offset = kv_offset+ (8)*outputs_size;
         } else {
           C_offset = kv_offset+ (32+32)*outputs_size;
@@ -1822,7 +1841,7 @@ namespace hw {
           offset = set_command_header(INS_VALIDATE, 0x02, i+1);
           //options
           this->buffer_send[offset] = (i==outputs_size-1)? 0x00:0x80 ;
-          this->buffer_send[offset] |= (type==rct::RCTTypeBulletproof2 || type==rct::RCTTypeCLSAG)?0x02:0x00;
+          this->buffer_send[offset] |= (type==rct::RCTType::Bulletproof2 || type==rct::RCTType::CLSAG)?0x02:0x00;
           offset += 1;
           //is_subaddress
           this->buffer_send[offset] = outKeys.is_subaddress;
@@ -1843,7 +1862,7 @@ namespace hw {
           memmove(this->buffer_send+offset, data+C_offset,32);
           offset += 32;
           C_offset += 32;
-          if (type==rct::RCTTypeBulletproof2 || type==rct::RCTTypeCLSAG) {
+          if (type==rct::RCTType::Bulletproof2 || type==rct::RCTType::CLSAG) {
             //k
             memset(this->buffer_send+offset, 0, 32);
             offset += 32;
@@ -1925,7 +1944,7 @@ namespace hw {
         rct::key II_x;
         #endif
 
-        int offset = set_command_header_noopt(INS_MLSAG, 0x01);
+        int offset = set_command_header_noopt(INS_CLSAG, 0x01);
         //value H
         memmove(this->buffer_send+offset, H.bytes, 32);
         offset += 32;
@@ -1967,7 +1986,7 @@ namespace hw {
         rct::key aG_x;
         #endif
 
-        send_simple(INS_MLSAG, 0x01);
+        send_simple(INS_CLSAG, 0x01);
 
         offset = 0;
         this->receive_secret(a.bytes, offset);
@@ -1994,7 +2013,7 @@ namespace hw {
 
         cnt = long_message.size();
         for (size_t i = 0; i<cnt; i++) {
-          int offset = set_command_header(INS_MLSAG, 0x02, i+1);
+          int offset = set_command_header(INS_CLSAG, 0x02, i+1);
           //options
           this->buffer_send[offset] =
               (i==(cnt-1))?0x00:0x80;  //last
@@ -2036,7 +2055,7 @@ namespace hw {
         #endif
 
         for (size_t j = 0; j < dsRows; j++) {
-          int offset = set_command_header(INS_MLSAG, 0x03, j+1);
+          int offset = set_command_header(INS_CLSAG, 0x03, j+1);
           //options
           this->buffer_send[offset] = 0x00;
           if (j==(dsRows-1)) {
@@ -2302,4 +2321,3 @@ namespace hw {
 
   }
 }
-
