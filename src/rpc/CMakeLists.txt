@@ -46,9 +46,29 @@ add_library(daemon_rpc_server
   lmq_server.cpp
   )
 
+
 add_library(rpc_http_client
     http_client.cpp
     )
+
+add_library(daemon_messages
+  message.cpp
+  daemon_messages.cpp
+  message.h
+  daemon_messages.h
+  )
+  
+
+target_link_libraries(daemon_messages
+  PUBLIC
+    epee
+    cryptonote_core
+    cryptonote_protocol
+    version
+    serialization
+    extra
+    )
+
 target_link_libraries(rpc_commands
   PUBLIC
     common
