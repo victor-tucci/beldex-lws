@@ -27,6 +27,28 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+add_library(cryptonote_format_utils
+  cryptonote_format_utils.cpp
+)
+target_link_libraries(cryptonote_format_utils
+  PUBLIC
+  cncrypto
+)
+
+
+add_library(hardfork
+  hardfork.cpp
+  hardfork.h
+  )
+
+target_link_libraries(hardfork
+  PUBLIC
+    version
+    serialization
+    epee
+  PRIVATE
+   extra)
+
 add_library(cryptonote_basic
   account.cpp
   cryptonote_basic.cpp
