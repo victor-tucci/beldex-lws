@@ -40,6 +40,7 @@
 
 #define ADD_CHECKPOINT(h, hash)  CHECK_AND_ASSERT(add_checkpoint(h,  hash), false);
 #define JSON_HASH_FILE_NAME "checkpoints.json"
+#define ADD_CHECKPOINT2(h, hash)  CHECK_AND_ASSERT(add_checkpoint(h,  hash), false);
 
 namespace cryptonote
 {
@@ -132,7 +133,8 @@ namespace cryptonote
     bool add_checkpoint(uint64_t height, const std::string& hash_str);
 
     bool update_checkpoint(checkpoint_t const &checkpoint);
-
+    
+    bool init_default_checkpoints(network_type nettype);
     /**
      * @brief checks if there is a checkpoint in the future
      *

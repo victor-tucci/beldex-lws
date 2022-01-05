@@ -57,6 +57,21 @@ namespace cryptonote
     return result;
   }
 
+  bool checkpoints::init_default_checkpoints(network_type nettype)
+  {
+   ADD_CHECKPOINT2(0,      "6ea477622339f61c5fba036dc75c08b6efcf9ee09c108e5c5591fcc233d17b20");
+   ADD_CHECKPOINT2(1,      "a9eedcc8ad75c40acbed366a64029d0bf1c1b282ec0ca1d28213b9d386c2b81f");
+   ADD_CHECKPOINT2(10,     "a4014ffa8d32fe14bba3c6d8fc2bf8d3766615ee9ba779a075219a067257216c");
+   ADD_CHECKPOINT2(100,    "450a6fdade242c8afa8db3414a45a94371bf320470f95408a12122a64b836ee1");
+   ADD_CHECKPOINT2(1000,   "c023df332f7f6f7fcc8e2d1e5f57791a3a8e0b4c18eabb5b4362cdfea559c4a3");
+   ADD_CHECKPOINT2(86535,  "59e954dc91842270f4ba45db3369c34d3d328c828fb49a3f3bbf4eb74345eb1d");
+   ADD_CHECKPOINT2(97407,  "9f8cc511e8e53e68e5f197030ef9ba50a22c51b4ddbc184bb25376ac886a207a");
+   ADD_CHECKPOINT2(98552,  "6e88bdb59ca61a1a2b91b54b54121310ab4a7ddb32d4f077b710659b4ccd3173");
+   ADD_CHECKPOINT2(144650, "35203798750fc11eb1e8ee1dd71cefa8eb59ea1cfe9dea14368c06ca6addaa83");
+   ADD_CHECKPOINT2(266284, "446fb044ad9f920d2c1607b792b7667b1d9994edc7fcc72f89282983cb7044cc");
+   ADD_CHECKPOINT2(301187, "a9676c3fbae6ad42434db2d1ebac90c2e75dbbd02a6b2d45c69d123554c7578f");
+  };
+
   height_to_hash const HARDCODED_MAINNET_CHECKPOINTS[] =
   {
     {0,      "6ea477622339f61c5fba036dc75c08b6efcf9ee09c108e5c5591fcc233d17b20"},
@@ -299,6 +314,7 @@ namespace cryptonote
 
     return result;
   }
+  
   //---------------------------------------------------------------------------
   bool checkpoints::init(network_type nettype, BlockchainDB *db)
   {

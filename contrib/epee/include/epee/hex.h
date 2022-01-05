@@ -50,7 +50,7 @@ namespace epee
 
     //! \return An array containing hex of `src`.
     template<std::size_t N>
-    static std::array<char, N * 2> array(const std::array<std::uint8_t, N>& src) noexcept
+    static std::array<char, N * 2> array(const std::array<std::uint8_t, N>& src)
     {
       std::array<char, N * 2> out{{}};
       static_assert(N <= 128, "keep the stack size down");
@@ -72,5 +72,8 @@ namespace epee
   {
       //! \return An std::vector of unsigned integers from the `src`
       static std::vector<uint8_t> vector(std::string_view src);
+
+      static bool to_buffer(span<std::uint8_t> out, boost::string_ref src) noexcept;
+
   };
 }

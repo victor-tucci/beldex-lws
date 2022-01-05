@@ -1091,7 +1091,7 @@ void toJsonValue(rapidjson::Writer<epee::byte_stream>& dest, const rct::rctSig& 
   };
 
   INSERT_INTO_JSON_OBJECT(dest, type, sig.type);
-  if (sig.type != rct::RCTTypeNull)
+  if (sig.type != rct::RCTType::Null)
   {
     INSERT_INTO_JSON_OBJECT(dest, encrypted, sig.ecdhInfo);
     INSERT_INTO_JSON_OBJECT(dest, commitments, transform(sig.outPk, just_mask));
@@ -1125,7 +1125,7 @@ void fromJsonValue(const rapidjson::Value& val, rct::rctSig& sig)
   }
 
   GET_FROM_JSON_OBJECT(val, sig.type, type);
-  if (sig.type != rct::RCTTypeNull)
+  if (sig.type != rct::RCTType::Null)
   {
     GET_FROM_JSON_OBJECT(val, sig.ecdhInfo, encrypted);
     GET_FROM_JSON_OBJECT(val, sig.outPk, commitments);
