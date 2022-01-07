@@ -880,11 +880,8 @@ namespace tools
   {
     if (m_wallet->is_trusted_daemon())
     {
-      std::optional<std::string> address = m_wallet->resolve_address(std::string{addr_or_url});
-      if (address)
-      {
         cryptonote::address_parse_info info;
-        if (!get_account_address_from_str_or_url(info, nettype, *address,
+        if (!get_account_address_from_str_or_url(info, nettype, addr_or_url,
           [](const std::string_view url, const std::vector<std::string> &addresses, bool dnssec_valid) {
             if (!dnssec_valid)
               throw wallet_rpc_error{error_code::WRONG_ADDRESS, "Invalid DNSSEC for "s + std::string{url}};
@@ -894,9 +891,6 @@ namespace tools
           }))
           throw wallet_rpc_error{error_code::WRONG_ADDRESS, "Invalid address: "s + std::string{addr_or_url}};
         return info;
-      } else {
-        throw wallet_rpc_error{error_code::WRONG_ADDRESS, "Invalid address: "s + std::string{addr_or_url}};
-      }
     } else {
       cryptonote::address_parse_info info;
       if (!get_account_address_from_str_or_url(info, nettype, addr_or_url,
