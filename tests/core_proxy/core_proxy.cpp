@@ -241,6 +241,11 @@ bool tests::proxy_core::handle_incoming_block(const cryptonote::blobdata& block_
     return true;
 }
 
+bool tests::proxy_core::handle_uptime_proof_v12(const cryptonote::NOTIFY_UPTIME_PROOF_V12::request &proof, bool &my_uptime_proof_confirmation)
+{
+  // TODO: add tests for core uptime proof checking.
+  return false; // never relay these for tests.
+}
 bool tests::proxy_core::handle_uptime_proof(const cryptonote::NOTIFY_UPTIME_PROOF::request &proof, bool &my_uptime_proof_confirmation)
 {
   // TODO: add tests for core uptime proof checking.
