@@ -314,7 +314,23 @@ namespace cryptonote
 
     return result;
   }
-  
+  //---------------------------------------------------------------------------
+  const std::map<uint64_t, crypto::hash>& checkpoints::get_points() const
+  {
+     std::map<uint64_t, crypto::hash> m_points;
+      checkpoint_t top_checkpoint;
+    if (m_db->get_top_checkpoint(top_checkpoint))
+    {
+      std::cout << "top_checkpoint.height : " << top_checkpoint.height << std::endl;
+      std::cout << "top_checkpoint.block_hash : " << top_checkpoint.block_hash << std::endl;
+      // m_points.insert(pair<uint64_t, crypto::hash>(1, 40))
+      m_points.emplace(top_checkpoint.height , top_checkpoint.block_hash);
+      // m_points.begin()->first = top_checkpoint.block_hash;
+      //  m_points.begin()->second = top_checkpoint.height;
+    }
+    // std::cout << m_points.begin()->first <<" mpoints" << m_points.begin()->second << std::endl;
+    return m_points;
+  }
   //---------------------------------------------------------------------------
   bool checkpoints::init(network_type nettype, BlockchainDB *db)
   {

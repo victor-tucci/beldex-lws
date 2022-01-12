@@ -34,6 +34,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <boost/utility/string_ref.hpp>
 
 #include "wipeable_string.h"
 #include "span.h"

@@ -189,6 +189,13 @@ namespace cryptonote
      * @return the height of the highest checkpoint
      */
     uint64_t get_max_height() const;
+    
+    /**
+     * @brief gets the highest checkpoint height
+     *
+     * @return the hash of the highest height
+     */
+    const std::map<uint64_t, crypto::hash>& get_points() const;
 
     /**
      * @brief loads the default main chain checkpoints
@@ -199,6 +206,7 @@ namespace cryptonote
     bool init(network_type nettype, class BlockchainDB *db);
 
   private:
+    std::map<uint64_t, crypto::hash> m_points; //!< the checkpoints container
     network_type m_nettype = UNDEFINED;
     uint64_t m_last_cull_height = 0;
     uint64_t m_immutable_height = 0;
