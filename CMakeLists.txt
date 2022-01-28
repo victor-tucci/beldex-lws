@@ -11,10 +11,13 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 set(BELDEX_LIBRARIES
 common
+lmdb
 )
 
 set(BELDEX_SEARCH_PATHS
+"/external/db_drivers/liblmdb"
 "/src"
+"/src/lmdb"
 )
 
 #
@@ -84,7 +87,7 @@ foreach (LIB ${BELDEX_LIBRARIES})
   list(FIND BELDEX_OPTIONAL "${LIB}" LIB_OPTIONAL)
   if (NOT LIB_PATH)
     if (LIB_OPTIONAL EQUAL -1)
-      message(FATAL_ERROR "Unable to find required Monero library ${LIB}")
+      message(FATAL_ERROR "Unable to find required beldex library ${LIB}")
     endif()
   else ()
     set(LIB_NAME "beldex::${LIB}")

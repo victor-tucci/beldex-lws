@@ -14,8 +14,12 @@
 #include "common/util.h"              //beldex/common
 #include "config.h"
 #include "cryptonote_config.h"        //beldex/src/
+#include "db/storage.h"
+#include "rpc/client.h"
 #include "options.h"
 #include "rest_server.h"
+#include "scanner.h"
+
 namespace
 {
   struct options : lws::options
@@ -152,7 +156,7 @@ namespace
 
     return prog;
   }
-    void run(program prog)
+  void run(program prog)
   {
     std::signal(SIGINT, [] (int) { lws::scanner::stop(); });
 

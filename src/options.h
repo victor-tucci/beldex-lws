@@ -16,7 +16,6 @@ namespace lws
    const std::string default_db_subdir = "/light_wallet_server";
    const std::string dir_slash = "/";
    const std::string default_db_dir = std::getenv("HOME")+ dir_slash + CRYPTONOTE_NAME;
-  // constexpr const char default_db_subdir[] = "/light_wallet_server";
   struct options
   {
     const command_line::arg_descriptor<std::string> db_path;
@@ -24,7 +23,6 @@ namespace lws
 
     options()
        : db_path{"db-path", "Folder for LMDB files", default_db_dir + default_db_subdir}
-     // : db_path{"db-path", "Folder for LMDB files", tools::get_default_data_dir() + default_db_subdir}
       , network{"network", "<\"main\"|\"dev\"|\"test\"> - Blockchain net type", "main"}
     {}
 

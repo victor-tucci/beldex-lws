@@ -1,16 +1,23 @@
 
+include_directories(.)
+add_subdirectory(db)
 
-# For both the server and admin utility.
-set(monero-lws-common_sources config.cpp error.cpp)
-set(monero-lws-common_headers config.h error.h fwd.h)
+set(beldex-lws-common_sources config.cpp error.cpp)
+set(beldex-lws-common_headers config.h error.h fwd.h)
 
-add_executable(monero-lws-daemon server_main.cpp rest_server.cpp scanner.cpp)
-target_include_directories(monero-lws-daemon PUBLIC ${ZMQ_INCLUDE_PATH})
-target_link_libraries(monero-lws-daemon
+add_library(beldex-lws-common ${beldex-lws-common_sources} ${beldex-lws-common_headers})
+target_link_libraries(beldex-lws-common beldex::libraries)
+
+add_executable(beldex-lws-daemon server_main.cpp rest_server.cpp scanner.cpp)
+
+# For the server 
+target_include_directories(beldex-lws-daemon PUBLIC ${ZMQ_INCLUDE_PATH})
+target_link_libraries(beldex-lws-daemon
   PRIVATE
     beldex::libraries
-    ${MONERO_lmdb}
+    ${BELDEX_lmdb}
     beldex-lws-common
+    beldex-lws-db
     ${Boost_CHRONO_LIBRARY}
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
@@ -21,3 +28,4 @@ target_link_libraries(monero-lws-daemon
     Threads::Threads
 )
 
+install(TARGETS beldex-lws-daemon DESTINATION bin)

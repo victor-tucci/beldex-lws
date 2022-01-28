@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "epee/net/net_ssl.h" //contrib/epee/include
-
+#include "rpc/client.h"
 namespace lws
 {
     class rest_server
@@ -19,6 +19,6 @@ namespace lws
             std::vector<std::string> access_controls;
             std::size_t threads;
             bool allow_external;
-        };
-    };
-}
+        }; //configre
+    }; //rest_server
+} //lws
