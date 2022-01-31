@@ -27,20 +27,27 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 add_library(epee
-    buffer.cpp
-    connection_basic.cpp
-    hex.cpp
-    levin_base.cpp
-    memwipe.c
-    mlocker.cpp
+    portable_storage.cpp
+    time_helper.cpp
+    byte_slice.cpp
+    byte_stream.cpp 
+    hex.cpp 
+    abstract_http_client.cpp
+    http_auth.cpp
     mlog.cpp
-    net_utils_base.cpp
+    net_helper.cpp
+    net_utils_base.cpp 
+    string_tools.cpp
+    wipeable_string.cpp
+    levin_base.cpp
+    memwipe.c 
+    connection_basic.cpp
     network_throttle.cpp
     network_throttle-detail.cpp
-    portable_storage.cpp
-    string_tools.cpp
-    time_helper.cpp
-    wipeable_string.cpp
+    mlocker.cpp
+    buffer.cpp
+    net_ssl.cpp
+    int-util.cpp
 )
 
 if (TARGET readline)
