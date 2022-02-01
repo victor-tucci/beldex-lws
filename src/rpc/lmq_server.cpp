@@ -140,6 +140,7 @@ omq_rpc::omq_rpc(cryptonote::core& core, core_rpc_server& rpc, const boost::prog
   } else if (locals.size() == 1 && locals[0] == "none") {
     locals.clear();
   }
+  std::cout<<"The value of"<<locals.back()<<std::endl;
   for (const auto &addr : locals) {
     check_omq_listen_addr(addr);
     MGINFO("LMQ listening on " << addr << " (unauthenticated local admin)");

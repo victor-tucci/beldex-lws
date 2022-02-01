@@ -133,7 +133,7 @@ namespace http
   {
     http::url_content parsed{};
     const bool r = parse_url(address, parsed);
-    CHECK_AND_ASSERT_MES(r, false, "failed to parse url: " << address);
+    // CHECK_AND_ASSERT_MES(r, false, "failed to parse url: " << address);
     set_server(std::move(parsed.host), std::to_string(parsed.port), std::move(user), std::move(ssl_options));
     return true;
   }
