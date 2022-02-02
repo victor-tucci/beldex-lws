@@ -43,7 +43,7 @@ extern "C" {
 #include "crypto/generic-ops.h"
 #include "crypto/crypto.h"
 
-#include "common/hex.h"
+#include "epee/hex.h"
 #include "serialization/variant.h"
 #include "common/util.h"
 
