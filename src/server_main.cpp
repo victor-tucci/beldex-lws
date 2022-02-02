@@ -162,17 +162,6 @@ namespace
 
     boost::filesystem::create_directories(prog.db_path);
     auto disk = lws::db::storage::open(prog.db_path.c_str(), prog.create_queue_max);
-    auto ctx = lws::rpc::context::make(std::move(prog.daemon_rpc), std::move(prog.daemon_sub), prog.rates_interval);
-
-    MINFO("Using monerod ZMQ RPC at " << ctx.daemon_address());
-    auto client = lws::scanner::sync(disk.clone(), ctx.connect().value()).value();
-
-    lws::rest_server server{epee::to_span(prog.rest_servers), disk.clone(), std::move(client), std::move(prog.rest_config)};
-    for (const std::string& address : prog.rest_servers)
-      MINFO("Listening for REST clients at " << address);
-
-    // blocks until SIGINT
-    lws::scanner::run(std::move(disk), std::move(ctx), prog.scan_threads);
   }
 } // anonymous
 

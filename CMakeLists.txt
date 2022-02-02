@@ -10,6 +10,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 set(BELDEX_LIBRARIES
+cryptonote_basic
+checkpoints
 common
 lmdb
 )
@@ -17,6 +19,8 @@ lmdb
 set(BELDEX_SEARCH_PATHS
 "/external/db_drivers/liblmdb"
 "/src"
+"/src/crypto"
+"/src/cryptonote_basic"
 "/src/lmdb"
 )
 
