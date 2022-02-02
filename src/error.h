@@ -36,12 +36,12 @@ namespace lws
     tx_relay_failed             //!< Daemon failed to relayed tx from REST client
   };
 
-//   std::error_category const& error_category() noexcept;
+  std::error_category const& error_category() noexcept;
 
-//   inline std::error_code make_error_code(lws::error value) noexcept
-//   {
-//     return std::error_code{int(value), error_category()};
-//   }
+  inline std::error_code make_error_code(lws::error value) noexcept
+  {
+    return std::error_code{int(value), error_category()};
+  }
 }
 
 namespace std

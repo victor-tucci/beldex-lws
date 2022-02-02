@@ -38,13 +38,135 @@ namespace db
       account_status status;
       char reserved[3];
     };
+    
+    struct account_by_address
+    {
+      account_address address; //!< Must be first for LMDB optimizations
+      account_lookup lookup;
+    };
 
     constexpr const unsigned blocks_version = 0;
     constexpr const unsigned by_address_version = 0;
+    
+    template<typename T>
+    int less(epee::span<const std::uint8_t> left, epee::span<const std::uint8_t> right) noexcept
+    {
+      if (left.size() < sizeof(T))
+      {
+        assert(left.empty());
+        return -1;
+      }
+      if (right.size() < sizeof(T))
+      {
+        assert(right.empty());
+        return 1;
+      }
 
-    // constexpr const lmdb::basic_table<unsigned, block_info> blocks{
-    //   "blocks_by_id", (MDB_CREATE | MDB_DUPSORT), MONERO_SORT_BY(block_info, id)
-    // };
+      T left_val;
+      T right_val;
+      std::memcpy(std::addressof(left_val), left.data(), sizeof(T));
+      std::memcpy(std::addressof(right_val), right.data(), sizeof(T));
+
+      return (left_val < right_val) ? -1 : int(right_val < left_val);
+    }
+
+    int compare_32bytes(epee::span<const std::uint8_t> left, epee::span<const std::uint8_t> right) noexcept
+    {
+      if (left.size() < 32)
+      {
+        assert(left.empty());
+        return -1;
+      }
+      if (right.size() < 32)
+      {
+        assert(right.empty());
+        return 1;
+      }
+
+      return std::memcmp(left.data(), right.data(), 32);
+    }
+
+    int output_compare(MDB_val const* left, MDB_val const* right) noexcept
+    {
+      if (left == nullptr || right == nullptr)
+      {
+        assert("MDB_val nullptr" == 0);
+        return -1;
+      }
+
+      auto left_bytes = lmdb::to_byte_span(*left);
+      auto right_bytes = lmdb::to_byte_span(*right);
+
+      int diff = less<lmdb::native_type<block_id>>(left_bytes, right_bytes);
+      if (diff)
+        return diff;
+
+      left_bytes.remove_prefix(sizeof(block_id));
+      right_bytes.remove_prefix(sizeof(block_id));
+
+      static_assert(sizeof(crypto::hash) == 32, "bad memcmp below");
+      diff = compare_32bytes(left_bytes, right_bytes);
+      if (diff)
+        return diff;
+
+      left_bytes.remove_prefix(sizeof(crypto::hash));
+      right_bytes.remove_prefix(sizeof(crypto::hash));
+      return less<output_id>(left_bytes, right_bytes);
+    }
+    int spend_compare(MDB_val const* left, MDB_val const* right) noexcept
+    {
+      if (left == nullptr || right == nullptr)
+      {
+        assert("MDB_val nullptr" == 0);
+        return -1;
+      }
+
+      auto left_bytes = lmdb::to_byte_span(*left);
+      auto right_bytes = lmdb::to_byte_span(*right);
+
+      int diff = less<lmdb::native_type<block_id>>(left_bytes, right_bytes);
+      if (diff)
+        return diff;
+
+      left_bytes.remove_prefix(sizeof(block_id));
+      right_bytes.remove_prefix(sizeof(block_id));
+
+      static_assert(sizeof(crypto::hash) == 32, "bad memcmp below");
+      diff = compare_32bytes(left_bytes, right_bytes);
+      if (diff)
+        return diff;
+
+      left_bytes.remove_prefix(sizeof(crypto::hash));
+      right_bytes.remove_prefix(sizeof(crypto::hash));
+
+      static_assert(sizeof(crypto::key_image) == 32, "bad memcmp below");
+      return compare_32bytes(left_bytes, right_bytes);
+    }
+    
+    constexpr const lmdb::basic_table<unsigned, block_info> blocks{
+      "blocks_by_id", (MDB_CREATE | MDB_DUPSORT), MONERO_SORT_BY(block_info, id)
+    };
+    constexpr const lmdb::basic_table<account_status, account> accounts{
+      "accounts_by_status,id", (MDB_CREATE | MDB_DUPSORT), MONERO_SORT_BY(account, id)
+    };
+    constexpr const lmdb::basic_table<unsigned, account_by_address> accounts_by_address(
+      "accounts_by_address", (MDB_CREATE | MDB_DUPSORT), MONERO_COMPARE(account_by_address, address.view_public)
+    );
+    constexpr const lmdb::basic_table<block_id, account_lookup> accounts_by_height(
+      "accounts_by_height,id", (MDB_CREATE | MDB_DUPSORT), MONERO_SORT_BY(account_lookup, id)
+    );
+    constexpr const lmdb::basic_table<account_id, output> outputs{
+      "outputs_by_account_id,block_id,tx_hash,output_id", (MDB_CREATE | MDB_DUPSORT), &output_compare
+    };
+    constexpr const lmdb::basic_table<account_id, spend> spends{
+      "spends_by_account_id,block_id,tx_hash,image", (MDB_CREATE | MDB_DUPSORT), &spend_compare
+    };
+    constexpr const lmdb::basic_table<output_id, db::key_image> images{
+      "key_images_by_output_id,image", (MDB_CREATE | MDB_DUPSORT), MONERO_COMPARE(db::key_image, value)
+    };
+    constexpr const lmdb::basic_table<request, request_info> requests{
+      "requests_by_type,address", (MDB_CREATE | MDB_DUPSORT), MONERO_COMPARE(request_info, address.spend_public)
+    };
     cryptonote::checkpoints const& get_checkpoints()
     {
       struct initializer
