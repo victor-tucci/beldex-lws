@@ -10,15 +10,14 @@
 #include <string>
 #include <utility>
 
-#include "config.h"
-#include "error.h"
-#include "data.h"
 #include "checkpoints/checkpoints.h"
+#include "config.h"
 #include "crypto/crypto.h"
 #include "cryptonote_basic/cryptonote_basic.h"
 #include "cryptonote_core/cryptonote_tx_utils.h"
 #include "common/expect.h"   //beldex/src
-
+#include "error.h"
+#include "data.h"
 #include "lmdb/database.h"   //beldex/src
 #include "lmdb/error.h"
 #include "lmdb/key_stream.h"
@@ -62,8 +61,10 @@ namespace db
         return 1;
       }
 
-      T left_val;
-      T right_val;
+      // T left_val;
+      // T right_val;
+      uint8_t left_val;
+      uint8_t right_val;
       std::memcpy(std::addressof(left_val), left.data(), sizeof(T));
       std::memcpy(std::addressof(right_val), right.data(), sizeof(T));
 
@@ -142,7 +143,7 @@ namespace db
       static_assert(sizeof(crypto::key_image) == 32, "bad memcmp below");
       return compare_32bytes(left_bytes, right_bytes);
     }
-    
+
     constexpr const lmdb::basic_table<unsigned, block_info> blocks{
       "blocks_by_id", (MDB_CREATE | MDB_DUPSORT), MONERO_SORT_BY(block_info, id)
     };
@@ -167,6 +168,7 @@ namespace db
     constexpr const lmdb::basic_table<request, request_info> requests{
       "requests_by_type,address", (MDB_CREATE | MDB_DUPSORT), MONERO_COMPARE(request_info, address.spend_public)
     };
+
     cryptonote::checkpoints const& get_checkpoints()
     {
       struct initializer

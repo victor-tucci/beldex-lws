@@ -10,18 +10,19 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 set(BELDEX_LIBRARIES
-cryptonote_basic
-checkpoints
-common
-lmdb
+#cryptonote_basic
+mergedfile
 )
 
 set(BELDEX_SEARCH_PATHS
+"/contrib/epee/src"
+"/external/easyloggingpp"
 "/external/db_drivers/liblmdb"
 "/src"
 "/src/crypto"
 "/src/cryptonote_basic"
 "/src/lmdb"
+"/src/ringct"
 )
 
 #
@@ -107,7 +108,7 @@ add_library(beldex::libraries INTERFACE IMPORTED)
 set_property(TARGET beldex::libraries PROPERTY
   INTERFACE_INCLUDE_DIRECTORIES
     ${Boost_INCLUDE_DIR}
-    "${BELDEX_BUILD_DIR}/generated_include"
+   # "${BELDEX_BUILD_DIR}/generated_include"
     "${BELDEX_SOURCE_DIR}/contrib/epee/include"
     "${BELDEX_SOURCE_DIR}/external/easylogging++"
     "${BELDEX_SOURCE_DIR}/external/loki-mq"
@@ -132,7 +133,7 @@ set_property(TARGET beldex::libraries PROPERTY
 )
 
 set(LMDB_INCLUDE "${beldex_LMDB_INCLUDE}")
-set(LMDB_LIB_PATH "beldex::lmdb")
+#set(LMDB_LIB_PATH "beldex::lmdb")
 set(ZMQ_LIB "${beldex_ZMQ_LIB}")
 set(ZMQ_INCLUDE_PATH "${beldex_ZMQ_INCLUDE_PATH}")
 

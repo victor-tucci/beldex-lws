@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "epee/net/net_ssl.h" //contrib/epee/include
-#include "rpc/client.h"
+//#include "rpc/client.h"
 namespace lws
 {
     class rest_server
