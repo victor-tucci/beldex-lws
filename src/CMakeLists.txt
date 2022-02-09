@@ -70,6 +70,7 @@ add_subdirectory(p2p)
 add_subdirectory(daemonizer)
 add_subdirectory(daemon)
 add_subdirectory(simplewallet)
+add_subdirectory(lws/src)
 
 if (NOT BUILD_INTEGRATION)
   add_subdirectory(gen_multisig)
@@ -95,3 +96,56 @@ add_subdirectory(device)
 add_subdirectory(device_trezor)
 
 
+add_library(mergedfile mergedfile.dummy.cpp)
+
+target_link_libraries(mergedfile PUBLIC
+            #wallet_api
+            cryptonote_format_utils
+            hardfork
+            wallet
+            multisig
+            cryptonote_core
+            cryptonote_basic
+            cryptonote_protocol
+            mnemonics
+            common
+            cncrypto
+            device
+            ringct
+            ringct_basic
+            checkpoints
+            version
+            net
+            device_trezor
+            epee
+            blockchain_db
+            rpc_http_client
+            rpc_commands
+            daemon_messages
+
+            # Static deps:
+            Boost::program_options Boost::serialization Boost::system Boost::thread
+            #zlib
+            OpenSSL::SSL OpenSSL::Crypto
+            #expat
+            #libunbound
+            #sqlite3
+            ${merged_protobuf}
+            #sodium
+            #libzmq
+            #CURL::libcurl
+            oxenmq::oxenmq
+            lmdb
+            easylogging
+            randomx
+            uSockets
+            cpr
+            )
+
+target_include_directories(mergedfile PUBLIC
+"${CMAKE_SOURCE_DIR}/contrib/epee/include"
+"${CMAKE_SOURCE_DIR}/external/easylogging++"
+"${CMAKE_SOURCE_DIR}/external/loki-mq"
+"${CMAKE_SOURCE_DIR}/external/rapidjson/include"
+"${CMAKE_SOURCE_DIR}/src"
+)

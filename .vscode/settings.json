@@ -77,6 +77,8 @@
         "concepts": "cpp",
         "numbers": "cpp",
         "stop_token": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "filesystem": "cpp",
+        "ranges": "cpp"
     }
 }

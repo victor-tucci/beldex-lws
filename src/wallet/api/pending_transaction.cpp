@@ -80,7 +80,7 @@ std::vector<std::string> PendingTransactionImpl::txid() const
 }
 
 EXPORT
-bool PendingTransactionImpl::commit(std::string_view filename_, bool overwrite, bool flash)
+bool PendingTransactionImpl::commit(std::string_view filename_, bool overwrite, bool blink)
 {
 
     LOG_PRINT_L3("m_pending_tx size: " << m_pending_tx.size());
@@ -129,7 +129,7 @@ bool PendingTransactionImpl::commit(std::string_view filename_, bool overwrite, 
 
         while (!m_pending_tx.empty()) {
             auto & ptx = m_pending_tx.back();
-            m_wallet.m_wallet->commit_tx(ptx, flash);
+            m_wallet.m_wallet->commit_tx(ptx, blink);
             // if no exception, remove element from vector
             m_pending_tx.pop_back();
         } // TODO: extract method;
@@ -163,12 +163,12 @@ uint64_t PendingTransactionImpl::amount() const
         for (const auto &dest : ptx.dests) {
             result += dest.amount;
         }
-        service_nodes::staking_components sc;
+        master_nodes::staking_components sc;
         uint64_t height = m_wallet.blockChainHeight();
         std::optional<uint8_t> hf_version = m_wallet.hardForkVersion();
         if (hf_version)
         {
-          if (service_nodes::tx_get_staking_components_and_amounts(static_cast<cryptonote::network_type>(m_wallet.nettype()), *hf_version, ptx.tx, height, &sc)
+          if (master_nodes::tx_get_staking_components_and_amounts(static_cast<cryptonote::network_type>(m_wallet.nettype()), *hf_version, ptx.tx, height, &sc)
           && sc.transferred > 0)
             result = sc.transferred;
         }

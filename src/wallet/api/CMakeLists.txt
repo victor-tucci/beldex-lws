@@ -39,7 +39,7 @@ add_library(wallet_api
   subaddress.cpp
   subaddress_account.cpp
   unsigned_transaction.cpp)
-
+message("==================== in api ==========================")
 target_link_libraries(wallet_api
   PUBLIC
     wallet
@@ -62,7 +62,6 @@ endif()
 
 install(FILES ${wallet_api_headers}
     DESTINATION include/wallet/api)
-
 function(combine_archives output_archive)
   set(FULL_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/lib${output_archive}.a)
   set(output_archive_dummy_file ${CMAKE_CURRENT_BINARY_DIR}/${output_archive}.dummy.cpp)

@@ -73,11 +73,10 @@ target_link_libraries(wallet_rpc_server
 add_subdirectory(api)
 
 
-##################
-
-
+###################################################################################
+message("----------------wallet---------------------")
 function(combine_archives output_archive)
-message("HELLLLLLLLLLLLLLLLLLLLLLLLLLOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOo")
+  message("----------------function called------------------------")
   set(FULL_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/lib${output_archive}.a)
   set(output_archive_dummy_file ${CMAKE_CURRENT_BINARY_DIR}/${output_archive}.dummy.cpp)
   add_custom_command(OUTPUT ${output_archive_dummy_file}
@@ -85,74 +84,87 @@ message("HELLLLLLLLLLLLLLLLLLLLLLLLLLOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOo")
                      DEPENDS ${ARGN})
   add_library(${output_archive} STATIC EXCLUDE_FROM_ALL ${output_archive_dummy_file})
 
-  # if(NOT APPLE)
-  # message("AAAAAAAAAAAAPPPPPPPPPPPPLLLLLLLLLLLLLLEEEEEEEEEEE")
-  #   set(mri_file ${CMAKE_CURRENT_BINARY_DIR}/${output_archive}.mri)
-  #   set(mri_content "create ${FULL_OUTPUT_PATH}\n")
-  #   foreach(in_archive ${ARGN})
-  #       string(APPEND mri_content "addlib $<TARGET_FILE:${in_archive}>\n")
-  #   endforeach()
-  #   string(APPEND mri_content "save\nend\n")
-  # file(GENERATE OUTPUT ${mri_file} CONTENT "${mri_content}")
+  if(NOT APPLE)
+  message("----------------inside not apple function called------------------------")
+    set(mri_file ${CMAKE_CURRENT_BINARY_DIR}/${output_archive}.mri)
+    set(mri_content "create ${FULL_OUTPUT_PATH}\n")
+    message("create ${FULL_OUTPUT_PATH}\n")
+    foreach(in_archive ${ARGN})
+        message("${ARGN}")
+        string(APPEND mri_content "addlib $<TARGET_FILE:${in_archive}>\n")
+    endforeach()
+    string(APPEND mri_content "save\nend\n")
+    file(GENERATE OUTPUT ${mri_file} CONTENT "${mri_content}")
+    message("mri_files are : ${mri_file}")
 
-  #   add_custom_command(TARGET ${output_archive}
-  #                      POST_BUILD
-  #                      COMMAND ar -M < ${mri_file})
-  message("111111111111111111111111111111111111")
+    add_custom_command(TARGET ${output_archive}
+                       POST_BUILD
+                       COMMAND ar -M < ${mri_file})
+  else()
+  message("--------------------in else ----------------------------")
     set(merge_libs)
     foreach(in_archive ${ARGN})
-    message("22222222222222222222222222222222222")
       list(APPEND merge_libs $<TARGET_FILE:${in_archive}>)
     endforeach()
     add_custom_command(TARGET ${output_archive}
                        POST_BUILD
                        COMMAND /usr/bin/libtool -static -o ${FULL_OUTPUT_PATH} ${merge_libs})
-                       message("333333333333333333333333333333")
-                   
-  # endif()
+  endif()
 endfunction(combine_archives)
 
-
-
-
-message("***********************************************************")
 if (true)
+message("------------merge functions--------------")
+    set(merged_protobuf)
+    if(TARGET protobuf_lite)
+      set(merged_protobuf protobuf_lite)
+    endif()
 
-combine_archives(wallet_merged
-  wallet_api
-  wallet
-  multisig
-  cryptonote_core
-  cryptonote_basic
-  cryptonote_protocol
-  mnemonics
-  common
-  cncrypto
-  device
-  ringct
-  ringct_basic
-  checkpoints
-  version
-  net
-  device_trezor
-  epee
-  blockchain_db
-  rpc_http_client
-  rpc_commands
+    combine_archives(wallet_merged
+            #wallet_api
+            wallet
+            multisig
+            cryptonote_core
+            cryptonote_basic
+            cryptonote_protocol
+            mnemonics
+            common
+            cncrypto
+            device
+            ringct
+            ringct_basic
+            checkpoints
+            version
+            net
+            device_trezor
+            epee
+            blockchain_db
+            rpc_http_client
+            rpc_commands
 
-  # Static deps:
-  Boost::program_options Boost::serialization Boost::system Boost::thread
-  OpenSSL::SSL OpenSSL::Crypto
-  ${merged_protobuf}
-  oxenmq::oxenmq
-  lmdb
-  easylogging
-  randomx
-  uSockets
-  cpr
-)
-set(lib_folder lib)
+            # Static deps:
+            Boost::program_options Boost::serialization Boost::system Boost::thread
+            #zlib
+            OpenSSL::SSL OpenSSL::Crypto
+            #expat
+            #libunbound
+            #sqlite3
+            #${merged_protobuf}
+            #sodium
+            #libzmq
+            #CURL::libcurl
+            oxenmq::oxenmq
+            lmdb
+            easylogging
+            randomx
+            uSockets
+            cpr
+            )
 
+    if(IOS)
+        set(lib_folder lib-${ARCH})
+    else()
+        set(lib_folder lib)
+    endif()
     install(TARGETS wallet_merged
         ARCHIVE DESTINATION ${lib_folder}
         EXCLUDE_FROM_ALL)

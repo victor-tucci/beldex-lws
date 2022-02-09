@@ -51,6 +51,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <thread>
+#include <mutex>
 
 using namespace cryptonote;
 
@@ -1596,33 +1597,6 @@ PendingTransaction *WalletImpl::createTransactionMultDest(const std::vector<std:
               setStatusError(tools::ERR_MSG_NETWORK_VERSION_QUERY_FAILED);
               return transaction;
             }
-        }
-        if (error) {
-            break;
-        }
-        if (!extra_nonce.empty() && !add_extra_nonce_to_tx_extra(extra, extra_nonce)) {
-            setStatusError(tr("failed to set up payment id, though it was decoded correctly"));
-            break;
-        }
-        try {
-            std::optional<uint8_t> hf_version = m_wallet->get_hard_fork_version();
-            if (!hf_version)
-            {
-              setStatusError(tools::ERR_MSG_NETWORK_VERSION_QUERY_FAILED);
-              return transaction;
-            }
-
-            if (amount) {
-                beldex_construct_tx_params tx_params = tools::wallet2::construct_params(*hf_version, txtype::standard, priority);
-                transaction->m_pending_tx = m_wallet->create_transactions_2(dsts, CRYPTONOTE_DEFAULT_TX_MIXIN, 0 /* unlock_time */,
-                                                                            priority,
-                                                                            extra, subaddr_account, subaddr_indices, tx_params);
-            } else {
-                transaction->m_pending_tx = m_wallet->create_transactions_all(0, info.address, info.is_subaddress, 1, CRYPTONOTE_DEFAULT_TX_MIXIN, 0 /* unlock_time */,
-                                                                              priority,
-                                                                              extra, subaddr_account, subaddr_indices);
-            }
-            pendingTxPostProcess(transaction);
 
             if (amount) {
                 beldex_construct_tx_params tx_params = tools::wallet2::construct_params(*hf_version, txtype::standard, priority);

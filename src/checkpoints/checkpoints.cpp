@@ -317,6 +317,7 @@ namespace cryptonote
   //---------------------------------------------------------------------------
   const std::map<uint64_t, crypto::hash>& checkpoints::get_points() const
   {
+     std::cout << "top_checkpoint.height : " << std::endl; 
      std::map<uint64_t, crypto::hash> m_points;
       checkpoint_t top_checkpoint;
     if (m_db->get_top_checkpoint(top_checkpoint))

@@ -1018,7 +1018,7 @@ struct Wallet
     virtual Device getDeviceType() const = 0;
 
     /// Prepare a staking transaction; return nullptr on failure
-    virtual PendingTransaction* stakePending(const std::string& master_node_key, const uint64_t amount) = 0;
+    virtual PendingTransaction* stakePending(const std::string& master_node_key, const uint64_t& amount) = 0;
 
     virtual StakeUnlockResult* canRequestStakeUnlock(const std::string &mn_key) = 0;
 
