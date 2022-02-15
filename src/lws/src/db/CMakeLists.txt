@@ -42,5 +42,5 @@ target_link_libraries(beldex-lws-db PUBLIC
     extra
 )
 
-target_include_directories(beldex-lws-db PRIVATE "${CMAKE_SOURCE_DIR}/src/lws/src")
+target_include_directories(beldex-lws-db PUBLIC "${CMAKE_SOURCE_DIR}/src/lws/src")
 message("${CMAKE_SOURCE_DIR} : " ${CMAKE_SOURCE_DIR}/src/lws/src)

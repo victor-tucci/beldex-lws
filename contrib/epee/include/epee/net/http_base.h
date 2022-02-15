@@ -28,6 +28,7 @@
 
 #pragma once
 #include "epee/memwipe.h"
+#include "epee/string_tools.h"
 
 #include <boost/utility/string_ref.hpp>
 

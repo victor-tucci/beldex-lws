@@ -883,6 +883,14 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang" AND ARCH_WIDTH EQUAL "32" AND NOT IOS AN
   endif()
 endif()
 
+find_path(ZMQ_INCLUDE_PATH zmq.h)
+find_library(ZMQ_LIB zmq)
+if(NOT ZMQ_INCLUDE_PATH)
+  message(FATAL_ERROR "Could not find required header zmq.h")
+endif()
+if(NOT ZMQ_LIB)
+  message(FATAL_ERROR "Could not find required libzmq")
+endif()
 
 if(BUILD_STATIC_DEPS)
   # sqlite3 target already set up

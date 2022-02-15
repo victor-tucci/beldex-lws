@@ -259,6 +259,34 @@ POP_WARNINGS
     }
     return s;
   }
+   //----------------------------------------------------------------------------
+  template<class t_pod_type>
+  std::string pod_to_hex(const t_pod_type& s)
+  {
+    static_assert(std::is_standard_layout<t_pod_type>(), "expected standard layout type");
+    return to_hex::string(as_byte_span(s));
+  }
+  //----------------------------------------------------------------------------
+  template<class t_pod_type>
+  bool hex_to_pod(const boost::string_ref hex_str, t_pod_type& s)
+  {
+    static_assert(std::is_standard_layout<t_pod_type>(), "expected standard layout type");
+    return from_hex::to_buffer(as_mut_byte_span(s), hex_str);
+  }
+  //----------------------------------------------------------------------------
+  template<class t_pod_type>
+  bool hex_to_pod(const boost::string_ref hex_str, tools::scrubbed<t_pod_type>& s)
+  {
+    return hex_to_pod(hex_str, unwrap(s));
+  }
+  //----------------------------------------------------------------------------
+  template<class t_pod_type>
+  bool hex_to_pod(const boost::string_ref hex_str, epee::mlocked<t_pod_type>& s)
+  {
+    return hex_to_pod(hex_str, unwrap(s));
+  }
+    //----------------------------------------------------------------------------
+  bool validate_hex(uint64_t length, const std::string& str);
 }
 }
 #endif //_STRING_TOOLS_H_
