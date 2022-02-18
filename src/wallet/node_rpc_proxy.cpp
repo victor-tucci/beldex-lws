@@ -72,6 +72,8 @@ void NodeRPCProxy::invalidate()
   m_block_weight_limit = 0;
   m_get_info_time = std::chrono::steady_clock::time_point::min();
   m_height_time = std::chrono::steady_clock::time_point::min();
+  m_hardfork_version = 0;
+  m_hardfork_version_time = std::chrono::steady_clock::time_point::min();
 }
 
 bool NodeRPCProxy::get_rpc_version(rpc::version_t &rpc_version) const
@@ -188,11 +190,19 @@ std::optional<uint8_t> NodeRPCProxy::get_hardfork_version() const
     if (m_offline)
        return std::nullopt;
     LOG_PRINT_L0("invoke HARD_FORK_INFO");
-  try {
-    return invoke_json_rpc<rpc::HARD_FORK_INFO>({}).version;
-  } catch (...) {}
+    auto now = std::chrono::steady_clock::now();
+    if (now >= m_hardfork_version_time + 30s) // re-cache every 30 seconds
+    {
+        try {
+            m_hardfork_version_time = now;
+            m_hardfork_version =  invoke_json_rpc<rpc::HARD_FORK_INFO>({}).version;
 
-  return std::nullopt;
+        } catch (...) {
+            return std::nullopt;
+        }
+    }
+  if (m_hardfork_version==0) return std::nullopt;
+  return m_hardfork_version;
 }
 
 bool NodeRPCProxy::refresh_dynamic_base_fee_cache(uint64_t grace_blocks) const
