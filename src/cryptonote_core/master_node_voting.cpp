@@ -137,31 +137,34 @@ namespace master_nodes
     auto &vvc = tvc.m_vote_ctx;
     if (state_change.state != new_state::deregister && hf_version < cryptonote::network_version_13_checkpointing)
     {
-      LOG_PRINT_L1("Non-deregister state changes are invalid before v12");
+      LOG_PRINT_L1("Received state change TX with Non-deregister state changes are invalid before v12");
       return bad_tx(tvc);
     }
 
     if (state_change.state >= new_state::_count)
     {
-      LOG_PRINT_L1("Unknown state change to new state: " << static_cast<uint16_t>(state_change.state));
+      LOG_PRINT_L1("Received state change TX with with unknown state change to new state: " << static_cast<uint16_t>(state_change.state));
       return bad_tx(tvc);
     }
 
     if (state_change.votes.size() < master_nodes::STATE_CHANGE_MIN_VOTES_TO_CHANGE_STATE)
     {
-      LOG_PRINT_L1("Not enough votes");
+      LOG_PRINT_L1("Received state change TX with not enough votes");
       vvc.m_not_enough_votes = true;
       return bad_tx(tvc);
     }
 
     if (state_change.votes.size() > master_nodes::STATE_CHANGE_QUORUM_SIZE)
     {
-      LOG_PRINT_L1("Too many votes");
+      LOG_PRINT_L1("Received state change TX with too many votes");
       return bad_tx(tvc);
     }
 
     if (!bounds_check_worker_index(quorum, state_change.master_node_index, &vvc))
-      return bad_tx(tvc);
+    {
+        LOG_PRINT_L1("Received state change tx with invalid bounds_check_worker_index");
+        return bad_tx(tvc);
+    }
 
     // Check if state_change is too old or too new to hold onto
     {

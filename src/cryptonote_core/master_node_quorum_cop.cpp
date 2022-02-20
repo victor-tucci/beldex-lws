@@ -361,12 +361,16 @@ namespace master_nodes
 
                 auto test_results = check_master_node(obligations_height_hf_version, node_key, info);
                 bool passed       = test_results.passed(hf_version==cryptonote::network_version_12_security_signature);
-
+                int64_t credit = calculate_decommission_credit(info, latest_height,hf_version);
                 new_state vote_for_state;
                 uint16_t reason = 0;
                 if (passed) {
                   if (info.is_decommissioned()) {
-                    vote_for_state = new_state::recommission;
+                      if(credit>=0) {
+                          vote_for_state = new_state::recommission;
+                      }else{
+                          vote_for_state = new_state::deregister; // Credit ran out!
+                      }
                     LOG_PRINT_L2("Decommissioned master node " << quorum->workers[node_index] << " is now passing required checks; voting to recommission");
                   } else if (!test_results.single_ip) {
                       // Don't worry about this if the SN is getting recommissioned (above) -- it'll
@@ -387,7 +391,7 @@ namespace master_nodes
                   if (!test_results.belnet_reachable) reason |= cryptonote::Decommission_Reason::belnet_unreachable;
                   if (!test_results.timestamp_participation) reason |= cryptonote::Decommission_Reason::timestamp_response_unreachable;
                   if (!test_results.timesync_status) reason |= cryptonote::Decommission_Reason::timesync_status_out_of_sync;
-                  int64_t credit = calculate_decommission_credit(info, latest_height,hf_version);
+
 
                   if (info.is_decommissioned()) {
                     if (credit >= 0) {
@@ -550,6 +554,7 @@ namespace master_nodes
           !master_node_infos[0].info->can_transition_to_state(net, vote.block_height, vote.state_change.state))
         // NOTE: Vote is valid but is invalidated because we cannot apply the change to a master node or it is not on the network anymore
         //       So don't bother generating a state change tx.
+          LOG_PRINT_L2("Vote is valid but is invalidated because we cannot apply the change to a master node");
         return true;
     }
 
@@ -709,7 +714,7 @@ namespace master_nodes
     return result;
   }
 
-  // Calculate the decommission credit for a master node.  If the SN is current decommissioned this
+  // Calculate the decommission credit for a master node.  If the MN is current decommissioned this
   // accumulated blocks.
   int64_t quorum_cop::calculate_decommission_credit(const master_node_info &info, uint64_t current_height,uint8_t hf_version)
   {
