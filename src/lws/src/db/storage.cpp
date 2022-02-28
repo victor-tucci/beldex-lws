@@ -64,10 +64,10 @@ namespace db
         return 1;
       }
 
-      // T left_val;
-      // T right_val;
-      uint8_t left_val;
-      uint8_t right_val;
+      T left_val;
+      T right_val;
+      // uint8_t left_val;
+      // uint8_t right_val;
       std::memcpy(std::addressof(left_val), left.data(), sizeof(T));
       std::memcpy(std::addressof(right_val), right.data(), sizeof(T));
 
@@ -512,7 +512,7 @@ namespace db
     expect<void> append_block_hashes(MDB_cursor& cur, db::block_id first, T const& chain)
     {
       std::uint64_t height = std::uint64_t(first);
-      boost::container::static_vector<block_info, 25> hashes{};
+      boost::container::static_vector<block_info, 1> hashes{};
       static_assert(sizeof(hashes) <= 1024, "using more stack space than expected");
       for (auto current = chain.begin() ;; ++current)
       {
