@@ -31,12 +31,13 @@ namespace lws
 
     void scanner::sync(db::storage disk)
     {
+      MINFO("Starting blockchain sync with daemon");
       using LMQ_ptr = std::shared_ptr<oxenmq::OxenMQ>;
     
       LMQ_ptr m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
       m_LMQ->start();
 
-      auto c = m_LMQ->connect_remote("tcp://192.168.1.49:4567",
+      auto c = m_LMQ->connect_remote("tcp://127.0.0.1:4567",
       [](ConnectionID conn) { std::cout << "Connected \n";},
       [](ConnectionID conn, std::string_view f) { std::cout << "connect failed: \n";} 
       );
@@ -69,7 +70,6 @@ namespace lws
         //    MONERO_CHECK(disk.sync_chain(db::block_id(details["start_height"]), details["m_block_ids"]));
 
          disk.sync_chain(db::block_id(details["start_height"]), epee::to_span(blk_ids));
-            break;
            a = block_ids_size + start_height;
 
            if (a>=current_height)

@@ -118,6 +118,8 @@ namespace lmdb
 
         T left_val;
         T right_val;
+        // uint8_t left_val;
+        // uint8_t right_val;
         std::memcpy(std::addressof(left_val), static_cast<char*>(left->mv_data) + offset, sizeof(T));
         std::memcpy(std::addressof(right_val), static_cast<char*>(right->mv_data) + offset, sizeof(T));
         return left_val < right_val ? -1 : bool(right_val < left_val);

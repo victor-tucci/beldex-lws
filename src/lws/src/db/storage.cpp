@@ -512,7 +512,7 @@ namespace db
     expect<void> append_block_hashes(MDB_cursor& cur, db::block_id first, T const& chain)
     {
       std::uint64_t height = std::uint64_t(first);
-      boost::container::static_vector<block_info, 1> hashes{};
+      boost::container::static_vector<block_info, 25> hashes{};
       static_assert(sizeof(hashes) <= 1024, "using more stack space than expected");
       for (auto current = chain.begin() ;; ++current)
       {
