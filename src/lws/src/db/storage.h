@@ -37,7 +37,85 @@ namespace lws
     MONERO_CURSOR(accounts_by_height);
   }
   
-   struct storage_internal;
+  struct storage_internal;
+  
+  struct reader_internal
+  {
+    cursor::blocks blocks_cur;
+    cursor::accounts_by_address accounts_ba_cur;
+    cursor::accounts_by_height accounts_bh_cur;
+  };
+
+  class storage_reader
+  {
+    std::shared_ptr<storage_internal> db;
+    lmdb::read_txn txn;
+    reader_internal curs;
+
+  public:
+    storage_reader(std::shared_ptr<storage_internal> db, lmdb::read_txn txn) noexcept
+      : db(std::move(db)), txn(std::move(txn)), curs{}
+    {}
+
+    storage_reader(storage_reader&&) = default;
+    storage_reader(storage_reader const&) = delete;
+
+    ~storage_reader() noexcept;
+
+    storage_reader& operator=(storage_reader&&) = default;
+    storage_reader& operator=(storage_reader const&) = delete;
+
+    //! \return Last known block.
+    expect<block_info> get_last_block() noexcept;
+
+    //! \return "Our" block hash at `height`.
+    expect<crypto::hash> get_block_hash(const block_id height) noexcept;
+
+    //! \return List for `GetHashesFast` to sync blockchain with daemon.
+    // expect<std::list<crypto::hash>> get_chain_sync();
+    expect<int> get_chain_sync();
+
+    //! \return All registered `account`s.
+    expect<lmdb::key_stream<account_status, account, cursor::close_accounts>>
+      get_accounts(cursor::accounts cur = nullptr) noexcept;
+
+    //! \return All `account`s currently in `status` or `lmdb::error(MDB_NOT_FOUND)`.
+    expect<lmdb::value_stream<account, cursor::close_accounts>>
+      get_accounts(account_status status, cursor::accounts cur = nullptr) noexcept;
+
+    //! \return Info for account `id` iff it has `status`.
+    expect<account> get_account(const account_status status, const account_id id) noexcept;
+
+    //! \return Info related to `address`.
+    expect<std::pair<account_status, account>>
+      get_account(account_address const& address) noexcept;
+
+    //! \return All outputs received by `id`.
+    expect<lmdb::value_stream<output, cursor::close_outputs>>
+      get_outputs(account_id id, cursor::outputs cur = nullptr) noexcept;
+
+    //! \return All potential spends by `id`.
+    expect<lmdb::value_stream<spend, cursor::close_spends>>
+      get_spends(account_id id, cursor::spends cur = nullptr) noexcept;
+
+    //! \return All key images associated with `id`.
+    expect<lmdb::value_stream<db::key_image, cursor::close_images>>
+      get_images(output_id id, cursor::images cur = nullptr) noexcept;
+
+    //! \return All `request_info`s.
+    expect<lmdb::key_stream<request, request_info, cursor::close_requests>>
+      get_requests(cursor::requests cur = nullptr) noexcept;
+
+    //! \return A specific request from `address` of `type`.
+    expect<request_info>
+      get_request(request type, account_address const& address, cursor::requests cur = nullptr) noexcept;
+
+    //! Dump the contents of the database in JSON format to `out`.
+    expect<void> json_debug(std::ostream& out, bool show_keys);
+
+    //! \return Read txn that can be re-used via `storage::start_read`.
+    lmdb::suspended_txn finish_read() noexcept;
+  };
    class storage
     {
     std::shared_ptr<storage_internal> db;
@@ -132,7 +210,7 @@ namespace lws
   //   expect<std::size_t> update(block_id height, epee::span<const crypto::hash> chain, epee::span<const lws::account> accts);
 
   //   //! `txn` must have come from a previous call on the same thread.
-  //   expect<storage_reader> start_read(lmdb::suspended_txn txn = nullptr) const;
+    expect<storage_reader> start_read(lmdb::suspended_txn txn = nullptr) const;
   };// storage
  }//db
 }//lws

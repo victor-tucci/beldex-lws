@@ -192,7 +192,7 @@ namespace db
     template<typename K, typename V>
     expect<void> bulk_insert(MDB_cursor& cur, K const& key, epee::span<V> values) noexcept
     {
-      std::cout << " values.size() : " << values.size() << std::endl;
+      // std::cout << " values.size() : " << values.size() << std::endl;
       while (!values.empty())
       {
         void const* const data = reinterpret_cast<void const*>(values.data());
@@ -200,7 +200,7 @@ namespace db
         MDB_val value_bytes[2] = {
           MDB_val{sizeof(V), const_cast<void*>(data)}, MDB_val{values.size(), nullptr}
         };
-        std::cout << " before the mdb_cursor_put " << std::endl;
+        // std::cout << " before the mdb_cursor_put " << std::endl;
         int err = mdb_cursor_put(
           &cur, &key_bytes, value_bytes, (MDB_NODUPDATA | MDB_MULTIPLE)
         );
@@ -209,7 +209,7 @@ namespace db
 
         values.remove_prefix(value_bytes[1].mv_size + (err == MDB_KEYEXIST ? 1 : 0));
       }
-      std::cout << " inside the bulk insert function" << std::endl;
+      // std::cout << " inside the bulk insert function" << std::endl;
       return success();
     }
 
@@ -325,7 +325,78 @@ namespace db
         }
       }
     }
+    
+    template<typename T>
+    expect<T> get_blocks(MDB_cursor& cur, std::size_t max_internal)
+    {
+      T out{};
 
+      //max_internal = std::min(std::size_t(64), max_internal);
+      //out.reserve(12 + max_internal);
+      std::cout << " block version : " << blocks_version << std::endl;
+
+      MDB_val key = lmdb::to_val(blocks_version);
+      MDB_val value{};
+      MONERO_LMDB_CHECK(mdb_cursor_get(&cur, &key, &value, MDB_SET));
+      MONERO_LMDB_CHECK(mdb_cursor_get(&cur, &key, &value, MDB_LAST_DUP));
+
+      //const expect<block_id> height = blocks.get_value<MONERO_FIELD(block_info,id)>(value);
+      expect<block_info> next = blocks.get_value<block_info>(value);
+      if(!next)
+        return next.error();
+      
+      out.push_back(std::move(*next));
+      return out;
+      //for (unsigned i = 0; i < 10; ++i)
+      //{
+        // expect<block_info> next = blocks.get_value<block_info>(value);
+        // if (!next)
+        //   return next.error();
+
+        // out.push_back(std::move(*next));
+        // std::cout <<" out.back().id : " <<  out.back().id << std::endl;
+
+        // const int err = mdb_cursor_get(&cur, &key, &value, MDB_PREV_DUP);
+        // if (err)
+        // {
+        //   if (err != MDB_NOTFOUND)
+        //     return {lmdb::error(err)};
+        //   if (out.back().id != block_id(0))
+        //     return {lws::error::bad_blockchain};
+        //   return out;
+        // }
+      //}
+
+      // const auto add_block = [&cur, &out] (std::uint64_t id) -> expect<void>
+      // {
+      //   expect<crypto::hash> next = do_get_block_hash(cur, block_id(id));
+      //   if (!next)
+      //     return next.error();
+      //   out.push_back(block_info{block_id(id), std::move(*next)});
+      //   const std::uint64_t start_height_from_db = lmdb::to_native(out.back().id);
+      //   std::cout << "start_height_from_db : " << start_height_from_db << std::endl;
+      //   return success();
+      // };
+
+      // const std::uint64_t checkpoint = get_checkpoints().get_max_height();
+      // const std::uint64_t anchor = lmdb::to_native(out.back().id);
+
+      // std::cout << "anchor : " << anchor << std::endl;
+
+      // for (unsigned i = 1; i <= max_internal; ++i)
+      // {
+      //   const std::uint64_t offset = 2 << i;
+      //   if (anchor < offset || anchor - offset < checkpoint)
+      //     break;
+      //   MONERO_CHECK(add_block(anchor - offset));
+      // }
+
+      // if (block_id(checkpoint) < out.back().id)
+      //   MONERO_CHECK(add_block(checkpoint));
+      // if (out.back().id != block_id(0))
+      //   MONERO_CHECK(add_block(0));
+      // return out;
+    }
   }// anonymous
   struct storage_internal : lmdb::database
   {
@@ -364,6 +435,29 @@ namespace db
       MONERO_UNWRAP(this->commit(std::move(txn)));
     }
   };
+
+  storage_reader::~storage_reader() noexcept
+  {}
+
+  expect<int> storage_reader::get_chain_sync()
+  {
+    MONERO_PRECOND(txn != nullptr);
+    assert(db != nullptr);
+    MONERO_CHECK(check_cursor(*txn, db->tables.blocks, curs.blocks_cur));
+    auto blocks = get_blocks<std::vector<block_info>>(*curs.blocks_cur, 64);
+    if (!blocks)
+      return blocks.error();
+
+    // std::list<crypto::hash> out{};
+    std::vector<block_info> out{};
+    for (block_info const& block : *blocks)
+    {
+       out.push_back(block);
+    }
+    const std::uint64_t anchor = lmdb::to_native(out.back().id);
+    std::cout << anchor << std::endl;
+    return anchor;
+  }
      
   storage storage::open(const char* path, unsigned create_queue_max)
   {
@@ -380,6 +474,19 @@ namespace db
   {
     return storage{db};
   }
+
+  expect<storage_reader> storage::start_read(lmdb::suspended_txn txn) const
+  {
+    MONERO_PRECOND(db != nullptr);
+
+    expect<lmdb::read_txn> reader = db->create_read_txn(std::move(txn));
+    if (!reader)
+      return reader.error();
+
+    assert(*reader != nullptr);
+    return storage_reader{db, std::move(*reader)};
+  }
+
 
   // sub functions for `sync_chain(...)`
   namespace 
@@ -518,7 +625,7 @@ namespace db
       {
         if (current == chain.end() || hashes.size() == hashes.capacity())
         {
-          std::cout << "hashes.size() in append : " << hashes.size() << std::endl;
+          // std::cout << "hashes.size() in append : " << hashes.size() << std::endl;
           MONERO_CHECK(bulk_insert(cur, blocks_version, epee::to_span(hashes)));
           if (current == chain.end())
             return success();

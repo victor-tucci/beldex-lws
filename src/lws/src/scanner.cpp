@@ -22,6 +22,7 @@
 #include "oxenmq/oxenmq.h"
 #include "oxenmq/connections.h"
 #include "epee/span.h"
+#include "epee/misc_log_ex.h"
 using namespace oxenmq;
 using json = nlohmann::json;
 namespace lws
@@ -45,6 +46,24 @@ namespace lws
       json details;
       int a =0;
       std::vector<crypto::hash> blk_ids;
+
+     {
+      auto reader = disk.start_read();
+      if (!reader)
+      {
+        // return reader.error(); 
+      }
+
+      auto chain = reader->get_chain_sync();
+      std::cout << *chain << std::endl;
+      if (!chain)
+      {
+        // return chain.error();
+      }
+
+      // req.known_hashes = std::move(*chain);
+      a = *chain;
+     }
       for(;;)
       {
           m_LMQ->request(c,"rpc.get_hashes",[&details,a,&blk_ids](bool s , auto data){
