@@ -160,7 +160,7 @@ namespace db
     // The above field needs to be first for LMDB optimizations
     transaction_link link;   //!< Link to `spend` and `output`.
   };
-
+  WIRE_DECLARE_OBJECT(key_image);
   struct request_info
   {
     account_address address;//!< Must be first for LMDB optimizations

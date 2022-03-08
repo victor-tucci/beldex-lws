@@ -170,6 +170,9 @@ namespace
     system("mkdir -p /home/blockhash/.beldex/light_wallet_server");
     auto disk = lws::db::storage::open(prog.db_path.c_str(), prog.create_queue_max);
     lws::scanner::sync(disk.clone());
+
+        // blocks until SIGINT
+   lws::scanner::run(std::move(disk), prog.scan_threads);
     
   }
 } // anonymous

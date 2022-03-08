@@ -458,7 +458,46 @@ namespace db
     std::cout << anchor << std::endl;
     return anchor;
   }
-     
+
+  expect<lmdb::key_stream<account_status, account, cursor::close_accounts>>
+  storage_reader::get_accounts(cursor::accounts cur) noexcept
+  {
+    MONERO_PRECOND(txn != nullptr);
+    assert(db != nullptr); // both are moved in pairs
+    MONERO_CHECK(check_cursor(*txn, db->tables.accounts, cur));
+    return accounts.get_key_stream(std::move(cur));
+  }
+
+  expect<lmdb::value_stream<account, cursor::close_accounts>>
+  storage_reader::get_accounts(account_status status, cursor::accounts cur) noexcept
+  {
+    MONERO_PRECOND(txn != nullptr);
+    assert(db != nullptr); // both are moved in pairs
+    MONERO_CHECK(check_cursor(*txn, db->tables.accounts, cur));
+    return accounts.get_value_stream(status, std::move(cur));
+  }
+  
+  expect<lmdb::value_stream<output, cursor::close_outputs>>
+  storage_reader::get_outputs(account_id id, cursor::outputs cur) noexcept
+  {
+    MONERO_PRECOND(txn != nullptr);
+    assert(db != nullptr);
+    MONERO_CHECK(check_cursor(*txn, db->tables.outputs, cur));
+    return outputs.get_value_stream(id, std::move(cur));
+  }
+
+  lmdb::suspended_txn storage_reader::finish_read() noexcept
+  {
+    if (txn != nullptr)
+    {
+      assert(db != nullptr);
+      auto suspended = db->reset_txn(std::move(txn));
+      if (suspended) // errors not currently logged
+        return {std::move(*suspended)};
+    }
+    return nullptr;
+  }
+
   storage storage::open(const char* path, unsigned create_queue_max)
   {
     return {

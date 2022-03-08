@@ -3,6 +3,7 @@ include_directories(.)
 message( "--------- INSIDE THE LWS ------")
 
 add_subdirectory(db)
+add_subdirectory(wire)
 
 find_package(nlohmann_json 3.7.0 REQUIRED)
 
@@ -22,6 +23,7 @@ target_link_libraries(beldex-lws-daemon PUBLIC
     filesystem
     Boost::thread
     Boost::system
+    Threads::Threads
 )
 target_link_libraries(beldex-lws-daemon PRIVATE nlohmann_json::nlohmann_json mysqlcppconn)
 
