@@ -45,6 +45,16 @@ namespace lws
       boost::condition_variable user_poll;
       std::atomic<bool> update;
     };
+    struct thread_data
+    {
+      explicit thread_data(db::storage disk, std::vector<lws::account> users)
+        : disk(std::move(disk)), users(std::move(users))
+      {}
+
+      // rpc::client client;
+      db::storage disk;
+      std::vector<lws::account> users;
+    };
     
     // until we have a signal-handler safe notification system
     void checked_wait(const std::chrono::nanoseconds wait)
@@ -60,6 +70,345 @@ namespace lws
         const auto sleep_time = std::min(wait - current, std::chrono::nanoseconds{interval});
         std::this_thread::sleep_for(std::chrono::nanoseconds{sleep_time.count()});
       }
+    }
+
+    struct by_height
+    {
+      bool operator()(account const& left, account const& right) const noexcept
+      {
+        return left.scan_height() < right.scan_height();
+      }
+    };
+
+    void scan_loop(thread_sync& self, std::shared_ptr<thread_data> data) noexcept
+    {
+      // try
+      // {
+      //   // boost::thread doesn't support move-only types + attributes
+      //   // rpc::client client{std::move(data->client)};
+      //   db::storage disk{std::move(data->disk)};
+      //   std::vector<lws::account> users{std::move(data->users)};
+
+      //   assert(!users.empty());
+      //   assert(std::is_sorted(users.begin(), users.end(), by_height{}));
+
+      //   data.reset();
+
+      //   struct stop_
+      //   {
+      //     thread_sync& self;
+      //     ~stop_() noexcept
+      //     {
+      //       self.update = true;
+      //       self.user_poll.notify_one();
+      //     }
+      //   } stop{self};
+
+      //   // RPC server assumes that `start_height == 0` means use
+      //   // block ids. This technically skips genesis block.
+      //   cryptonote::rpc::GetBlocksFast::Request req{};
+      //   req.start_height = std::uint64_t(users.begin()->scan_height());
+      //   req.start_height = std::max(std::uint64_t(1), req.start_height);
+      //   req.prune = true;
+
+      //   epee::byte_slice block_request = rpc::client::make_message("get_blocks_fast", req);
+      //   if (!send(client, block_request.clone()))
+      //     return;
+
+      //   std::vector<crypto::hash> blockchain{};
+
+      //   while (!self.update && scanner::is_running())
+      //   {
+      //     blockchain.clear();
+
+      //     auto resp = client.get_message(block_rpc_timeout);
+      //     if (!resp)
+      //     {
+      //       const bool timeout = resp.matches(std::errc::timed_out);
+      //       if (timeout)
+      //         MWARNING("Block retrieval timeout, resetting scanner");
+      //       if (timeout || resp.matches(std::errc::interrupted))
+      //         return;
+      //       MONERO_THROW(resp.error(), "Failed to retrieve blocks from daemon");
+      //     }
+
+      //     auto fetched = MONERO_UNWRAP(wire::json::from_bytes<rpc::json<rpc::get_blocks_fast>::response>(std::move(*resp)));
+      //     if (fetched.result.blocks.empty())
+      //       throw std::runtime_error{"Daemon unexpectedly returned zero blocks"};
+
+      //     if (fetched.result.start_height != req.start_height)
+      //     {
+      //       MWARNING("Daemon sent wrong blocks, resetting state");
+      //       return;
+      //     }
+
+      //     // prep for next blocks retrieval
+      //     req.start_height = fetched.result.start_height + fetched.result.blocks.size() - 1;
+      //     block_request = rpc::client::make_message("get_blocks_fast", req);
+
+      //     if (fetched.result.blocks.size() <= 1)
+      //     {
+      //       // synced to top of chain, wait for next blocks
+      //       for (;;)
+      //       {
+      //         const expect<rpc::minimal_chain_pub> new_block = client.wait_for_block();
+      //         if (new_block.matches(std::errc::interrupted))
+      //           return;
+      //         if (!new_block || is_new_block(disk, users.front(), *new_block))
+      //           break;
+      //       }
+
+      //       // request next chunk of blocks
+      //       if (!send(client, block_request.clone()))
+      //         return;
+      //       continue; // to next get_blocks_fast read
+      //     }
+
+      //     // request next chunk of blocks
+      //     if (!send(client, block_request.clone()))
+      //       return;
+
+      //     if (fetched.result.blocks.size() != fetched.result.output_indices.size())
+      //       throw std::runtime_error{"Bad daemon response - need same number of blocks and indices"};
+
+      //     blockchain.push_back(cryptonote::get_block_hash(fetched.result.blocks.front().block));
+
+      //     auto blocks = epee::to_span(fetched.result.blocks);
+      //     auto indices = epee::to_span(fetched.result.output_indices);
+
+      //     if (fetched.result.start_height != 1)
+      //     {
+      //       // skip overlap block
+      //       blocks.remove_prefix(1);
+      //       indices.remove_prefix(1);
+      //     }
+      //     else
+      //       fetched.result.start_height = 0;
+
+      //     for (auto block_data : boost::combine(blocks, indices))
+      //     {
+      //       ++(fetched.result.start_height);
+
+      //       cryptonote::block const& block = boost::get<0>(block_data).block;
+      //       auto const& txes = boost::get<0>(block_data).transactions;
+
+      //       if (block.tx_hashes.size() != txes.size())
+      //         throw std::runtime_error{"Bad daemon response - need same number of txes and tx hashes"};
+
+      //       auto indices = epee::to_span(boost::get<1>(block_data));
+      //       if (indices.empty())
+      //         throw std::runtime_error{"Bad daemon response - missing /coinbase tx indices"};
+
+      //       crypto::hash miner_tx_hash;
+      //       if (!cryptonote::get_transaction_hash(block.miner_tx, miner_tx_hash))
+      //         throw std::runtime_error{"Failed to calculate miner tx hash"};
+
+      //       scan_transaction(
+      //         epee::to_mut_span(users),
+      //         db::block_id(fetched.result.start_height),
+      //         block.timestamp,
+      //         miner_tx_hash,
+      //         block.miner_tx,
+      //         *(indices.begin())
+      //       );
+
+      //       indices.remove_prefix(1);
+      //       if (txes.size() != indices.size())
+      //         throw std::runtime_error{"Bad daemon respnse - need same number of txes and indices"};
+
+      //       for (auto tx_data : boost::combine(block.tx_hashes, txes, indices))
+      //       {
+      //         scan_transaction(
+      //           epee::to_mut_span(users),
+      //           db::block_id(fetched.result.start_height),
+      //           block.timestamp,
+      //           boost::get<0>(tx_data),
+      //           boost::get<1>(tx_data),
+      //           boost::get<2>(tx_data)
+      //         );
+      //       }
+
+      //       blockchain.push_back(cryptonote::get_block_hash(block));
+      //     } // for each block
+
+      //     expect<std::size_t> updated = disk.update(
+      //       users.front().scan_height(), epee::to_span(blockchain), epee::to_span(users)
+      //     );
+      //     if (!updated)
+      //     {
+      //       if (updated == lws::error::blockchain_reorg)
+      //       {
+      //         epee::byte_stream dest{};
+      //         {
+      //           rapidjson::Writer<epee::byte_stream> out{dest};
+      //           cryptonote::json::toJsonValue(out, blocks[998]);
+      //         }
+      //         MINFO("Blockchain reorg detected, resetting state");
+      //         return;
+      //       }
+      //       MONERO_THROW(updated.error(), "Failed to update accounts on disk");
+      //     }
+
+      //     MINFO("Processed " << blocks.size() << " block(s) against " << users.size() << " account(s)");
+      //     if (*updated != users.size())
+      //     {
+      //       MWARNING("Only updated " << *updated << " account(s) out of " << users.size() << ", resetting");
+      //       return;
+      //     }
+
+      //     for (account& user : users)
+      //       user.updated(db::block_id(fetched.result.start_height));
+      //   }
+      // }
+      // catch (std::exception const& e)
+      // {
+      //   scanner::stop();
+      //   MERROR(e.what());
+      // }
+      // catch (...)
+      // {
+      //   scanner::stop();
+      //   MERROR("Unknown exception");
+      // }
+    }
+
+    /*!
+      Launches `thread_count` threads to run `scan_loop`, and then polls for
+      active account changes in background
+    */
+    void check_loop(db::storage disk, std::size_t thread_count, std::vector<lws::account> users, std::vector<db::account_id> active)
+    {
+      assert(0 < thread_count);
+      assert(0 < users.size());
+
+      thread_sync self{};
+      std::vector<boost::thread> threads{};
+
+      struct join_
+      {
+        thread_sync& self;
+        std::vector<boost::thread>& threads;
+        // rpc::context& ctx;
+
+        ~join_() noexcept
+        {
+          self.update = true;
+          // ctx.raise_abort_scan();
+          for (auto& thread : threads)
+            thread.join();
+        }
+      } join{self, threads/*, ctx*/};
+
+      /*
+        The algorithm here is extremely basic. Users are divided evenly amongst
+        the configurable thread count, and grouped by scan height. If an old
+        account appears, some accounts (grouped on that thread) will be delayed
+        in processing waiting for that account to catch up. Its not the greatest,
+        but this "will have to do" for the first cut.
+        Its not expected that many people will be running
+        "enterprise level" of nodes where accounts are constantly added.
+
+        Another "issue" is that each thread works independently instead of more
+        cooperatively for scanning. This requires a bit more synchronization, so
+        was left for later. Its likely worth doing to reduce the number of
+        transfers from the daemon, and the bottleneck on the writes into LMDB.
+
+        If the active user list changes, all threads are stopped/joined, and
+        everything is re-started.
+      */
+
+      boost::thread::attributes attrs;
+      attrs.set_stack_size(THREAD_STACK_SIZE);
+
+      threads.reserve(thread_count);
+      std::sort(users.begin(), users.end(), by_height{});
+
+      MINFO("Starting scan loops on " << std::min(thread_count, users.size()) << " thread(s) with " << users.size() << " account(s)");
+
+      while (!users.empty() && --thread_count)
+      {
+        const std::size_t per_thread = std::max(std::size_t(1), users.size() / (thread_count + 1));
+        const std::size_t count = std::min(per_thread, users.size());
+        std::vector<lws::account> thread_users{
+          std::make_move_iterator(users.end() - count), std::make_move_iterator(users.end())
+        };
+        users.erase(users.end() - count, users.end());
+
+      //   rpc::client client = MONERO_UNWRAP(ctx.connect());
+      //   client.watch_scan_signals();
+
+        auto data = std::make_shared<thread_data>(disk.clone(), std::move(thread_users)
+        );
+        threads.emplace_back(attrs, std::bind(&scan_loop, std::ref(self), std::move(data)));
+      }
+
+      if (!users.empty())
+      {
+        // rpc::client client = MONERO_UNWRAP(ctx.connect());
+        // client.watch_scan_signals();
+
+        auto data = std::make_shared<thread_data>(disk.clone(), std::move(users));
+        threads.emplace_back(attrs, std::bind(&scan_loop, std::ref(self), std::move(data)));
+      }
+
+      auto last_check = std::chrono::steady_clock::now();
+
+      lmdb::suspended_txn read_txn{};
+      db::cursor::accounts accounts_cur{};
+      boost::unique_lock<boost::mutex> lock{self.sync};
+
+      while (scanner::is_running())
+      {
+      //   update_rates(ctx);
+
+        for (;;)
+        {
+          //! \TODO use signalfd + ZMQ? Windows is the difficult case...
+          // self.user_poll.wait_for(lock, boost::chrono::seconds{1});
+          std::this_thread::sleep_for(1s);
+          if (self.update || !scanner::is_running())
+            return;
+          auto this_check = std::chrono::steady_clock::now();
+          if (account_poll_interval <= (this_check - last_check))
+          {
+            last_check = this_check;
+            break;
+          }
+        }
+
+        auto reader = disk.start_read(std::move(read_txn));
+        if (!reader)
+        {
+          if (reader.matches(std::errc::no_lock_available))
+          {
+            MWARNING("Failed to open DB read handle, retrying later");
+            continue;
+          }
+          MONERO_THROW(reader.error(), "Failed to open DB read handle");
+        }
+
+        auto current_users = MONERO_UNWRAP(
+          reader->get_accounts(db::account_status::active, std::move(accounts_cur))
+        );
+        if (current_users.count() != active.size())
+        {
+          MINFO("Change in active user accounts detected, stopping scan threads...");
+          return;
+        }
+
+        for (auto user = current_users.make_iterator(); !user.is_end(); ++user)
+        {
+          const db::account_id user_id = user.get_value<MONERO_FIELD(db::account, id)>();
+          if (!std::binary_search(active.begin(), active.end(), user_id))
+          {
+            MINFO("Change in active user accounts detected, stopping scan threads...");
+            return;
+          }
+        }
+
+        read_txn = reader->finish_read();
+        accounts_cur = current_users.give_cursor();
+      } // while scanning
     }
 
    }//anonymous
@@ -136,13 +485,13 @@ namespace lws
             }
             std::cout << a << std::endl;
       }
-           std::this_thread::sleep_for(10s);
+           std::this_thread::sleep_for(5s);
            std::cout <<"the current_height details : " <<details["current_height"] << std::endl;
            std::cout << " connection end " << std::endl;
     }
 
-  void scanner::run(db::storage disk, std::size_t thread_count)
-  {
+   void scanner::run(db::storage disk, std::size_t thread_count)
+   {
     thread_count = std::max(std::size_t(1), thread_count);
 
     // rpc::client client{};
@@ -161,7 +510,6 @@ namespace lws
         auto accounts = MONERO_UNWRAP(
           reader.get_accounts(db::account_status::active)
         );
-           std::this_thread::sleep_for(3s);
 
         for (db::account user : accounts.make_range())
         {
@@ -187,22 +535,25 @@ namespace lws
 
         reader.finish_read();
       } // cleanup DB reader
+      
+      std::cout << " thread count : " << thread_count << std::endl;
 
       if (users.empty())
       {
         MINFO("No active accounts");
         checked_wait(account_poll_interval - (std::chrono::steady_clock::now() - last));
       }
-      // else
-        // check_loop(disk.clone(), ctx, thread_count, std::move(users), std::move(active));
+      else
+        check_loop(disk.clone(),thread_count, std::move(users), std::move(active));
 
-      // if (!scanner::is_running())
-      //   return;
+      if (!scanner::is_running())
+        return;
 
       // if (!client)
       //   client = MONERO_UNWRAP(ctx.connect());
 
       // expect<rpc::client> synced = sync(disk.clone(), std::move(client));
+      sync(disk.clone());
       // if (!synced)
       // {
       //   if (!synced.matches(std::errc::timed_out))
@@ -213,6 +564,6 @@ namespace lws
       // else
       //   client = std::move(*synced);
     } // while scanning
-  }
+   }
 
 }//lws

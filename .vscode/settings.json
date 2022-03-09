@@ -79,6 +79,7 @@
         "stop_token": "cpp",
         "semaphore": "cpp",
         "filesystem": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "cassert": "cpp"
     }
 }

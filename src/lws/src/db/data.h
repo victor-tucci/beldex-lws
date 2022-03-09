@@ -57,7 +57,7 @@ namespace db
     crypto::public_key view_public; //!< Must be first for LMDB optimizations.
     crypto::public_key spend_public;
   };
-
+  static_assert(sizeof(account_address) == 64, "padding in account_address");
   WIRE_DECLARE_OBJECT(account_address);
  struct account
   {

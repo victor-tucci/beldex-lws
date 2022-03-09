@@ -4,4 +4,4 @@ set(beldex-lws-wire_headers crypto.h error.h field.h filters.h fwd.h json.h read
 add_library(beldex-lws-wire ${beldex-lws-wire_sources} ${beldex-lws-wire_headers})
 target_link_libraries(beldex-lws-wire PRIVATE beldex-lws-db)
 
-# add_subdirectory(json)
+add_subdirectory(json)

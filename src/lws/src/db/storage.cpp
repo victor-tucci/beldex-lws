@@ -397,6 +397,37 @@ namespace db
       //   MONERO_CHECK(add_block(0));
       // return out;
     }
+    
+    expect<account_id> find_last_id(MDB_cursor& cur) noexcept
+    {
+      account_id best = account_id(0);
+
+      MDB_val key{};
+      MDB_val value{};
+
+      int err = mdb_cursor_get(&cur, &key, &value, MDB_FIRST);
+      if (err == MDB_NOTFOUND)
+        return best;
+      if (err)
+        return {lmdb::error(err)};
+
+      do
+      {
+        MONERO_LMDB_CHECK(mdb_cursor_get(&cur, &key, &value, MDB_LAST_DUP));
+        const expect<account_id> current =
+          accounts.get_value<MONERO_FIELD(account, id)>(value);
+        if (!current)
+          return current.error();
+
+
+        best = std::max(best, *current);
+        err = mdb_cursor_get(&cur, &key, &value, MDB_NEXT_NODUP);
+        if (err == MDB_NOTFOUND)
+          return best;
+      } while (err == 0);
+      return {lmdb::error(err)};
+    }
+
   }// anonymous
   struct storage_internal : lmdb::database
   {
@@ -722,6 +753,121 @@ namespace db
       std::cout << "chain.size() : " << chain.size() << std::endl;
       std::cout <<"current : " << current << std::endl;
       return append_block_hashes(*blocks_cur, db::block_id(current), chain);
+    });
+  }
+
+  namespace
+  {
+    expect<db::account_time> get_account_time() noexcept
+    {
+      const auto time = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+      );
+
+      if (time.count() < 0)
+        return {lws::error::system_clock_invalid_range};
+      if (std::numeric_limits<lmdb::native_type<db::account_time>>::max() < time.count())
+        return {lws::error::system_clock_invalid_range};
+      return db::account_time(time.count());
+    }
+  }
+
+  namespace
+  {
+    expect<void> do_add_account(MDB_cursor& accounts_cur, MDB_cursor& accounts_ba_cur, MDB_cursor& accounts_bh_cur, account const& user) noexcept
+    {
+      {
+        crypto::secret_key copy{};
+        crypto::public_key verify{};
+        static_assert(sizeof(copy) == sizeof(user.key), "bad memcpy");
+        std::memcpy(
+          std::addressof(unwrap(copy)), std::addressof(user.key), sizeof(copy)
+        );
+
+        if (!crypto::secret_key_to_public_key(copy, verify))
+          return {lws::error::bad_view_key};
+
+        if (verify != user.address.view_public)
+          return {lws::error::bad_view_key};
+      }
+
+      const account_by_address by_address{
+        user.address, {user.id, account_status::active}
+      };
+
+      MDB_val key = lmdb::to_val(by_address_version);
+      MDB_val value = lmdb::to_val(by_address);
+      const int err = mdb_cursor_put(&accounts_ba_cur, &key, &value, MDB_NODUPDATA);
+
+      if (err == MDB_KEYEXIST)
+        return {lws::error::account_exists};
+      if (err)
+        return {lmdb::error(err)};
+
+      key = lmdb::to_val(user.scan_height);
+      value = lmdb::to_val(by_address.lookup);
+      MONERO_LMDB_CHECK(
+        mdb_cursor_put(&accounts_bh_cur, &key, &value, MDB_NODUPDATA)
+      );
+
+      key = lmdb::to_val(by_address.lookup.status);
+      value = lmdb::to_val(user);
+      MONERO_LMDB_CHECK(
+        mdb_cursor_put(&accounts_cur, &key, &value, MDB_NODUPDATA)
+      );
+      return success();
+    }
+  } // anonymous
+
+   expect<void> storage::add_account(account_address const& address, crypto::secret_key const& key) noexcept
+   {
+    MONERO_PRECOND(db != nullptr);
+    return db->try_write([this, &address, &key] (MDB_txn& txn) -> expect<void>
+    {
+      const expect<db::account_time> current_time = get_account_time();
+      if (!current_time)
+        return current_time.error();
+
+      cursor::blocks blocks_cur;
+      cursor::accounts accounts_cur;
+      cursor::accounts_by_address accounts_ba_cur;
+      cursor::accounts_by_height accounts_bh_cur;
+
+      MONERO_CHECK(check_cursor(txn, this->db->tables.blocks, blocks_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.accounts, accounts_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.accounts_ba, accounts_ba_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.accounts_bh, accounts_bh_cur));
+
+      const expect<account_id> last_id = find_last_id(*accounts_cur);
+      if (!last_id)
+        return last_id.error();
+
+      MDB_val keyv = lmdb::to_val(blocks_version);
+      MDB_val value{};
+
+      MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &keyv, &value, MDB_SET));
+      MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &keyv, &value, MDB_LAST_DUP));
+
+      const expect<block_id> height =
+        blocks.get_value<MONERO_FIELD(block_info, id)>(value);
+      if (!height)
+        return height.error();
+
+      const account_id next_id = account_id(lmdb::to_native(*last_id) + 1);
+      account user{};
+      user.id = next_id;
+      user.address = address;
+      static_assert(sizeof(user.key) == sizeof(key), "bad memcpy");
+      std::memcpy(std::addressof(user.key), std::addressof(key), sizeof(key));
+      user.start_height = *height;
+      user.scan_height = *height;
+      user.access = *current_time;
+      user.creation = *current_time;
+      // ... leave flags set to zero ...
+
+      return do_add_account(
+        *accounts_cur, *accounts_ba_cur, *accounts_bh_cur, user
+      );
     });
   }
 } //db
