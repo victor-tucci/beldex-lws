@@ -29,3 +29,4 @@
 add_subdirectory(src)
 target_include_directories(epee PUBLIC include)
 target_include_directories(epee PUBLIC include/epee)
+target_include_directories(epee PUBLIC include/epee/net)

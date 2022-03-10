@@ -82,30 +82,30 @@ namespace lws
 
     void scan_loop(thread_sync& self, std::shared_ptr<thread_data> data) noexcept
     {
-      // try
-      // {
-      //   // boost::thread doesn't support move-only types + attributes
-      //   // rpc::client client{std::move(data->client)};
-      //   db::storage disk{std::move(data->disk)};
-      //   std::vector<lws::account> users{std::move(data->users)};
+      try
+      {
+        // boost::thread doesn't support move-only types + attributes
+        // rpc::client client{std::move(data->client)};
+        db::storage disk{std::move(data->disk)};
+        std::vector<lws::account> users{std::move(data->users)};
 
-      //   assert(!users.empty());
-      //   assert(std::is_sorted(users.begin(), users.end(), by_height{}));
+        assert(!users.empty());
+        assert(std::is_sorted(users.begin(), users.end(), by_height{}));
 
-      //   data.reset();
+        data.reset();
 
-      //   struct stop_
-      //   {
-      //     thread_sync& self;
-      //     ~stop_() noexcept
-      //     {
-      //       self.update = true;
-      //       self.user_poll.notify_one();
-      //     }
-      //   } stop{self};
+        struct stop_
+        {
+          thread_sync& self;
+          ~stop_() noexcept
+          {
+            self.update = true;
+            self.user_poll.notify_one();
+          }
+        } stop{self};
 
-      //   // RPC server assumes that `start_height == 0` means use
-      //   // block ids. This technically skips genesis block.
+        // RPC server assumes that `start_height == 0` means use
+        // block ids. This technically skips genesis block.
       //   cryptonote::rpc::GetBlocksFast::Request req{};
       //   req.start_height = std::uint64_t(users.begin()->scan_height());
       //   req.start_height = std::max(std::uint64_t(1), req.start_height);
@@ -259,17 +259,17 @@ namespace lws
       //     for (account& user : users)
       //       user.updated(db::block_id(fetched.result.start_height));
       //   }
-      // }
-      // catch (std::exception const& e)
-      // {
+      }
+      catch (std::exception const& e)
+      {
       //   scanner::stop();
       //   MERROR(e.what());
-      // }
-      // catch (...)
-      // {
+      }
+      catch (...)
+      {
       //   scanner::stop();
       //   MERROR("Unknown exception");
-      // }
+      }
     }
 
     /*!

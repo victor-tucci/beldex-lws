@@ -6,19 +6,36 @@
 #include <string>
 #include <vector>
 
-#include "epee/net/net_ssl.h" //contrib/epee/include
+#include "epee/net/net_ssl.h"   //contrib/epee/include
+#include "span.h"               //beldex/contrib/epee/include/epee
+#include "db/storage.h"
 //#include "rpc/client.h"
 namespace lws
 {
     class rest_server
     {
-    public:
+      struct internal;
+    
+       boost::asio::io_service io_service_;
+       std::list<internal> ports_;
+
+     public:
         struct configuration
         {
             epee::net_utils::ssl_authentication_t auth;
             std::vector<std::string> access_controls;
             std::size_t threads;
             bool allow_external;
-        }; //configre
+        };
+
+        explicit rest_server(epee::span<const std::string> addresses, db::storage disk,configuration config);
+        
+        rest_server(rest_server&&) = delete;
+        rest_server(rest_server const&) = delete;
+        
+        ~rest_server() noexcept;
+        
+        rest_server& operator=(rest_server&&) = delete;
+        rest_server& operator=(rest_server const&) = delete;
     }; //rest_server
 } //lws
