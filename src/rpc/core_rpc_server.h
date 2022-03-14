@@ -192,6 +192,7 @@ namespace cryptonote::rpc {
 
     GET_HEIGHT::response                                invoke(GET_HEIGHT::request&& req, rpc_context context);
     GET_BLOCKS_FAST::response                           invoke(GET_BLOCKS_FAST::request&& req, rpc_context context);
+    GET_BLOCKS_FAST_RPC::response                       invoke(GET_BLOCKS_FAST_RPC::request&& req, rpc_context context);
     GET_ALT_BLOCKS_HASHES::response                     invoke(GET_ALT_BLOCKS_HASHES::request&& req, rpc_context context);
     GET_BLOCKS_BY_HEIGHT::response                      invoke(GET_BLOCKS_BY_HEIGHT::request&& req, rpc_context context);
     GET_HASHES_FAST::response                           invoke(GET_HASHES_FAST::request&& req, rpc_context context);

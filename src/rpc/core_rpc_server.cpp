@@ -547,6 +547,67 @@ namespace cryptonote { namespace rpc {
     res.status = STATUS_OK;
     return res;
   }
+
+  //------------------------------------------------------------------------------------------------------------------------------
+  GET_BLOCKS_FAST_RPC::response core_rpc_server::invoke(GET_BLOCKS_FAST_RPC::request&& req, rpc_context context)
+  {
+    GET_BLOCKS_FAST_RPC::response res{};
+
+    PERF_TIMER(on_get_blocks);
+    if (use_bootstrap_daemon_if_necessary<GET_BLOCKS_FAST_RPC>(req, res))
+      return res;
+
+    std::vector<std::pair<std::pair<cryptonote::blobdata, crypto::hash>, std::vector<std::pair<crypto::hash, cryptonote::blobdata> > > > bs;
+
+    if(!m_core.find_blockchain_supplement(req.start_height, req.block_ids, bs, res.current_height, res.start_height, req.prune, !req.no_miner_tx, GET_BLOCKS_FAST_RPC::MAX_COUNT))
+    {
+      res.status = "Failed";
+      return res;
+    }
+
+    size_t size = 0, ntxes = 0;
+    res.blocks.reserve(bs.size());
+    res.output_indices.reserve(bs.size());
+    for(auto& bd: bs)
+    {
+      res.blocks.resize(res.blocks.size()+1);
+      res.blocks.back().block = bd.first.first;
+      size += bd.first.first.size();
+      res.output_indices.push_back(GET_BLOCKS_FAST_RPC::block_output_indices());
+      ntxes += bd.second.size();
+      res.output_indices.back().indices.reserve(1 + bd.second.size());
+      if (req.no_miner_tx)
+        res.output_indices.back().indices.push_back(GET_BLOCKS_FAST_RPC::tx_output_indices());
+      res.blocks.back().txs.reserve(bd.second.size());
+      for (std::vector<std::pair<crypto::hash, cryptonote::blobdata>>::iterator i = bd.second.begin(); i != bd.second.end(); ++i)
+      {
+        res.blocks.back().txs.push_back({std::move(i->second), crypto::null_hash});
+        i->second.clear();
+        i->second.shrink_to_fit();
+        size += res.blocks.back().txs.back().size();
+      }
+
+      const size_t n_txes_to_lookup = bd.second.size() + (req.no_miner_tx ? 0 : 1);
+      if (n_txes_to_lookup > 0)
+      {
+        std::vector<std::vector<uint64_t>> indices;
+        bool r = m_core.get_tx_outputs_gindexs(req.no_miner_tx ? bd.second.front().first : bd.first.second, n_txes_to_lookup, indices);
+        if (!r || indices.size() != n_txes_to_lookup || res.output_indices.back().indices.size() != (req.no_miner_tx ? 1 : 0))
+        {
+          res.status = "Failed";
+          return res;
+        }
+        for (size_t i = 0; i < indices.size(); ++i)
+          res.output_indices.back().indices.push_back({std::move(indices[i])});
+      }
+    }
+
+    MDEBUG("on_get_blocks: " << bs.size() << " blocks, " << ntxes << " txes, size " << size);
+    res.status = STATUS_OK;
+    return res;
+  }
+  //------------------------------------------------------------------------------------------------------------------------------
+
   GET_ALT_BLOCKS_HASHES::response core_rpc_server::invoke(GET_ALT_BLOCKS_HASHES::request&& req, rpc_context context)
   {
     GET_ALT_BLOCKS_HASHES::response res{};
@@ -2088,7 +2149,7 @@ namespace cryptonote { namespace rpc {
     res.tx_hashes.reserve(blk.tx_hashes.size());
     for (const auto& tx_hash : blk.tx_hashes)
         res.tx_hashes.push_back(tools::type_to_hex(tx_hash));
-    res.blob = oxenmq::to_hex(t_serializable_object_to_blob(blk));
+    // res.blob = oxenmq::to_hex(t_serializable_object_to_blob(blk));
     res.json = obj_to_json_str(blk);
     res.status = STATUS_OK;
     return res;
