@@ -25,7 +25,9 @@ namespace lws
         static bool is_running() noexcept { return running; }
 
         //! Stops all scanner instances globally.
-        static void stop() noexcept { running = false; }
+        static void stop() noexcept {
+            std::cout << "stop called" << std::endl;
+             running = false; }
     };
 
 } //lws

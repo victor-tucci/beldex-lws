@@ -172,7 +172,7 @@ namespace
     auto disk = lws::db::storage::open(prog.db_path.c_str(), prog.create_queue_max);
     lws::scanner::sync(disk.clone());
 
-    lws::rest_server server{epee::to_span(prog.rest_servers), disk.clone(), std::move(prog.rest_config)};
+    // lws::rest_server server{epee::to_span(prog.rest_servers), disk.clone(), std::move(prog.rest_config)};
     for (const std::string& address : prog.rest_servers)
       MINFO("Listening for REST clients at " << address);
 

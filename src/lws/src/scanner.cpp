@@ -13,8 +13,14 @@
 #include <utility>
 
 #include "common/error.h"   
-#include "common/hex.h"                          // monero/src
-#include "crypto/crypto.h"                            // monero/src
+#include "common/hex.h"                                 // beldex/src
+#include "crypto/crypto.h"                              // beldex/src
+#include "crypto/wallet/crypto.h"                       // beldex/src
+#include "cryptonote_basic/cryptonote_format_utils.h"   // beldex/src
+#include "cryptonote_basic/cryptonote_basic.h"          // beldex/src
+#include "ringct/rctOps.h"                              // beldex/src
+#include "cryptonote_core/cryptonote_tx_utils.h"        // beldex/src
+#include "wallet/wallet2.h"                             // beldex/src
 #include "error.h"
 #include "scanner.h"
 #include "db/account.h"
@@ -80,6 +86,173 @@ namespace lws
       }
     };
 
+    void scan_transaction(
+      epee::span<lws::account> users,
+      const db::block_id height,
+      const std::uint64_t timestamp,
+      crypto::hash const& tx_hash,
+      cryptonote::transaction const& tx,
+      std::vector<std::uint64_t> const& out_ids)
+    {
+      std::cout << " timestamp : " << timestamp << std::endl;
+      std::cout << " tx_hash : " << tx_hash << std::endl;
+      // std::cout << "tx : " << tx << std::endl;
+      for(auto it :out_ids)
+      {
+        std::cout << " out_ids : " << it << std::endl;
+      }
+      std::cout <<"-------------------------------------------------" << std::endl;
+      if (cryptonote::txversion::v2_ringct < tx.version)
+        throw std::runtime_error{"Unsupported tx version"};
+
+      cryptonote::tx_extra_pub_key key;
+      boost::optional<crypto::hash> prefix_hash;
+      boost::optional<cryptonote::tx_extra_nonce> extra_nonce;
+      std::pair<std::uint8_t, db::output::payment_id_> payment_id;
+
+      {
+        std::vector<cryptonote::tx_extra_field> extra;
+        cryptonote::parse_tx_extra(tx.extra, extra);
+        // allow partial parsing of tx extra (similar to wallet2.cpp)
+
+        if (!cryptonote::find_tx_extra_field_by_type(extra, key))
+          return;
+
+        extra_nonce.emplace();
+        if (cryptonote::find_tx_extra_field_by_type(extra, *extra_nonce))
+        {
+          if (cryptonote::get_payment_id_from_tx_extra_nonce(extra_nonce->nonce, payment_id.second.long_))
+            payment_id.first = sizeof(crypto::hash);
+        }
+        else
+          extra_nonce = boost::none;
+      } // destruct `extra` vector
+
+      for (account& user : users)
+      {
+        if (height <= user.scan_height())
+          continue; // to next user
+
+        crypto::key_derivation derived;
+        if (!crypto::wallet::generate_key_derivation(key.pub_key, user.view_key(), derived))
+          continue; // to next user
+
+        db::extra ext{};
+        std::uint32_t mixin = 0;
+        for (auto const& in : tx.vin)
+        {
+          cryptonote::txin_to_key const* const in_data =
+            std::get_if<cryptonote::txin_to_key>(std::addressof(in));
+          if (in_data)
+          {
+            mixin = boost::numeric_cast<std::uint32_t>(
+              std::max(std::size_t(1), in_data->key_offsets.size()) - 1
+            );
+
+            std::uint64_t goffset = 0;
+            for (std::uint64_t offset : in_data->key_offsets)
+            {
+              goffset += offset;
+              if (user.has_spendable(db::output_id{in_data->amount, goffset}))
+              {
+                user.add_spend(
+                  db::spend{
+                    db::transaction_link{height, tx_hash},
+                    in_data->k_image,
+                    db::output_id{in_data->amount, goffset},
+                    timestamp,
+                    tx.unlock_time,
+                    mixin,
+                    {0, 0, 0}, // reserved
+                    payment_id.first,
+                    payment_id.second.long_
+                  }
+                );
+              }
+            }
+          }
+          else if (std::get_if<cryptonote::txin_gen>(std::addressof(in)))
+            ext = db::extra(ext | db::coinbase_output);
+        }
+
+        std::size_t index = -1;
+        for (auto const& out : tx.vout)
+        {
+          ++index;
+
+          cryptonote::txout_to_key const* const out_data =
+            std::get_if<cryptonote::txout_to_key>(std::addressof(out.target));
+          if (!out_data)
+            continue; // to next output
+
+          crypto::public_key derived_pub;
+          const bool received =
+            crypto::wallet::derive_subaddress_public_key(out_data->key, derived, index, derived_pub) &&
+            derived_pub == user.spend_public();
+
+          if (!received)
+            continue; // to next output
+
+          if (!prefix_hash)
+          {
+            prefix_hash.emplace();
+            cryptonote::get_transaction_prefix_hash(tx, *prefix_hash);
+          }
+
+          std::uint64_t amount = out.amount;
+          rct::key mask = rct::identity();
+          if (!amount && !(ext & db::coinbase_output) && cryptonote::txversion::v1 < tx.version)
+          {
+            const bool bulletproof2 = (rct::RCTType::Bulletproof2 <= tx.rct_signatures.type);
+            const auto decrypted = lws::decode_amount(
+              tx.rct_signatures.outPk.at(index).mask, tx.rct_signatures.ecdhInfo.at(index), derived, index, bulletproof2
+            );
+            if (!decrypted)
+            {
+              MWARNING(user.address() << " failed to decrypt amount for tx " << tx_hash << ", skipping output");
+              continue; // to next output
+            }
+            amount = decrypted->first;
+            mask = decrypted->second;
+            ext = db::extra(ext | db::ringct_output);
+          }
+
+          if (extra_nonce)
+          {
+            if (!payment_id.first && cryptonote::get_encrypted_payment_id_from_tx_extra_nonce(extra_nonce->nonce, payment_id.second.short_))
+            {
+              payment_id.first = sizeof(crypto::hash8);
+              lws::decrypt_payment_id(payment_id.second.short_, derived);
+            }
+          }
+
+          const bool added = user.add_out(
+            db::output{
+              db::transaction_link{height, tx_hash},
+              db::output::spend_meta_{
+                db::output_id{out.amount, out_ids.at(index)},
+                amount,
+                mixin,
+                boost::numeric_cast<std::uint32_t>(index),
+                key.pub_key
+              },
+              timestamp,
+              tx.unlock_time,
+              *prefix_hash,
+              out_data->key,
+              mask,
+              {0, 0, 0, 0, 0, 0, 0}, // reserved bytes
+              db::pack(ext, payment_id.first),
+              payment_id.second
+            }
+          );
+
+          if (!added)
+            MWARNING("Output not added, duplicate public key encountered");
+        } // for all tx outs
+      } // for all users
+    }
+
     void scan_loop(thread_sync& self, std::shared_ptr<thread_data> data) noexcept
     {
       try
@@ -106,8 +279,10 @@ namespace lws
 
         // RPC server assumes that `start_height == 0` means use
         // block ids. This technically skips genesis block.
-      //   cryptonote::rpc::GetBlocksFast::Request req{};
-      //   req.start_height = std::uint64_t(users.begin()->scan_height());
+        // cryptonote::rpc::GetBlocksFast::Request req{};
+        auto start_height = std::uint64_t(users.begin()->scan_height());
+        std::cout << "start_height : " << start_height << std::endl;
+        std::cout << "thread_id : " << std::this_thread::get_id()<<std::endl;
       //   req.start_height = std::max(std::uint64_t(1), req.start_height);
       //   req.prune = true;
 
@@ -115,11 +290,11 @@ namespace lws
       //   if (!send(client, block_request.clone()))
       //     return;
 
-      //   std::vector<crypto::hash> blockchain{};
+        std::vector<crypto::hash> blockchain{};
 
-      //   while (!self.update && scanner::is_running())
-      //   {
-      //     blockchain.clear();
+        while (!self.update && scanner::is_running())
+        {
+          blockchain.clear();
 
       //     auto resp = client.get_message(block_rpc_timeout);
       //     if (!resp)
@@ -258,7 +433,7 @@ namespace lws
 
       //     for (account& user : users)
       //       user.updated(db::block_id(fetched.result.start_height));
-      //   }
+        }
       }
       catch (std::exception const& e)
       {
