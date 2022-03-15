@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <iosfwd>
 #include <utility> 
- 
+
+#include "crypto/crypto.h"
+#include "lmdb/util.h"
 #include "storage.h"
 #include "wire/fwd.h"
 #include "ringct/rctTypes.h" //! \TODO brings in lots of includes, try to remove
@@ -72,6 +74,8 @@ namespace db
     char reserved[3];
   };
 
+  static_assert(sizeof(account) == (4 * 2) + 64 + 32 + (8 * 2) + (4 * 2), "padding in account");
+  void write_bytes(wire::writer&, const account&, bool show_key = false);
    struct block_info
   {
     block_id id;      //!< Must be first for LMDB optimizations
@@ -139,6 +143,11 @@ namespace db
     } payment_id;
   };
 
+  static_assert(
+    sizeof(output) == 8 + 32 + (8 * 3) + (4 * 2) + 32 + (8 * 2) + (32 * 3) + 7 + 1 + 32,
+    "padding in output"
+  );
+  void write_bytes(wire::writer&, const output&);
     struct spend
   {
     transaction_link link;    //!< Orders and links `spend` to `output`.
@@ -170,6 +179,8 @@ namespace db
     account_flags creation_flags; //!< Generated locally?
     char reserved[3];
   };
+  static_assert(sizeof(request_info) == 64 + 32 + 8 + (4 * 2), "padding in request_info");
+  void write_bytes(wire::writer& dest, const request_info& self, bool show_key = false);
 
   inline constexpr bool operator==(output_id left, output_id right) noexcept
   {

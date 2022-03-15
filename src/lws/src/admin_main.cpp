@@ -94,6 +94,15 @@ namespace
     write_json_addresses(out, address);
   }
 
+  void debug_database(program prog, std::ostream& out)
+  {
+    if (!prog.arguments.empty())
+      throw std::runtime_error{"debug_database takes zero arguments"};
+
+    auto reader = prog.disk.start_read().value();
+    reader.json_debug(out, prog.show_sensitive);
+  }
+
   struct command
   {
     char const* const name;
@@ -105,7 +114,7 @@ namespace
   {
     // {"accept_requests",       &accept_requests, "<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
     {"add_account",           &add_account,     "<base58 address> <view key hex>"},
-    // {"debug_database",        &debug_database,  ""},
+    {"debug_database",        &debug_database,  ""},
     // {"list_accounts",         &list_accounts,   ""},
     // {"list_requests",         &list_requests,   ""},
     // {"modify_account_status", &modify_account,  "<\"active\"|\"inactive\"|\"hidden\"> <base58 address> [base 58 address]..."},
