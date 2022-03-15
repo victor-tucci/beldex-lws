@@ -299,6 +299,26 @@ namespace lws
         {
           blockchain.clear();
 
+          using LMQ_ptr = std::shared_ptr<oxenmq::OxenMQ>;
+  
+          LMQ_ptr m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
+          m_LMQ->start();
+    
+          auto c = m_LMQ->connect_remote("tcp://127.0.0.1:4567",
+          [](ConnectionID conn) { std::cout << "Connected \n";},
+          [](ConnectionID conn, std::string_view f) { std::cout << "connect failed: \n";} 
+          ); 
+
+          m_LMQ->request(c, "rpc.get_blocks_fast", [](bool s, auto data) {
+          if (s == 1 && data[0] == "200"){
+              std::cout << "get_blocks data : " << data[1] << "\n";
+              std::cout << "called" << std::endl;
+              json jf= json::parse(data[1]);
+              
+            }
+            else
+              std::cout << "Timeout fetching master nodes list data!";
+            },"{\"start_height\":981492}");
       //     auto resp = client.get_message(block_rpc_timeout);
       //     if (!resp)
       //     {
@@ -440,13 +460,13 @@ namespace lws
       }
       catch (std::exception const& e)
       {
-      //   scanner::stop();
-      //   MERROR(e.what());
+        scanner::stop();
+        MERROR(e.what());
       }
       catch (...)
       {
-      //   scanner::stop();
-      //   MERROR("Unknown exception");
+        scanner::stop();
+        MERROR("Unknown exception");
       }
     }
 

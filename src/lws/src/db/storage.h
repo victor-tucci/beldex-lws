@@ -8,10 +8,13 @@
 
 #include "common/expect.h"
 #include "crypto/crypto.h"
-#include "fwd.h"
 #include "lmdb/transaction.h"
 #include "lmdb/key_stream.h"
 #include "lmdb/value_stream.h"
+
+#include "fwd.h"
+#include "account.h"
+
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -207,7 +210,7 @@ namespace lws
 
   //     \return True iff LMDB successfully committed the update.
   //   */
-  //   expect<std::size_t> update(block_id height, epee::span<const crypto::hash> chain, epee::span<const lws::account> accts);
+    expect<std::size_t> update(block_id height, epee::span<const crypto::hash> chain, epee::span<const lws::account> accts);
 
   //   //! `txn` must have come from a previous call on the same thread.
     expect<storage_reader> start_read(lmdb::suspended_txn txn = nullptr) const;

@@ -870,5 +870,164 @@ namespace db
       );
     });
   }
+
+  namespace
+  {
+    expect<void>
+    add_spends(MDB_cursor& spends_cur, MDB_cursor& images_cur, account_id user, epee::span<const spend> spends) noexcept
+    {
+      MONERO_CHECK(bulk_insert(spends_cur, user, spends));
+      for (auto const& entry : spends)
+      {
+        const db::key_image image{entry.image, entry.link};
+
+        MDB_val key = lmdb::to_val(entry.source);
+        MDB_val value = lmdb::to_val(image);
+        const int err = mdb_cursor_put(&images_cur, &key, &value, MDB_NODUPDATA);
+        if (err && err != MDB_KEYEXIST)
+          return {lmdb::error(err)};
+      }
+      return success();
+    }
+  } // anonymous
+  
+  expect<std::size_t> storage::update(block_id height, epee::span<const crypto::hash> chain, epee::span<const lws::account> users)
+  {
+     std::cout << " in updated function " << std::endl;
+    if (users.empty() && chain.empty())
+      return 0;
+
+    MONERO_PRECOND(!chain.empty());
+    MONERO_PRECOND(db != nullptr);
+
+    return db->try_write([this, height, chain, users] (MDB_txn& txn) -> expect<std::size_t>
+    {
+      epee::span<const crypto::hash> chain_copy{chain};
+      const std::uint64_t last_update =
+        lmdb::to_native(height) + chain.size() - 1;
+
+      if (get_checkpoints().get_max_height() <= last_update)
+      {
+        cursor::blocks blocks_cur;
+        MONERO_CHECK(check_cursor(txn, this->db->tables.blocks, blocks_cur));
+
+        MDB_val key = lmdb::to_val(blocks_version);
+        MDB_val value;
+        MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &key, &value, MDB_SET));
+        MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &key, &value, MDB_LAST_DUP));
+
+        const expect<block_info> last_block = blocks.get_value<block_info>(value);
+        if (!last_block)
+          return last_block.error();
+        if (last_block->id < height)
+          return {lws::error::bad_blockchain};
+
+        const std::uint64_t last_same =
+          std::min(lmdb::to_native(last_block->id), last_update);
+
+        const expect<crypto::hash> hash_check =
+          do_get_block_hash(*blocks_cur, block_id(last_same));
+        if (!hash_check)
+          return hash_check.error();
+
+        const std::uint64_t offset = last_same - lmdb::to_native(height);
+        if (*hash_check != *(chain_copy.begin() + offset))
+          return {lws::error::blockchain_reorg};
+
+        chain_copy.remove_prefix(offset + 1);
+        MONERO_CHECK(
+          append_block_hashes(
+            *blocks_cur, block_id(lmdb::to_native(height) + offset + 1), chain_copy
+          )
+        );
+      }
+
+      cursor::accounts            accounts_cur;
+      cursor::accounts_by_address accounts_ba_cur;
+      cursor::accounts_by_height  accounts_bh_cur;
+      cursor::outputs             outputs_cur;
+      cursor::spends              spends_cur;
+      cursor::images              images_cur;
+
+      MONERO_CHECK(check_cursor(txn, this->db->tables.accounts, accounts_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.accounts_bh, accounts_bh_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.outputs, outputs_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.spends, spends_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.images, images_cur));
+
+      // for bulk inserts
+      boost::container::static_vector<account_lookup, 127> heights{};
+      static_assert(sizeof(heights) <= 1024, "stack vector is large");
+
+      std::size_t updated = 0;
+      for (auto user = users.begin() ;; ++user)
+      {
+        if (heights.size() == heights.capacity() || user == users.end())
+        {
+          // bulk update account height index
+          MONERO_CHECK(
+            bulk_insert(*accounts_bh_cur, last_update, epee::to_span(heights))
+          );
+          if (user == users.end())
+            break;
+          heights.clear();
+        }
+
+        // faster to assume that account is still active
+        account_status status_key = account_status::active;
+        const account_id user_id = user->id();
+        MDB_val key = lmdb::to_val(status_key);
+        MDB_val value = lmdb::to_val(user_id);
+        int err = mdb_cursor_get(accounts_cur.get(), &key, &value, MDB_GET_BOTH);
+        if (err)
+        {
+          if (err != MDB_NOTFOUND)
+            return {lmdb::error(err)};
+          if (accounts_ba_cur == nullptr)
+            MONERO_CHECK(check_cursor(txn, this->db->tables.accounts_ba, accounts_ba_cur));
+
+          MDB_val temp_key = lmdb::to_val(by_address_version);
+          MDB_val temp_value = lmdb::to_val(user->db_address());
+          err = mdb_cursor_get(accounts_ba_cur.get(), &temp_key, &temp_value, MDB_GET_BOTH);
+          if (err)
+          {
+            if (err != MDB_NOTFOUND)
+              return {lmdb::error(err)};
+            continue; // to next account
+          }
+
+          const expect<account_lookup> lookup =
+            accounts_by_address.get_value<MONERO_FIELD(account_by_address, lookup)>(temp_value);
+          if (!lookup)
+            return lookup.error();
+
+          status_key = lookup->status;
+          MONERO_LMDB_CHECK(mdb_cursor_get(accounts_cur.get(), &key, &value, MDB_GET_BOTH));
+        }
+        expect<account> existing = accounts.get_value<account>(value);
+        if (!existing || existing->scan_height != user->scan_height())
+          continue; // to next account
+
+        const block_id existing_height = existing->scan_height;
+
+        existing->scan_height = block_id(last_update);
+        value = lmdb::to_val(*existing);
+        MONERO_LMDB_CHECK(mdb_cursor_put(accounts_cur.get(), &key, &value, MDB_CURRENT));
+
+        heights.push_back(account_lookup{user->id(), status_key});
+
+        key = lmdb::to_val(existing_height);
+        value = lmdb::to_val(user_id);
+        MONERO_LMDB_CHECK(mdb_cursor_get(accounts_bh_cur.get(), &key, &value, MDB_GET_BOTH));
+        MONERO_LMDB_CHECK(mdb_cursor_del(accounts_bh_cur.get(), 0));
+
+        MONERO_CHECK(bulk_insert(*outputs_cur, user->id(), epee::to_span(user->outputs())));
+        MONERO_CHECK(add_spends(*spends_cur, *images_cur, user->id(), epee::to_span(user->spends())));
+
+        ++updated;
+      } // ... for every account being updated ...
+      return updated;
+    });
+  }
 } //db
 } //lws
