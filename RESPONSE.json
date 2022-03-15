@@ -1,0 +1,121 @@
+{
+    "blocks_by_id": [
+        {
+            "id": 0,
+            "hash": "48ca7cd3c8de5b6a4d53d2861fbdaedca141553559f9be9520068053cda8430b"
+        },
+        {
+            "id": 260,
+            "hash": "f4b10926a709c2be09d9a214e0eab6f4692681ec0d006734c15b13df0f8d6bb4"
+        },
+        {
+            "id": 261,
+            "hash": "01a906077cf1891ef1527806cd249d9e4b9dfe8b5d7dcc4f073c2c9cd132e5ce"
+        },
+        {
+            "id": 262,
+            "hash": "b6c4daaf53a82b79c47955a2eb1bf05315153843438f6a9aa9d3647a8dce9c96"
+        },
+        {
+            "id": 263,
+            "hash": "a947231fbe93cbe68454a55c9ce5c699407a3b3117c4d9179b4da044c1596c46"
+        },
+        {
+            "id": 264,
+            "hash": "bc7b3977b35074c2672177e4ef982fed794b2208d6d4f8ae9e746cfdb0c77104"
+        },
+        {
+            "id": 265,
+            "hash": "60fda723abf8a32e079347cc1309875e1c913d0f44de7c64400bee6e6425b936"
+        },
+        {
+            "id": 266,
+            "hash": "6f86007780295c8cf9cf9ac10d204ed513d988c45895cd6e47c030b554631039"
+        },
+        {
+            "id": 267,
+            "hash": "543b7ba5e1974f4d8b0a1077681a9d22526927cbf8dc821ca686e296faa2818a"
+        },
+        {
+            "id": 268,
+            "hash": "87d3d4a517438d457cae92bca458e837b20fb87982d9b42cae39897e1d1eadfa"
+        },
+        {
+            "id": 269,
+            "hash": "16f78a3ebeea54069c06ec7bec9a82d6e39ecd1a5f13103dd5ba1ec3e0aab856"
+        }
+    ],
+    "accounts_by_status,id": {
+        "active": [
+            {
+                "id": 1,
+                "access_time": 1646202710,
+                "address": {
+                    "spend_public": "aae39deb353c2e28824a8b824a17eb7a12639fe9ba8d6ec47b954bd78a223a53",
+                    "view_public": "dedcaba7486f430c16ae4e05065428226ddc5278d0909a9ee91e5ce2692ad854"
+                },
+                "scan_height": 1444,
+                "start_height": 263,
+                "creation_time": 1646202710,
+                "admin": 0,
+                "generated_locally": 0
+            }
+        ]
+    },
+    "accounts_by_address": {
+        "9yeFmqmKxq37mzH9TsuWdpMRFUxY9k8MKZs8UBHgFBKXF2efigwHL1Q32GvYA9UrHD6m1LZj2ZQemTadfHHBKFVRAYUEbDD": {
+            "id": 1,
+            "status": "active"
+        }
+    },
+    "accounts_by_height,id": [
+        {
+            "scan_height": 1444,
+            "accounts": [
+                {
+                    "id": 1,
+                    "status": "active"
+                }
+            ]
+        }
+    ],
+    "outputs_by_account_id,block_id,tx_hash,output_id": {
+        "1": [
+            {
+                "id": {
+                    "high": 757414801,
+                    "low": 0
+                },
+                "block": 264,
+                "index": 0,
+                "amount": 757414801,
+                "timestamp": 1646202701,
+                "tx_hash": "8879cf1d3eb8988a15bb2b5c45bc0247673526384c984399c47568f81e0b875e",
+                "tx_prefix_hash": "8879cf1d3eb8988a15bb2b5c45bc0247673526384c984399c47568f81e0b875e",
+                "tx_public": "dde3ed2e5dbcc3d1c01b5198ac58c0ae6630f7eeb92688fa8dd797577005a1ad",
+                "unlock_time": 324,
+                "mixin_count": 0,
+                "coinbase": 1
+            },
+            {
+                "id": {
+                    "high": 7000000000,
+                    "low": 14
+                },
+                "block": 264,
+                "index": 1,
+                "amount": 7000000000,
+                "timestamp": 1646202701,
+                "tx_hash": "8879cf1d3eb8988a15bb2b5c45bc0247673526384c984399c47568f81e0b875e",
+                "tx_prefix_hash": "8879cf1d3eb8988a15bb2b5c45bc0247673526384c984399c47568f81e0b875e",
+                "tx_public": "dde3ed2e5dbcc3d1c01b5198ac58c0ae6630f7eeb92688fa8dd797577005a1ad",
+                "unlock_time": 324,
+                "mixin_count": 0,
+                "coinbase": 1
+            }
+        ]
+    },
+    "spends_by_account_id,block_id,tx_hash,image": {},
+    "key_images_by_output_id,image": {},
+    "requests_by_type,address": {}
+}

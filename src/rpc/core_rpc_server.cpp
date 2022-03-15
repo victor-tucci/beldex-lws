@@ -512,7 +512,7 @@ namespace cryptonote { namespace rpc {
     for(auto& bd: bs)
     {
       res.blocks.resize(res.blocks.size()+1);
-      res.blocks.back().block = bd.first.first;
+      res.blocks.back().block = tools::type_to_hex(bd.first.second);
       size += bd.first.first.size();
       res.output_indices.push_back(GET_BLOCKS_FAST::block_output_indices());
       ntxes += bd.second.size();
@@ -522,7 +522,7 @@ namespace cryptonote { namespace rpc {
       res.blocks.back().txs.reserve(bd.second.size());
       for (std::vector<std::pair<crypto::hash, cryptonote::blobdata>>::iterator i = bd.second.begin(); i != bd.second.end(); ++i)
       {
-        res.blocks.back().txs.push_back({std::move(i->second), crypto::null_hash});
+        res.blocks.back().txs.push_back({std::move(tools::type_to_hex(i->first)), crypto::null_hash});
         i->second.clear();
         i->second.shrink_to_fit();
         size += res.blocks.back().txs.back().size();
