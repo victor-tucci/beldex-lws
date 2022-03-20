@@ -647,6 +647,7 @@ namespace cryptonote
     tx_extra_field field;
     if (hf_version < network_version_13_checkpointing)
     {
+
       CHECK_AND_ASSERT_MES(state_change.state == master_nodes::new_state::deregister, false, "internal error: cannot construct an old deregistration for a non-deregistration state change (before hardfork v12)");
       field = tx_extra_master_node_deregister_old{state_change};
     }
