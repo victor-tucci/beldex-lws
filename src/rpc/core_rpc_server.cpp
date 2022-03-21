@@ -568,10 +568,17 @@ namespace cryptonote { namespace rpc {
     size_t size = 0, ntxes = 0;
     res.blocks.reserve(bs.size());
     res.output_indices.reserve(bs.size());
+    block blk;
+    int block_height = req.start_height;
     for(auto& bd: bs)
     {
       res.blocks.resize(res.blocks.size()+1);
       res.blocks.back().block = bd.first.first;
+      if (!m_core.get_block_by_height(block_height, blk))
+        throw rpc_error{ERROR_INTERNAL, "Internal error: can't get block by height. Height = " + std::to_string(req.start_height) + '.'};
+      res.blocks.back().block_hash = tools::type_to_hex(get_block_hash(blk));
+      res.blocks.back().timestamp = blk.timestamp;
+      ++block_height;
       size += bd.first.first.size();
       res.output_indices.push_back(GET_BLOCKS_FAST_RPC::block_output_indices());
       ntxes += bd.second.size();
@@ -685,6 +692,47 @@ namespace cryptonote { namespace rpc {
       res.status = "Failed";
       return res;
     }
+
+    res.status = STATUS_OK;
+    return res;
+  }
+
+    //------------------------------------------------------------------------------------------------------------------------------
+  GET_HASHES_FAST_RPC::response core_rpc_server::invoke(GET_HASHES_FAST_RPC::request&& req, rpc_context context)
+  {
+    GET_HASHES_FAST_RPC::response res{};
+
+    PERF_TIMER(on_get_hashes);
+    std::cout <<"req.block_ids size  :" << req.block_ids.size() << std::endl;
+    std::cout << "req.start_height : " << req.start_height << std::endl;
+
+      // req.block_ids.push_back("<a9676c3fbae6ad42434db2d1ebac90c2e75dbbd02a6b2d45c69d123554c7578f>");
+      // req.block_ids.push_back("<6ea477622339f61c5fba036dc75c08b6efcf9ee09c108e5c5591fcc233d17b20>");
+    
+    std::cout <<"req.block_ids size after insert :" << req.block_ids.size() << std::endl;
+
+    for (auto &req_blocks_id_rpc : req.block_ids)
+    {
+      std::cout << " req_blocks_id_rpc : " << req_blocks_id_rpc << std::endl;
+    }
+    if (use_bootstrap_daemon_if_necessary<GET_HASHES_FAST_RPC>(req, res))
+      return res;
+
+    res.start_height = req.start_height;
+    std::vector<crypto::hash> blk_ids;
+    if(!m_core.get_blockchain_storage().find_blockchain_supplement_rpc(req.block_ids, blk_ids, res.start_height, res.current_height, false))
+    {
+      res.status = "Failed";
+      return res;
+    }
+
+   res.m_block_ids.reserve(blk_ids.size());
+
+   for (const crypto::hash &m_blocks_id : blk_ids)
+    {
+       res.m_block_ids.push_back(tools::type_to_hex(m_blocks_id));
+    }
+    
 
     res.status = STATUS_OK;
     return res;

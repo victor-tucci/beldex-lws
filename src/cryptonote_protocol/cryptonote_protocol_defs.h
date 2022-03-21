@@ -141,6 +141,19 @@ namespace cryptonote
   /************************************************************************/
   /*                                                                      */
   /************************************************************************/
+  struct block_complete_entry_rpc
+  {
+    std::string block;
+    std::string block_hash;
+    uint64_t timestamp;
+    std::vector<std::string> txs;
+    blobdata checkpoint;
+    std::vector<serializable_flash_metadata> flashes;
+    KV_MAP_SERIALIZABLE
+  };
+  /************************************************************************/
+  /*                                                                      */
+  /************************************************************************/
   struct NOTIFY_NEW_TRANSACTIONS
   {
     const static int ID = BC_COMMANDS_POOL_BASE + 2;
