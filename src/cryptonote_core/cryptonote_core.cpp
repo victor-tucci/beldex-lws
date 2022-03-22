@@ -1502,7 +1502,7 @@ namespace cryptonote
         auto q_height = flash.quorum_height(static_cast<flash_tx::subquorum>(qi));
         auto &q = quorum_cache[q_height];
         if (!q)
-          q = get_quorum(master_nodes::quorum_type::flash, q_height, true);
+          q = get_quorum(master_nodes::quorum_type::flash, q_height);
         if (!q)
         {
           MINFO("Don't have a quorum for height " << q_height << " (yet?), ignoring this flash");
