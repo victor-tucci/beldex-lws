@@ -137,31 +137,34 @@ namespace master_nodes
     auto &vvc = tvc.m_vote_ctx;
     if (state_change.state != new_state::deregister && hf_version < cryptonote::network_version_13_checkpointing)
     {
-      LOG_PRINT_L1("Non-deregister state changes are invalid before v12");
+      LOG_PRINT_L1("Received state change TX with Non-deregister state changes are invalid before v12");
       return bad_tx(tvc);
     }
 
     if (state_change.state >= new_state::_count)
     {
-      LOG_PRINT_L1("Unknown state change to new state: " << static_cast<uint16_t>(state_change.state));
+      LOG_PRINT_L1("Received state change TX with with unknown state change to new state: " << static_cast<uint16_t>(state_change.state));
       return bad_tx(tvc);
     }
 
     if (state_change.votes.size() < master_nodes::STATE_CHANGE_MIN_VOTES_TO_CHANGE_STATE)
     {
-      LOG_PRINT_L1("Not enough votes");
+      LOG_PRINT_L1("Received state change TX with not enough votes");
       vvc.m_not_enough_votes = true;
       return bad_tx(tvc);
     }
 
     if (state_change.votes.size() > master_nodes::STATE_CHANGE_QUORUM_SIZE)
     {
-      LOG_PRINT_L1("Too many votes");
+      LOG_PRINT_L1("Received state change TX with too many votes");
       return bad_tx(tvc);
     }
 
     if (!bounds_check_worker_index(quorum, state_change.master_node_index, &vvc))
-      return bad_tx(tvc);
+    {
+        LOG_PRINT_L1("Received state change tx with invalid bounds_check_worker_index");
+        return bad_tx(tvc);
+    }
 
     // Check if state_change is too old or too new to hold onto
     {
@@ -437,93 +440,91 @@ namespace master_nodes
     {
       vvc.m_verification_failed = !height_in_buffer;
       result = false;
+      LOG_PRINT_L1("invalid block height");
     }
 
     return result;
   }
 
-  bool verify_vote_signature(uint8_t hf_version, const quorum_vote_t &vote, cryptonote::vote_verification_context &vvc, const master_nodes::quorum &quorum)
-  {
-    bool result = true;
-    if (vote.type > tools::enum_top<quorum_type>)
-    {
-      vvc.m_invalid_vote_type = true;
-      result = false;
-    }
+  bool verify_vote_signature(uint8_t hf_version, const quorum_vote_t &vote, cryptonote::vote_verification_context &vvc, const master_nodes::quorum &quorum) {
+      bool result = true;
+      if (vote.type > tools::enum_top<quorum_type>) {
+          vvc.m_invalid_vote_type = true;
+          result = false;
+      }
 
-    if (vote.group > quorum_group::worker || vote.group < quorum_group::validator)
-    {
-      vvc.m_incorrect_voting_group = true;
-      result = false;
-    }
-
-    if (!result)
-      return result;
-
-    if (vote.group == quorum_group::validator)
-      result = bounds_check_validator_index(quorum, vote.index_in_group, &vvc);
-    else
-      result = bounds_check_worker_index(quorum, vote.index_in_group, &vvc);
-
-    if (!result)
-      return result;
-
-    crypto::public_key key = crypto::null_pkey;
-    crypto::hash hash      = crypto::null_hash;
-
-    switch(vote.type)
-    {
-      default:
-      {
-        LOG_PRINT_L1("Unhandled vote type with value: " << (int)vote.type);
-        assert("Unhandled vote type" == 0);
-        return false;
-      };
-
-      case quorum_type::obligations:
-      {
-        if (vote.group != quorum_group::validator)
-        {
-          LOG_PRINT_L1("Vote received specifies incorrect voting group, expected vote from validator");
+      if (vote.group > quorum_group::worker || vote.group < quorum_group::validator) {
           vvc.m_incorrect_voting_group = true;
           result = false;
-        }
-        else
-        {
-          key = quorum.validators[vote.index_in_group];
-          hash = make_state_change_vote_hash(vote.block_height, vote.state_change.worker_index, vote.state_change.state);
-          result = bounds_check_worker_index(quorum, vote.state_change.worker_index, &vvc);
-        }
       }
-      break;
 
-      case quorum_type::checkpointing:
-      {
-        if (vote.group != quorum_group::validator)
-        {
-          LOG_PRINT_L1("Vote received specifies incorrect voting group");
-          vvc.m_incorrect_voting_group = true;
-          result = false;
-        }
-        else
-        {
-          key  = quorum.validators[vote.index_in_group];
-          hash = vote.checkpoint.block_hash;
-        }
+      if (!result)
+          return result;
+
+      if (vote.group == quorum_group::validator)
+          result = bounds_check_validator_index(quorum, vote.index_in_group, &vvc);
+      else
+          result = bounds_check_worker_index(quorum, vote.index_in_group, &vvc);
+
+      if (!result)
+          return result;
+
+      crypto::public_key key = crypto::null_pkey;
+      crypto::hash hash = crypto::null_hash;
+
+      switch (vote.type) {
+          default: {
+              LOG_PRINT_L1("Unhandled vote type with value: " << (int) vote.type);
+              assert("Unhandled vote type" == 0);
+              return false;
+          };
+
+          case quorum_type::obligations: {
+              if (vote.group != quorum_group::validator) {
+                  LOG_PRINT_L1("Vote received specifies incorrect voting group, expected vote from validator");
+                  vvc.m_incorrect_voting_group = true;
+                  result = false;
+              } else {
+                  key = quorum.validators[vote.index_in_group];
+                  hash = make_state_change_vote_hash(vote.block_height, vote.state_change.worker_index,
+                                                     vote.state_change.state);
+                  result = bounds_check_worker_index(quorum, vote.state_change.worker_index, &vvc);
+              }
+          }
+              break;
+
+          case quorum_type::checkpointing: {
+              if (vote.group != quorum_group::validator) {
+                  LOG_PRINT_L1("Vote received specifies incorrect voting group");
+                  vvc.m_incorrect_voting_group = true;
+                  result = false;
+              } else {
+                  key = quorum.validators[vote.index_in_group];
+                  hash = vote.checkpoint.block_hash;
+              }
+          }
+              break;
       }
-      break;
+
+      if (!result)
+          return result;
+
+      result = crypto::check_signature(hash, key, vote.signature);
+      if (result){
+          MDEBUG("Signature accepted for " << vote.type << " voter " << vote.index_in_group << "/" << key
+                                           << (vote.type == quorum_type::obligations ? " voting for worker " +
+                                                                                       std::to_string(
+                                                                                               vote.state_change.worker_index)
+                                                                                     : "")
+                                 << " at height " << vote.block_height);
+          if(vote.type == quorum_type::obligations){
+              MDEBUG("Signature accepted for " << quorum.workers[vote.state_change.worker_index]);
+          }
     }
-
-    if (!result)
-      return result;
-
-    result = crypto::check_signature(hash, key, vote.signature);
-    if (result)
-      MDEBUG("Signature accepted for " << vote.type << " voter " << vote.index_in_group << "/" << key
-              << (vote.type == quorum_type::obligations ? " voting for worker " + std::to_string(vote.state_change.worker_index) : "")
-              << " at height " << vote.block_height);
-    else
-      vvc.m_signature_not_valid = true;
+    else {
+        vvc.m_signature_not_valid = true;
+        MDEBUG("Signature not accepted for MN " << quorum.workers[vote.state_change.worker_index]);
+    }
 
     return result;
   }

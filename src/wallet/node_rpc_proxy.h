@@ -142,6 +142,8 @@ private:
   mutable uint64_t m_block_weight_limit;
   mutable std::chrono::steady_clock::time_point m_get_info_time;
   mutable std::chrono::steady_clock::time_point m_height_time;
+  mutable std::optional<uint8_t> m_hardfork_version;
+  mutable std::chrono::steady_clock::time_point m_hardfork_version_time;
 };
 
 }

@@ -317,8 +317,10 @@ namespace master_nodes
 #ifndef BELDEX_ENABLE_INTEGRATION_TEST_HOOKS
             // NOTE: Wait at least 2 hours before we're allowed to vote so that we collect necessary
             // voting information from people on the network
-            if (live_time < m_core.get_net_config().UPTIME_PROOF_VALIDITY)
-              continue;
+            if (live_time < m_core.get_net_config().UPTIME_PROOF_VALIDITY) {
+                LOG_PRINT_L1("May not vote, this node needs to be online more time(>2hours) to be allowed to vote");
+                continue;
+            }
 #endif
 
             if (!m_core.master_node())
@@ -356,23 +358,34 @@ namespace master_nodes
                 const auto &node_key = worker_it->pubkey;
                 const auto &info = *worker_it->info;
 
-                if (!info.can_be_voted_on(m_obligations_height))
+                if (!info.can_be_voted_on(m_obligations_height)){
+                  LOG_PRINT_L2("process_quorums: Can not vote on:"); //TODO:VOTE
                   continue;
+                }
 
                 auto test_results = check_master_node(obligations_height_hf_version, node_key, info);
                 bool passed       = test_results.passed(hf_version==cryptonote::network_version_12_security_signature);
+                LOG_PRINT_L2("process_quorums: check_master_node passed:");//TODO:VOTE
+                LOG_PRINT_L3("NODE KEY:" << quorum->workers[node_index]);
 
+                int64_t credit = calculate_decommission_credit(info, latest_height,hf_version);
                 new_state vote_for_state;
                 uint16_t reason = 0;
                 if (passed) {
                   if (info.is_decommissioned()) {
-                    vote_for_state = new_state::recommission;
-                    LOG_PRINT_L2("Decommissioned master node " << quorum->workers[node_index] << " is now passing required checks; voting to recommission");
+                      if(credit>=0) {
+                          vote_for_state = new_state::recommission;
+                          LOG_PRINT_L2("process_quorums: passed and is_decommissioned credit>0 newstate:recommission node:" );
+                      }else{
+                          vote_for_state = new_state::deregister; // Credit ran out!
+                          LOG_PRINT_L2("process_quorums: passed and is_decommissioned credit 0 newstate:deregister node:" );
+                      }
+                    LOG_PRINT_L2("Decommissioned master node is now passing required checks; voting to recommission");
                   } else if (!test_results.single_ip) {
                       // Don't worry about this if the SN is getting recommissioned (above) -- it'll
                       // already reenter at the bottom.
                       vote_for_state = new_state::ip_change_penalty;
-                      LOG_PRINT_L2("Master node " << quorum->workers[node_index] << " was observed with multiple IPs recently; voting to reset reward position");
+                      LOG_PRINT_L2("Master node was observed with multiple IPs recently; voting to reset reward position");
                   } else {
                       good++;
                       continue;
@@ -387,7 +400,7 @@ namespace master_nodes
                   if (!test_results.belnet_reachable) reason |= cryptonote::Decommission_Reason::belnet_unreachable;
                   if (!test_results.timestamp_participation) reason |= cryptonote::Decommission_Reason::timestamp_response_unreachable;
                   if (!test_results.timesync_status) reason |= cryptonote::Decommission_Reason::timesync_status_out_of_sync;
-                  int64_t credit = calculate_decommission_credit(info, latest_height,hf_version);
+
 
                   if (info.is_decommissioned()) {
                     if (credit >= 0) {
@@ -459,6 +472,8 @@ namespace master_nodes
                       LOG_PRINT_L0("Master Node is passing all local tests");
                     LOG_PRINT_L0("(Note that some tests, such as storage server and belnet reachability, can only assessed by remote master nodes)");
                   }
+                }else{
+                    LOG_PRINT_L0("process_quorums: Cant be voted on my Master Node");
                 }
               }
             }
@@ -534,27 +549,33 @@ namespace master_nodes
 
   static bool handle_obligations_vote(cryptonote::core &core, const quorum_vote_t& vote, const std::vector<pool_vote_entry>& votes, const quorum& quorum)
   {
+    LOG_PRINT_L2("start handle_obligations_vote");
     if (votes.size() < STATE_CHANGE_MIN_VOTES_TO_CHANGE_STATE)
     {
       LOG_PRINT_L2("Don't have enough votes yet to submit a state change transaction: have " << votes.size() << " of " << STATE_CHANGE_MIN_VOTES_TO_CHANGE_STATE << " required");
       return true;
     }
-
+    LOG_PRINT_L2("get_network_version");
     auto net = core.get_blockchain_storage().get_network_version();
-
     // NOTE: Verify state change is still valid or have we processed some other state change already that makes it invalid
     {
       crypto::public_key const &master_node_pubkey = quorum.workers[vote.state_change.worker_index];
+      LOG_PRINT_L2("get_master_node_list_state " << master_node_pubkey);
       auto master_node_infos = core.get_master_node_list_state({master_node_pubkey});
-      if (!master_node_infos.size() ||
-          !master_node_infos[0].info->can_transition_to_state(net, vote.block_height, vote.state_change.state))
+
+      if (master_node_infos.empty() ||
+          !master_node_infos[0].info->can_transition_to_state(net, vote.block_height, vote.state_change.state)
+          ){
         // NOTE: Vote is valid but is invalidated because we cannot apply the change to a master node or it is not on the network anymore
         //       So don't bother generating a state change tx.
+          LOG_PRINT_L2("Vote is valid but is invalidated because we cannot apply the change to a master node" );
         return true;
+      }
     }
-
     using version_t = cryptonote::tx_extra_master_node_state_change::version_t;
+    LOG_PRINT_L2("State not reachable A!?");
     auto ver = net >= HF_VERSION_PROOF_BTENC ? version_t::v4_reasons : version_t::v0;
+
     cryptonote::tx_extra_master_node_state_change state_change{
         ver,
         vote.state_change.state,
@@ -573,8 +594,10 @@ namespace master_nodes
     }
 
     cryptonote::transaction state_change_tx{};
+    LOG_PRINT_L2("Before add_master_node_state_change_to_tx_extra ");//<< quorum.workers[vote.state_change.worker_index]);
     if (cryptonote::add_master_node_state_change_to_tx_extra(state_change_tx.extra, state_change, net))
     {
+        LOG_PRINT_L2("add_master_node_state_change_to_tx_extra " );
       state_change_tx.version = cryptonote::transaction::get_max_version_for_hf(net);
       state_change_tx.type    = cryptonote::txtype::state_change;
 
@@ -592,8 +615,9 @@ namespace master_nodes
     else
       LOG_PRINT_L1("Failed to add state change to tx extra for height: "
           << vote.block_height << " and master node: " << vote.state_change.worker_index);
-
+    LOG_PRINT_L2("handle_obligations_vote returned true");
     return true;
+
   }
 
   static bool handle_checkpoint_vote(cryptonote::core& core, const quorum_vote_t& vote, const std::vector<pool_vote_entry>& votes, const quorum& quorum)
@@ -671,22 +695,29 @@ namespace master_nodes
   bool quorum_cop::handle_vote(quorum_vote_t const &vote, cryptonote::vote_verification_context &vvc,uint8_t hf_version)
   {
     vvc = {};
-    if (!verify_vote_age(vote, m_core.get_current_blockchain_height(), vvc,hf_version))
-      return false;
+    if (!verify_vote_age(vote, m_core.get_current_blockchain_height(), vvc,hf_version)) {
+        LOG_PRINT_L1("failed verify_vote_age");
+        return false;
+    }
 
     std::shared_ptr<const quorum> quorum = m_core.get_quorum(vote.type, vote.block_height);
     if (!quorum)
     {
       vvc.m_invalid_block_height = true;
+      LOG_PRINT_L1("m_invalid_block_height (vote)");
       return false;
     }
 
-    if (!verify_vote_signature(get_network_version(m_core.get_nettype(), vote.block_height), vote, vvc, *quorum))
-      return false;
-
+    if (!verify_vote_signature(get_network_version(m_core.get_nettype(), vote.block_height), vote, vvc, *quorum)) {
+        LOG_PRINT_L1("failed verify_vote_signature");
+        return false;
+    }
     std::vector<pool_vote_entry> votes = m_vote_pool.add_pool_vote_if_unique(vote, vvc);
     if (!vvc.m_added_to_pool) // NOTE: Not unique vote
-      return true;
+    {
+        LOG_PRINT_L1("NOTE: Not unique vote");
+        return true;
+    }
 
     bool result = true;
     switch(vote.type)
@@ -699,17 +730,19 @@ namespace master_nodes
       };
 
       case quorum_type::obligations:
+        LOG_PRINT_L1("handle_obligations_vote");
         result &= handle_obligations_vote(m_core, vote, votes, *quorum);
         break;
 
       case quorum_type::checkpointing:
+          LOG_PRINT_L1("handle_checkpointing_vote ");
         result &= handle_checkpoint_vote(m_core, vote, votes, *quorum);
         break;
     }
     return result;
   }
 
-  // Calculate the decommission credit for a master node.  If the SN is current decommissioned this
+  // Calculate the decommission credit for a master node.  If the MN is current decommissioned this
   // accumulated blocks.
   int64_t quorum_cop::calculate_decommission_credit(const master_node_info &info, uint64_t current_height,uint8_t hf_version)
   {

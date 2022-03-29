@@ -1043,7 +1043,7 @@ bool rpc_command_executor::print_transaction_pool_stats() {
   else
   {
     uint64_t backlog = (res.pool_stats.bytes_total + full_reward_zone - 1) / full_reward_zone;
-    backlog_message = (boost::format("estimated %u block (%u minutes<V16) (%u minutes >=V17) backlog") % backlog %(((backlog * TARGET_BLOCK_TIME / 1min)), ((backlog * TARGET_BLOCK_TIME_V17 / 1min)) ) ).str();
+    backlog_message = (boost::format("estimated %u block (%u minutes ) backlog") % backlog %((backlog * TARGET_BLOCK_TIME_V17 / 1min) ) ).str();
   }
 
   tools::msg_writer() << n_transactions << " tx(es), " << res.pool_stats.bytes_total << " bytes total (min " << res.pool_stats.bytes_min << ", max " << res.pool_stats.bytes_max << ", avg " << avg_bytes << ", median " << res.pool_stats.bytes_med << ")" << std::endl
@@ -1389,7 +1389,7 @@ bool rpc_command_executor::alt_chain_info(const std::string &tip, size_t above, 
         if (start_difficulty > 0)
           tools::msg_writer() << "Approximated " << 100.f * tools::to_seconds(TARGET_BLOCK_TIME) * chain.length / dt << "% of network hash rate";  //old block time
         else
-          tools::fail_msg_writer() << "Bad cmumulative difficulty reported by dameon";
+          tools::fail_msg_writer() << "Bad cumulative difficulty reported by dameon";
       }
     }
     else
@@ -1570,7 +1570,7 @@ static void print_participation_history(std::ostringstream &stream, std::vector<
   }
 }
 
-static void append_printable_master_node_list_entry(cryptonote::network_type nettype, bool detailed_view, uint64_t blockchain_height, uint64_t entry_index, GET_MASTER_NODES::response::entry const &entry, std::string &buffer)
+static void append_printable_master_node_list_entry(cryptonote::network_type nettype, bool detailed_view, uint64_t blockchain_height, uint64_t entry_index, GET_MASTER_NODES::response::entry const &entry, std::string &buffer,uint8_t hf_version)
 {
   const char indent1[] = "  ";
   const char indent2[] = "    ";
@@ -1617,7 +1617,7 @@ static void append_printable_master_node_list_entry(cryptonote::network_type net
     else
     {
       uint64_t delta_height      = (blockchain_height >= expiry_height) ? 0 : expiry_height - blockchain_height;
-      uint64_t expiry_epoch_time = now + (delta_height * tools::to_seconds((entry.registration_hf_version>=cryptonote::network_version_17_POS?TARGET_BLOCK_TIME_V17:TARGET_BLOCK_TIME)));
+      uint64_t expiry_epoch_time = now + (delta_height * tools::to_seconds(TARGET_BLOCK_TIME_V17));
       stream << expiry_height << " (in " << delta_height << ") blocks\n";
       stream << indent2 << "Expiry Date (estimated): " << get_date_time(expiry_epoch_time) << " (" << get_human_time_ago(expiry_epoch_time, now) << ")\n";
     }
@@ -1738,9 +1738,9 @@ static void append_printable_master_node_list_entry(cryptonote::network_type net
   if (entry.active) {
     stream << indent2 << "Current Status: ACTIVE\n";
     stream << indent2 << "Downtime Credits: " << entry.earned_downtime_blocks << " blocks"
-      << " (about " << to_string_rounded(entry.earned_downtime_blocks / (double) BLOCKS_EXPECTED_IN_HOURS(1,entry.registration_hf_version), 2)  << " hours)";
+      << " (about " << to_string_rounded(entry.earned_downtime_blocks / (double) BLOCKS_EXPECTED_IN_HOURS(1,hf_version), 2)  << " hours)";
 
-    int64_t decommission_minimum    = BLOCKS_EXPECTED_IN_HOURS(2,entry.registration_hf_version);
+    int64_t decommission_minimum    = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
     if (entry.earned_downtime_blocks < decommission_minimum)
       stream << " (Note: " << decommission_minimum << " blocks required to enable deregistration delay)";
   } else if (is_registered) {
@@ -1854,16 +1854,17 @@ bool rpc_command_executor::print_mn(const std::vector<std::string> &args)
 
     std::string unregistered_print_data;
     std::string registered_print_data;
+    const uint8_t hf_version = cryptonote::get_network_version(nettype, curr_height);
     for (size_t i = 0; i < unregistered.size(); i++)
     {
       if (i) unregistered_print_data.append("\n");
-      append_printable_master_node_list_entry(nettype, detailed_view, curr_height, i, *unregistered[i], unregistered_print_data);
+      append_printable_master_node_list_entry(nettype, detailed_view, curr_height, i, *unregistered[i], unregistered_print_data, hf_version);
     }
 
     for (size_t i = 0; i < registered.size(); i++)
     {
       if (i) registered_print_data.append("\n");
-      append_printable_master_node_list_entry(nettype, detailed_view, curr_height, i, *registered[i], registered_print_data);
+      append_printable_master_node_list_entry(nettype, detailed_view, curr_height, i, *registered[i], registered_print_data,hf_version);
     }
 
     if (unregistered.size() > 0)

@@ -467,7 +467,7 @@ beldex_chain_generator::create_registration_tx(const cryptonote::account_base &s
 
     uint64_t unlock_time = 0;
     if (new_hf_version < cryptonote::network_version_11_infinite_staking)
-      unlock_time = new_height + master_nodes::staking_num_lock_blocks(cryptonote::FAKECHAIN);
+      unlock_time = new_height + master_nodes::staking_num_lock_blocks(cryptonote::FAKECHAIN,cryptonote::network_version_17_POS);
 
     std::vector<uint8_t> extra;
     cryptonote::add_master_node_pubkey_to_tx_extra(extra, master_node_keys.pub);
@@ -507,7 +507,7 @@ cryptonote::transaction beldex_chain_generator::create_staking_tx(const crypto::
 
   uint64_t unlock_time = 0;
   if (new_hf_version < cryptonote::network_version_11_infinite_staking)
-    unlock_time = new_height + master_nodes::staking_num_lock_blocks(cryptonote::FAKECHAIN);
+    unlock_time = new_height + master_nodes::staking_num_lock_blocks(cryptonote::FAKECHAIN,cryptonote::network_version_17_POS);
 
   beldex_tx_builder(events_, result, top().block, src /*from*/, src.get_keys().m_account_address /*to*/, amount, new_hf_version)
       .with_tx_type(cryptonote::txtype::stake)
@@ -1394,7 +1394,7 @@ bool test_generator::construct_block_manually(
 {
   blk.major_version = actual_params & bf_major_ver ? major_ver : static_cast<uint8_t>(cryptonote::network_version_7);
   blk.minor_version = actual_params & bf_minor_ver ? minor_ver : static_cast<uint8_t>(cryptonote::network_version_7);
-  blk.timestamp     = actual_params & bf_timestamp ? timestamp : prev_block.timestamp + tools::to_seconds(blk.major_version>=cryptonote::network_version_17_POS?TARGET_BLOCK_TIME_V17:TARGET_BLOCK_TIME)); // Keep difficulty unchanged
+  blk.timestamp     = actual_params & bf_timestamp ? timestamp : prev_block.timestamp + tools::to_seconds(blk.major_version>=cryptonote::network_version_17_POS?TARGET_BLOCK_TIME_V17:TARGET_BLOCK_TIME); // Keep difficulty unchanged
   blk.prev_id       = actual_params & bf_prev_id   ? prev_id   : get_block_hash(prev_block);
   blk.tx_hashes     = actual_params & bf_tx_hashes ? tx_hashes : std::vector<crypto::hash>();
 
@@ -1451,7 +1451,7 @@ cryptonote::transaction make_registration_tx(std::vector<test_event_entry>& even
   cryptonote::transaction tx;
   uint64_t unlock_time = 0;
   if (hf_version < cryptonote::network_version_11_infinite_staking)
-    unlock_time = new_height + master_nodes::staking_num_lock_blocks(cryptonote::FAKECHAIN);
+    unlock_time = new_height + master_nodes::staking_num_lock_blocks(cryptonote::FAKECHAIN,cryptonote::network_version_17_POS);
 
   std::vector<uint8_t> extra;
   cryptonote::add_master_node_pubkey_to_tx_extra(extra, master_node_keys.pub);
@@ -1713,7 +1713,7 @@ bool fill_tx_sources(std::vector<cryptonote::tx_source_entry>& sources, const st
 
         const output_index& oi = outs[sender_out];
         if (oi.spent) continue;
-        if (!cryptonote::rules::is_output_unlocked(oi.unlock_time, cryptonote::get_block_height(blk_head),nettype())) continue;
+        if (!cryptonote::rules::is_output_unlocked(oi.unlock_time, cryptonote::get_block_height(blk_head),cryptonote::FAKECHAIN)) continue;
 
         cryptonote::tx_source_entry ts;
         const auto& tx = *oi.p_tx;
@@ -2259,7 +2259,7 @@ uint64_t get_unlocked_balance(const cryptonote::account_base& addr, const std::v
         return false;
 
     for (const size_t out_idx : outs_mine) {
-        const auto unlocked = cryptonote::rules::is_output_unlocked(outs[out_idx].unlock_time, get_block_height(blockchain.back()),nettype());
+        const auto unlocked = cryptonote::rules::is_output_unlocked(outs[out_idx].unlock_time, get_block_height(blockchain.back()),cryptonote::FAKECHAIN);
         if (outs[out_idx].spent || !unlocked) continue;
         res += outs[out_idx].amount;
     }

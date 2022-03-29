@@ -465,33 +465,38 @@ namespace cryptonote
     /* As I don't know if accessing hshd from core could be a good practice,
     I prefer pushing target height to the core at the same time it is pushed to the user.
     Nz. */
-        int64_t diff = static_cast<int64_t>(hshd.current_height) - static_cast<int64_t>(curr_height);
-        uint64_t abs_diff = std::abs(diff);
-        uint64_t max_block_height = std::max(hshd.current_height, curr_height);
         auto nettype = m_core.get_nettype();
         auto hf17 = hard_fork_begins(nettype, cryptonote::network_version_17_POS);
-        std::chrono::seconds behindtime =abs_diff * TARGET_BLOCK_TIME;
         if (hf17)
         {
-            behindtime = std::min(abs_diff,*hf17) * TARGET_BLOCK_TIME;//the old Blocktime
-            if (max_block_height > *hf17){
-                behindtime = behindtime + ((max_block_height-*hf17)*TARGET_BLOCK_TIME_V17);
+            std::chrono::seconds behindtime = 0 * TARGET_BLOCK_TIME;
+            int64_t diff = static_cast<int64_t>(hshd.current_height) - static_cast<int64_t>(curr_height);
+            uint64_t abs_diff = std::abs(diff);
+
+            if (curr_height<*hf17){
+                uint64_t old_diff = static_cast<int64_t>(*hf17) - static_cast<int64_t>(curr_height);
+                behindtime = old_diff * TARGET_BLOCK_TIME;
+                uint64_t max_block_height = std::max(hshd.current_height, curr_height);
+                behindtime = behindtime + ((max_block_height - *hf17)  * TARGET_BLOCK_TIME_V17);
+            } else{
+                behindtime =   (abs_diff * TARGET_BLOCK_TIME_V17);
             }
+            MCLOG(is_inital ? el::Level::Info : el::Level::Debug, "global", context <<  "Sync data returned a new top block candidate: " << curr_height << " -> " << hshd.current_height
+                                                                                    << " [Your node is " << abs_diff << " blocks (" << tools::get_human_readable_timespan(behindtime) << " "
+                                                                                    << (0 <= diff ? "behind" : "ahead")
+                                                                                    << ")]\nSYNCHRONIZATION started");
         }
         else{
             for (static bool oncehf17= true; oncehf17; oncehf17 = !oncehf17)
                 MERROR("process_payload_sync_data: HF17 is not defined");
         }
 
-        MCLOG(is_inital ? el::Level::Info : el::Level::Debug, "global", context <<  "Sync data returned a new top block candidate: " << curr_height << " -> " << hshd.current_height
-      << " [Your node is " << abs_diff << " blocks (" << tools::get_human_readable_timespan(behindtime) << " "
-      << (0 <= diff ? "behind" : "ahead")
-      << ")]\nSYNCHRONIZATION started");
+
 
       m_period_start_time = m_sync_start_time = std::chrono::steady_clock::now();
       m_sync_start_height = curr_height;
 
-      if (hshd.current_height >= curr_height + 5) // don't switch to unsafe mode just for a few blocks
+      if (hshd.current_height >= curr_height + 10) // don't switch to unsafe mode just for a few blocks
       {
         m_core.safesyncmode(false);
       }
