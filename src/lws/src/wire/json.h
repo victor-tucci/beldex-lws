@@ -24,4 +24,3 @@
   {                                                                     \
     map(dest, source);                                                  \
   }
-

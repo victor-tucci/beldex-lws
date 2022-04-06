@@ -24,7 +24,6 @@
 #include "options.h"
 #include "rest_server.h"
 #include "scanner.h"
-#include "util/http_server.h"
 
 namespace
 {
@@ -165,18 +164,11 @@ namespace
   void run(program prog)
   {
     std::signal(SIGINT, [] (int) { lws::scanner::stop(); });
-     std::cout << "inside the run " << std::endl;
-   // boost::filesystem::create_directories("/home/blockhash123/.beldex/light_wallet_server");
-    // std::filesystem::create_directories(prog.db_path);
-    system("mkdir -p /home/blockhash/.beldex/light_wallet_server");
+    std::filesystem::create_directories(prog.db_path);
     auto disk = lws::db::storage::open(prog.db_path.c_str(), prog.create_queue_max);
     lws::scanner::sync(disk.clone());
 
-    // lws::rest_server server{epee::to_span(prog.rest_servers), disk.clone(), std::move(prog.rest_config)};
-    for (const std::string& address : prog.rest_servers)
-      MINFO("Listening for REST clients at " << address);
-
-    // blocks until SIGINT
+        // blocks until SIGINT
    lws::scanner::run(std::move(disk), prog.scan_threads);
     
   }

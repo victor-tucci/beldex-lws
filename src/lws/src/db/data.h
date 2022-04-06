@@ -142,12 +142,9 @@ namespace db
       crypto::hash long_;    //!< Long version of payment id (always decrypted)
     } payment_id;
   };
-
-  static_assert(
-    sizeof(output) == 8 + 32 + (8 * 3) + (4 * 2) + 32 + (8 * 2) + (32 * 3) + 7 + 1 + 32,
-    "padding in output"
-  );
+  static_assert(sizeof(output) == 8 + 32 + (8 * 3) + (4 * 2) + 32 + (8 * 2) + (32 * 3) + 7 + 1 + 32, "padding in output");
   void write_bytes(wire::writer&, const output&);
+
     struct spend
   {
     transaction_link link;    //!< Orders and links `spend` to `output`.

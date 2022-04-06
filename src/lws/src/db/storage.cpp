@@ -567,7 +567,7 @@ namespace db
     );
   }
   
-   expect<void> storage_reader::json_debug(std::ostream& out, bool show_keys)
+  expect<void> storage_reader::json_debug(std::ostream& out, bool show_keys)
   {
     using boost::adaptors::reverse;
     using boost::adaptors::transform;
@@ -1039,45 +1039,46 @@ namespace db
 
     return db->try_write([this, height, chain, users] (MDB_txn& txn) -> expect<std::size_t>
     {
+      std::cout << " in try_write function " << std::endl;
       epee::span<const crypto::hash> chain_copy{chain};
       const std::uint64_t last_update =
         lmdb::to_native(height) + chain.size() - 1;
 
-      if (get_checkpoints().get_max_height() <= last_update)
-      {
-        cursor::blocks blocks_cur;
-        MONERO_CHECK(check_cursor(txn, this->db->tables.blocks, blocks_cur));
+      // if (get_checkpoints().get_max_height() <= last_update)
+      // {
+      //   cursor::blocks blocks_cur;
+      //   MONERO_CHECK(check_cursor(txn, this->db->tables.blocks, blocks_cur));
 
-        MDB_val key = lmdb::to_val(blocks_version);
-        MDB_val value;
-        MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &key, &value, MDB_SET));
-        MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &key, &value, MDB_LAST_DUP));
+      //   MDB_val key = lmdb::to_val(blocks_version);
+      //   MDB_val value;
+      //   MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &key, &value, MDB_SET));
+      //   MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &key, &value, MDB_LAST_DUP));
 
-        const expect<block_info> last_block = blocks.get_value<block_info>(value);
-        if (!last_block)
-          return last_block.error();
-        if (last_block->id < height)
-          return {lws::error::bad_blockchain};
+      //   const expect<block_info> last_block = blocks.get_value<block_info>(value);
+      //   if (!last_block)
+      //     return last_block.error();
+      //   if (last_block->id < height)
+      //     return {lws::error::bad_blockchain};
 
-        const std::uint64_t last_same =
-          std::min(lmdb::to_native(last_block->id), last_update);
+      //   const std::uint64_t last_same =
+      //     std::min(lmdb::to_native(last_block->id), last_update);
 
-        const expect<crypto::hash> hash_check =
-          do_get_block_hash(*blocks_cur, block_id(last_same));
-        if (!hash_check)
-          return hash_check.error();
+      //   const expect<crypto::hash> hash_check =
+      //     do_get_block_hash(*blocks_cur, block_id(last_same));
+      //   if (!hash_check)
+      //     return hash_check.error();
 
-        const std::uint64_t offset = last_same - lmdb::to_native(height);
-        if (*hash_check != *(chain_copy.begin() + offset))
-          return {lws::error::blockchain_reorg};
+      //   const std::uint64_t offset = last_same - lmdb::to_native(height);
+      //   if (*hash_check != *(chain_copy.begin() + offset))
+      //     return {lws::error::blockchain_reorg};
 
-        chain_copy.remove_prefix(offset + 1);
-        MONERO_CHECK(
-          append_block_hashes(
-            *blocks_cur, block_id(lmdb::to_native(height) + offset + 1), chain_copy
-          )
-        );
-      }
+      //   chain_copy.remove_prefix(offset + 1);
+      //   MONERO_CHECK(
+      //     append_block_hashes(
+      //       *blocks_cur, block_id(lmdb::to_native(height) + offset + 1), chain_copy
+      //     )
+      //   );
+      // }
 
       cursor::accounts            accounts_cur;
       cursor::accounts_by_address accounts_ba_cur;
@@ -1091,7 +1092,7 @@ namespace db
       MONERO_CHECK(check_cursor(txn, this->db->tables.outputs, outputs_cur));
       MONERO_CHECK(check_cursor(txn, this->db->tables.spends, spends_cur));
       MONERO_CHECK(check_cursor(txn, this->db->tables.images, images_cur));
-
+      std::cout << " in check_cursor function " << std::endl;
       // for bulk inserts
       boost::container::static_vector<account_lookup, 127> heights{};
       static_assert(sizeof(heights) <= 1024, "stack vector is large");
@@ -1099,6 +1100,7 @@ namespace db
       std::size_t updated = 0;
       for (auto user = users.begin() ;; ++user)
       {
+        std::cout << " in user function " << std::endl;
         if (heights.size() == heights.capacity() || user == users.end())
         {
           // bulk update account height index
@@ -1163,6 +1165,7 @@ namespace db
 
         ++updated;
       } // ... for every account being updated ...
+      std::cout << " in updated function " << std::endl;
       return updated;
     });
   }
