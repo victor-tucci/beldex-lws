@@ -1,749 +1,447 @@
 ---
-
 kind: pipeline
-
 type: docker
-
-name: Debian Clang-11 (amd64)
-
-steps:
-
-- name: submodules
-
-  image: drone/git
-
-  commands:
-
-  - git fetch --tags
-
-  - git submodule update --init --recursive --depth=1
-
-- name: build
-
-  image: debian:sid
-
-  commands:
-
-  - echo \"Building on ${DRONE_STAGE_MACHINE}\"
-
-  - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
-
-  - apt-get -o=Dpkg::Use-Pty=0 -q update
-
-  - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
-
-  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
-
-  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache clang-11 libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
-
-  - mkdir build
-
-  - cd build
-
-  - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=ON -DBUILD_TESTS=ON -DCMAKE_C_COMPILER=clang-11 -DCMAKE_CXX_COMPILER=clang++-11 
-
-  - ninja -j6 -v
-
-  - cd ..
-
-  - apt-get install zip -y
-
-  - zip -r Debian-clang11-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip build/bin/*
-
-  - mkdir dronepushdebianclang-11
-
-  - cp Debian-clang11-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip dronepushdebianclang-11/
-
-  - chmod +x utils/build_scripts/debian-clang-11.sh
-
-  - cd utils/build_scripts
-
-- name: scp-files
-
-  image: appleboy/drone-scp
-
-  settings:
-
-    host:
-
-     - deb.beldex.io
-
-    user: ubuntu
-
-    password:
-
-     from_secret: ssh_password
-
-    port: 22
-
-    command_timeout: 120
-
-    command_timeout: 2m
-
-    target: /home/ubuntu/dronebuild/
-
-    source:
-
-      - dronepushdebianclang-11/*
-
-- name: ssh commands
-
-  image: appleboy/drone-ssh
-
-  settings:
-
-    host: deb.beldex.io
-
-    username: ubuntu
-
-    password:
-
-     from_secret: ssh_password
-
-    port: 22
-
-    script:
-
-      - ./Scripts/debian-clang-11.sh
-
-      
-
----     
-
-kind: pipeline
-
-type: docker
-
 name: Debian (w/ tests) (amd64)
 
 steps:
-
 - name: submodules
-
   image: drone/git
-
   commands:
-
   - git fetch --tags
-
   - git submodule update --init --recursive --depth=1
 
 - name: build
-
   image: debian:sid
-
   commands:
-
   - echo \"Building on ${DRONE_STAGE_MACHINE}\"
-
   - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
-
   - apt-get -o=Dpkg::Use-Pty=0 -q update
-
   - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++ libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
-
   - mkdir build
-
   - cd build
-
   - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=ON -DBUILD_TESTS=OFF
-
   - ninja -j6 -v
-
   - cd ..
-
   - apt-get install zip -y
+  - zip -r binary.zip build/bin/*
 
-  - zip -r Debian-amd_64-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip build/bin/*
-
-  - mkdir Debian-amd_64
-
-  - cp Debian-amd_64-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip Debian-amd_64/
-
-- name: scp
-
+- name: scp-files
   image: appleboy/drone-scp
-
   settings:
-
     host:
-
      - deb.beldex.io
-
     user: ubuntu
-
     password:
-
      from_secret: ssh_password
-
     port: 22
-
     command_timeout: 120
-
     command_timeout: 2m
-
-    target: /home/ubuntu/dronebuild/
-
+    target: /home/ubuntu
     source:
-
-      - Debian-amd_64/*
-
-- name: deb.beldex.io-Push
-
-  image: appleboy/drone-ssh
-
-  settings:
-
-    host: deb.beldex.io
-
-    username: ubuntu
-
-    password:
-
-     from_secret: ssh_password
-
-    port: 22
-
-    script:
-
-      - ./Scripts/debian-amd-64.sh
-
-      
-
+      - binary.zip
 ---      
-
 kind: pipeline
-
 type: docker
-
 name: Debian Debug (amd64)
 
 steps:
-
 - name: submodules
-
   image: drone/git
-
   commands:
-
   - git fetch --tags
-
   - git submodule update --init --recursive --depth=1
 
 - name: build
-
   image: debian:sid
-
   commands:
-
   - echo \"Building on ${DRONE_STAGE_MACHINE}\"
-
   - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
-
   - apt-get -o=Dpkg::Use-Pty=0 -q update
-
   - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++ libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
-
   - mkdir build
-
   - cd build
-
   - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Debug -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=OFF -DBUILD_TESTS=ON 
-
   - ninja -j6 -v
-
   - cd ..
-
   - apt-get install zip -y
-
-  - zip -r Debian-debug-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip build/bin/*
-
-  - mkdir Debian-debug-push
-
-  - cp Debian-debug-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip Debian-debug-push/
+  - zip -r binary1.zip build/bin/*
 
 - name: scp-files
-
   image: appleboy/drone-scp
-
   settings:
-
     host:
-
      - deb.beldex.io
-
     user: ubuntu
-
     password:
-
      from_secret: ssh_password
-
     port: 22
-
     command_timeout: 120
-
     command_timeout: 2m
-
-    target: /home/ubuntu/dronebuild/
-
+    target: /home/ubuntu
     source:
+      - binary1.zip
 
-      - Debian-debug-push/*
-
-- name: deb.beldex.io-Push
-
-  image: appleboy/drone-ssh
-
-  settings:
-
-    host: deb.beldex.io
-
-    username: ubuntu
-
-    password:
-
-     from_secret: ssh_password
-
-    port: 22
-
-    script:
-
-      - ./Scripts/debian-debug.sh
-
-      
-
----      
-
+---
 kind: pipeline
-
 type: docker
+name: Debian Clang-11 (amd64)
 
+steps:
+- name: submodules
+  image: drone/git
+  commands:
+  - git fetch --tags
+  - git submodule update --init --recursive --depth=1
+
+- name: build
+  image: debian:sid
+  commands:
+  - echo \"Building on ${DRONE_STAGE_MACHINE}\"
+  - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
+  - apt-get -o=Dpkg::Use-Pty=0 -q update
+  - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
+  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
+  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache clang-11 libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
+  - mkdir build
+  - cd build
+  - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=ON -DBUILD_TESTS=ON -DCMAKE_C_COMPILER=clang-11 -DCMAKE_CXX_COMPILER=clang++-11 
+  - ninja -j6 -v
+  - cd ..
+  - apt-get install zip -y
+  - zip -r binary2.zip build/bin/*
+
+- name: scp-files
+  image: appleboy/drone-scp
+  settings:
+    host:
+     - deb.beldex.io
+    user: ubuntu
+    password:
+     from_secret: ssh_password
+    port: 22
+    command_timeout: 120
+    command_timeout: 2m
+    target: /home/ubuntu
+    source:
+      - binary2.zip
+
+---
+kind: pipeline
+type: docker
 name: Debian gcc-10 (amd64)
 
 steps:
-
 - name: submodules
-
   image: drone/git
-
   commands:
-
   - git fetch --tags
-
   - git submodule update --init --recursive --depth=1
 
 - name: build
-
   image: debian:testing
-
   commands:
-
   - echo \"Building on ${DRONE_STAGE_MACHINE}\"
-
   - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
-
   - apt-get -o=Dpkg::Use-Pty=0 -q update
-
   - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++-10 libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
-
   - mkdir build
-
   - cd build
-
   - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=OFF -DBUILD_TESTS=ON -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10 -DBUILD_DEBUG_UTILS=ON
-
   - ninja -j6 -v
-
   - cd ..
-
   - apt-get install zip -y
-
-  - zip -r Debian-gcc-10-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip build/bin/*
-
-  - mkdir Debian-gcc-push
-
-  - cp Debian-gcc-10-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip Debian-gcc-push/
+  - zip -r binary3.zip build/bin/*
 
 - name: scp-files
-
   image: appleboy/drone-scp
-
   settings:
-
     host:
-
      - deb.beldex.io
-
     user: ubuntu
-
     password:
-
      from_secret: ssh_password
-
     port: 22
-
     command_timeout: 120
-
     command_timeout: 2m
-
-    target: /home/ubuntu/dronebuild/
-
+    target: /home/ubuntu
     source:
-
-      - Debian-gcc-push/*
-
-- name: deb.beldex.io-Push
-
-  image: appleboy/drone-ssh
-
-  settings:
-
-    host: deb.beldex.io
-
-    username: ubuntu
-
-    password:
-
-     from_secret: ssh_password
-
-    port: 22
-
-    script:
-
-      - ./Scripts/debian-gcc-10.sh
+      - binary3.zip       
 
 ---
-
 kind: pipeline
-
 type: docker
-
 name: Debian buster (i386)
 
 steps:
-
 - name: submodules
-
   image: drone/git
-
   commands:
-
   - git fetch --tags
-
   - git submodule update --init --recursive --depth=1
 
 - name: build
-
   image: i386/debian:buster
-
   commands:
-
   - echo \"Building on ${DRONE_STAGE_MACHINE}\"
-
   - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
-
   - apt-get -o=Dpkg::Use-Pty=0 -q update
-
   - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++ libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
-
   - mkdir build
-
   - cd build
-
   - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=OFF -DBUILD_TESTS=ON -DDOWNLOAD_SODIUM=ON -DARCH_ID=i386
-
   - ninja -j6 -v
-
   - cd ..
-
   - apt-get install zip -y
-
-  - zip -r Debian-buster-i386-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip build/bin/*
-
-  - mkdir Debian-buster-push
-
-  - cp Debian-buster-i386-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip Debian-buster-push/
+  - zip -r binary4.zip build/bin/*
 
 - name: scp-files
-
   image: appleboy/drone-scp
-
   settings:
-
     host:
-
      - deb.beldex.io
-
     user: ubuntu
-
     password:
-
      from_secret: ssh_password
-
     port: 22
-
     command_timeout: 120
-
     command_timeout: 2m
-
-    target: /home/ubuntu/dronebuild/
-
+    target: /home/ubuntu
     source:
+      - binary4.zip  
 
-      - Debian-buster-push/*
-
-- name: deb.beldex.io-Push
-
-  image: appleboy/drone-ssh
-
-  settings:
-
-    host: deb.beldex.io
-
-    username: ubuntu
-
-    password:
-
-     from_secret: ssh_password
-
-    port: 22
-
-    script:
-
-      - ./Scripts/debian-buster.sh
-
-      
-
----
-
+---      
 kind: pipeline
-
 type: docker
-
 name: Ubuntu focal (amd64)
 
 steps:
-
 - name: submodules
-
   image: drone/git
-
   commands:
-
   - git fetch --tags
-
   - git submodule update --init --recursive --depth=1
 
 - name: build
-
   image: ubuntu:focal
-
   commands:      
-
   - echo \"Building on ${DRONE_STAGE_MACHINE}\"
-
   - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
-
   - apt-get -o=Dpkg::Use-Pty=0 -q update
-
   - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++ libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
-
   - mkdir build
-
   - cd build
-
   - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=OFF -DBUILD_TESTS=ON 
-
   - ninja -j6 -v
-
   - cd ..
-
   - apt-get install zip -y
-
-  - zip -r ubuntu-focal-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip build/bin/*
-
-  - mkdir ubuntu-focal-push
-
-  - cp ubuntu-focal-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip ubuntu-focal-push/
+  - zip -r binary5.zip build/bin/*
 
 - name: scp-files
-
   image: appleboy/drone-scp
-
   settings:
-
     host:
-
      - deb.beldex.io
-
     user: ubuntu
-
     password:
-
      from_secret: ssh_password
-
     port: 22
-
     command_timeout: 120
-
     command_timeout: 2m
-
-    target: /home/ubuntu/dronebuild/
-
+    target: /home/ubuntu
     source:
+      - binary5.zip          
 
-      - ubuntu-focal-push/*
-
-- name: deb.beldex.io-Push
-
-  image: appleboy/drone-ssh
-
-  settings:
-
-    host: deb.beldex.io
-
-    username: ubuntu
-
-    password:
-
-     from_secret: ssh_password
-
-    port: 22
-
-    script:
-
-      - ./Scripts/ubuntu-focal.sh
-
-      
-
- 
-
+---
 kind: pipeline
-
 type: docker
-
 name: Debian (ARM64)
 
 steps:
-
 - name: submodules
-
   image: drone/git
-
   commands:
-
   - git fetch --tags
-
   - git submodule update --init --recursive --depth=1
 
 - name: build
-
   image: debian:sid
-
   commands:      
-
   - echo \"Building on ${DRONE_STAGE_MACHINE}\"
-
   - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
-
   - apt-get -o=Dpkg::Use-Pty=0 -q update
-
   - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
-
   - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++ libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
-
   - mkdir build
-
   - cd build
-
   - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=OFF 
-
   - ninja -j1 rpc wallet -v
-
   - ninja -j2 daemon device_trezor -v
-
   - ninja -j1 wallet_rpc_server -v
-
-  - ninja -j6 -v
-
+  - ninja -j2 -v
   - cd ..
-
   - apt-get install zip -y
-
-  - zip -r Debian-ARM_64-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip build/bin/*
-
-  - mkdir debian-arm-push
-
-  - cp Debian-ARM_64-$DRONE_BUILD_NUMBER-$DRONE_COMMIT_SHA.zip debian-arm-push/
-
-  
+  - zip -r binary6.zip build/bin/*
 
 - name: scp-files
-
   image: appleboy/drone-scp
-
   settings:
-
     host:
-
      - deb.beldex.io
-
     user: ubuntu
-
     password:
-
      from_secret: ssh_password
-
     port: 22
-
     command_timeout: 120
-
     command_timeout: 2m
-
-    target: /home/ubuntu/dronebuild/
-
+    target: /home/ubuntu
     source:
+      - binary6.zip                   
 
-      - debian-arm-push/*
+--- 
+kind: pipeline
+type: docker
+name: Debian buster (armhf)
 
-- name: deb.beldex.io-Push
+steps:
+- name: submodules
+  image: drone/git
+  commands:
+  - git fetch --tags
+  - git submodule update --init --recursive --depth=1
 
-  image: appleboy/drone-ssh
+- name: build
+  image: arm32v7/debian:buster
+  commands:      
+  - echo \"Building on ${DRONE_STAGE_MACHINE}\"
+  - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
+  - apt-get -o=Dpkg::Use-Pty=0 -q update
+  - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
+  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
+  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++ libsystemd-dev libboost-thread-dev libgtest-dev libboost-serialization-dev libboost-program-options-dev libunbound-dev nettle-dev libevent-dev libminiupnpc-dev libunwind8-dev libsodium-dev libssl-dev libreadline-dev libhidapi-dev libusb-1.0-0-dev python3 pkg-config libsqlite3-dev qttools5-dev libcurl4-openssl-dev gdb
+  - mkdir build
+  - cd build
+  - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=OFF -DDOWNLOAD_SODIUM=ON -DARCH_ID=armhf
+  - ninja -j1 rpc wallet -v
+  - ninja -j2 daemon device_trezor -v
+  - ninja -j1 wallet_rpc_server -v
+  - ninja -j2 -v
+  - cd ..
+  - apt-get install zip -y
+  - zip -r binary7.zip build/bin/*
 
+- name: scp-files
+  image: appleboy/drone-scp
   settings:
-
-    host: deb.beldex.io
-
-    username: ubuntu
-
+    host:
+     - deb.beldex.io
+    user: ubuntu
     password:
-
      from_secret: ssh_password
-
     port: 22
+    command_timeout: 120
+    command_timeout: 2m
+    target: /home/ubuntu
+    source:
+      - binary7.zip        
 
-    script:
+---
+kind: pipeline
+type: docker
+name: Static (bionic amd64)
 
-      - ./Scripts/debian-arm.sh 
+steps:
+- name: submodules
+  image: drone/git
+  commands:
+  - git fetch --tags
+  - git submodule update --init --recursive --depth=1
+
+- name: build
+  image: ubuntu:bionic
+  commands:      
+  - echo \"Building on ${DRONE_STAGE_MACHINE}\"
+  - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
+  - apt-get -o=Dpkg::Use-Pty=0 -q update
+  - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
+  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
+  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++-8 autoconf automake make qttools5-dev file libtool gperf pkg-config patch openssh-client gdb
+  - mkdir build
+  - cd build
+  - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=ON -DBUILD_STATIC_DEPS=ON -DCMAKE_C_COMPILER=gcc-8 -DCMAKE_CXX_COMPILER=g++-8 -DARCH=x86-64
+  - ninja -j6 -v
+  - ninja strip_binaries
+  - ninja create_tarxz
+  - cd ..
+  - apt-get install zip -y
+  - zip -r binary8.zip build/bin/*
+
+- name: scp-files
+  image: appleboy/drone-scp
+  settings:
+    host:
+     - deb.beldex.io
+    user: ubuntu
+    password:
+     from_secret: ssh_password
+    port: 22
+    command_timeout: 120
+    command_timeout: 2m
+    target: /home/ubuntu
+    source:
+      - binary8.zip                
+
+---
+kind: pipeline
+type: docker
+name: Static (win64)
+
+steps:
+- name: submodules
+  image: drone/git
+  commands:
+  - git fetch --tags
+  - git submodule update --init --recursive --depth=1
+
+- name: build
+  image: ubuntu:focal
+  commands:      
+  - echo \"Building on ${DRONE_STAGE_MACHINE}\"
+  - echo \"man-db man-db/auto-update boolean false\" | debconf-set-selections
+  - apt-get -o=Dpkg::Use-Pty=0 -q update
+  - apt-get -o=Dpkg::Use-Pty=0 -q install -y eatmydata
+  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q dist-upgrade -y
+  - eatmydata apt-get -o=Dpkg::Use-Pty=0 -q install -y --no-install-recommends cmake git ca-certificates ninja-build ccache g++ g++-mingw-w64-x86-64 autoconf automake make qttools5-dev file libtool gperf pkg-config patch openssh-client
+  - mkdir build
+  - cd build
+  - cmake .. -G Ninja -DCMAKE_CXX_FLAGS=-fdiagnostics-color=always -DCMAKE_BUILD_TYPE=Release -DLOCAL_MIRROR=https://builds.belnet.dev/deps -DUSE_LTO=OFF -DCMAKE_TOOLCHAIN_FILE=../cmake/64-bit-toolchain.cmake -DBUILD_STATIC_DEPS=ON -DARCH=x86-64
+  - ninja -j6 -v
+  - cd ..
+  - apt-get install zip -y
+  - zip -r binary9.zip build/bin/*
+
+- name: scp-files
+  image: appleboy/drone-scp
+  settings:
+    host:
+     - deb.beldex.io
+    user: ubuntu
+    password:
+     from_secret: ssh_password
+    port: 22
+    command_timeout: 120
+    command_timeout: 2m
+    target: /home/ubuntu
+    source:
+      - binary9.zip             
+---
