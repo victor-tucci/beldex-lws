@@ -35,6 +35,44 @@ namespace
     T value;
   };
 
+  void write_bytes(wire::json_writer& dest, const truncated<lws::db::account>& self)
+  {
+    wire::object(dest,
+      wire::field("address", lws::db::address_string(self.value.address)),
+      wire::field("scan_height", self.value.scan_height),
+      wire::field("access_time", self.value.access)
+    );
+  };
+
+  void write_bytes(wire::json_writer& dest, const truncated<lws::db::request_info>& self)
+  {
+    wire::object(dest,
+      wire::field("address", lws::db::address_string(self.value.address)),
+      wire::field("start_height", self.value.start_height)
+    );
+  }
+
+ template<typename V>
+  void write_bytes(wire::json_writer& dest, const truncated<boost::iterator_range<lmdb::value_iterator<V>>> self)
+  {
+    const auto truncate = [] (V src) { return truncated<V>{std::move(src)}; };
+    wire::array(dest, std::move(self.value), truncate);
+  }
+
+  template<typename K, typename V>
+  void stream_json_object(std::ostream& dest, boost::iterator_range<lmdb::key_iterator<K, V>> self)
+  {
+    using value_range = boost::iterator_range<lmdb::value_iterator<V>>;
+    const auto truncate = [] (value_range src) -> truncated<value_range>
+    {
+     return {std::move(src)};
+    };
+
+    wire::json_stream_writer json{dest};
+    wire::dynamic_object(json, std::move(self), wire::enum_as_string, truncate);
+    json.finish();
+  }
+
   void write_json_addresses(std::ostream& dest, epee::span<const lws::db::account_address> self)
   {
     // writes an array of monero base58 address strings
@@ -79,6 +117,34 @@ namespace
       MONERO_THROW(lws::error::bad_view_key, "View key has invalid hex");
     return out;
   }
+  
+  std::vector<lws::db::account_address> get_addresses(epee::span<const std::string> arguments)
+  {
+    // first entry is currently always some other option
+    assert(!arguments.empty());
+    arguments.remove_prefix(1);
+
+    std::vector<lws::db::account_address> addresses{};
+    for (std::string const& address : arguments)
+      addresses.push_back(lws::db::address_string(address).value());
+    return addresses;
+  }
+  
+   void accept_requests(program prog, std::ostream& out)
+  {
+    if (prog.arguments.size() < 2)
+      throw std::runtime_error{"accept_requests requires 2 or more arguments"};
+
+    const lws::db::request req =
+      MONERO_UNWRAP(lws::db::request_from_string(prog.arguments[0]));
+    std::vector<lws::db::account_address> addresses =
+      get_addresses(epee::to_span(prog.arguments));
+
+    const std::vector<lws::db::account_address> updated =
+      prog.disk.accept_requests(req, epee::to_span(addresses)).value();
+
+    write_json_addresses(out, epee::to_span(updated));
+  }
 
   void add_account(program prog, std::ostream& out)
   {
@@ -103,6 +169,83 @@ namespace
     reader.json_debug(out, prog.show_sensitive);
   }
 
+  void list_accounts(program prog, std::ostream& out)
+  {
+    if (!prog.arguments.empty())
+      throw std::runtime_error{"list_accounts takes zero arguments"};
+
+    auto reader = prog.disk.start_read().value();
+    auto stream = reader.get_accounts().value();
+    stream_json_object(out, stream.make_range());
+  }
+
+    void list_requests(program prog, std::ostream& out)
+  {
+    if (!prog.arguments.empty())
+      throw std::runtime_error{"list_requests takes zero arguments"};
+
+    auto reader = prog.disk.start_read().value();
+    auto stream = reader.get_requests().value();
+    stream_json_object(out, stream.make_range());
+  }
+
+  void modify_account(program prog, std::ostream& out)
+  {
+    if (prog.arguments.size() < 2)
+      throw std::runtime_error{"modify_account_status requires 2 or more arguments"};
+
+    const lws::db::account_status status =
+      lws::db::account_status_from_string(prog.arguments[0]).value();
+    std::vector<lws::db::account_address> addresses =
+      get_addresses(epee::to_span(prog.arguments));
+
+    const std::vector<lws::db::account_address> updated =
+      prog.disk.change_status(status, epee::to_span(addresses)).value();
+
+    write_json_addresses(out, epee::to_span(updated));
+  }
+
+   void reject_requests(program prog, std::ostream& out)
+  {
+    if (prog.arguments.size() < 2)
+      MONERO_THROW(common_error::kInvalidArgument, "reject_requests requires 2 or more arguments");
+
+    const lws::db::request req =
+      lws::db::request_from_string(prog.arguments[0]).value();
+    std::vector<lws::db::account_address> addresses =
+      get_addresses(epee::to_span(prog.arguments));
+
+    MONERO_UNWRAP(prog.disk.reject_requests(req, epee::to_span(addresses)));
+  }
+
+    void rescan(program prog, std::ostream& out)
+  {
+    if (prog.arguments.size() < 2)
+      throw std::runtime_error{"rescan requires 2 or more arguments"};
+
+    const auto height = lws::db::block_id(std::stoull(prog.arguments[0]));
+    const std::vector<lws::db::account_address> addresses =
+      get_addresses(epee::to_span(prog.arguments));
+
+    const std::vector<lws::db::account_address> updated =
+      prog.disk.rescan(height, epee::to_span(addresses)).value();
+
+    write_json_addresses(out, epee::to_span(updated));
+  }
+
+  void rollback(program prog, std::ostream& out)
+  {
+    if (prog.arguments.size() != 1)
+      throw std::runtime_error{"rollback requires 1 argument"};
+
+    const auto height = lws::db::block_id(std::stoull(prog.arguments[0]));
+    MONERO_UNWRAP(prog.disk.rollback(height));
+
+    wire::json_stream_writer json{out};
+    wire::object(json, wire::field("new_height", height));
+    json.finish();
+  }
+
   struct command
   {
     char const* const name;
@@ -112,15 +255,15 @@ namespace
 
   static constexpr const command commands[] =
   {
-    // {"accept_requests",       &accept_requests, "<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
+    {"accept_requests",       &accept_requests, "<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
     {"add_account",           &add_account,     "<base58 address> <view key hex>"},
     {"debug_database",        &debug_database,  ""},
-    // {"list_accounts",         &list_accounts,   ""},
-    // {"list_requests",         &list_requests,   ""},
-    // {"modify_account_status", &modify_account,  "<\"active\"|\"inactive\"|\"hidden\"> <base58 address> [base 58 address]..."},
-    // {"reject_requests",       &reject_requests, "<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
-    // {"rescan",                &rescan,          "<height> <base58 address> [base 58 address]..."},
-    // {"rollback",              &rollback,        "<height>"}
+    {"list_accounts",         &list_accounts,   ""},
+    {"list_requests",         &list_requests,   ""},
+    {"modify_account_status", &modify_account,  "<\"active\"|\"inactive\"|\"hidden\"> <base58 address> [base 58 address]..."},
+    {"reject_requests",       &reject_requests, "<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
+    {"rescan",                &rescan,          "<height> <base58 address> [base 58 address]..."},
+    {"rollback",              &rollback,        "<height>"}
   };
 
   void print_help(std::ostream& out)
