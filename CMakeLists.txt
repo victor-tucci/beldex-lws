@@ -1019,5 +1019,3 @@ add_custom_target(create_zip
   DEPENDS ${beldex_exec_tgts})
 
 add_custom_target(create_archive DEPENDS ${default_archive})
-add_executable(omq omq.cpp)
-target_link_libraries(omq PUBLIC oxenmq::oxenmq)

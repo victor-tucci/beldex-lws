@@ -554,38 +554,42 @@ namespace cryptonote { namespace rpc {
   GET_BLOCKS_FAST_RPC::response core_rpc_server::invoke(GET_BLOCKS_FAST_RPC::request&& req, rpc_context context)
   {
     GET_BLOCKS_FAST_RPC::response res{};
-
+    
+    typedef std::vector<uint64_t> tx_output_indices_rpc;
+    typedef std::vector<tx_output_indices_rpc> block_output_indices_rpc;
+    std::vector<block_output_indices_rpc> output_indices_rpc;
     PERF_TIMER(on_get_blocks);
     if (use_bootstrap_daemon_if_necessary<GET_BLOCKS_FAST_RPC>(req, res))
       return res;
+    
+    std::vector<std::pair<std::pair<blobdata, crypto::hash>, std::vector<std::pair<crypto::hash, blobdata> > > > blocks;
 
-    std::vector<std::pair<std::pair<cryptonote::blobdata, crypto::hash>, std::vector<std::pair<crypto::hash, cryptonote::blobdata> > > > bs;
-
-    if(!m_core.find_blockchain_supplement(req.start_height, req.block_ids, bs, res.current_height, res.start_height, req.prune, !req.no_miner_tx, GET_BLOCKS_FAST::MAX_COUNT))
+    if(!m_core.find_blockchain_supplement(req.start_height, req.block_ids, blocks, res.current_height, res.start_height, req.prune, !req.no_miner_tx, GET_BLOCKS_FAST::MAX_COUNT))
     {
       res.status = "Failed";
-      res.output_indices.clear();
       return res;
     }
 
     size_t size = 0, ntxes = 0;
-    uint64_t block_count = 0;
-    res.blocks.reserve(bs.size());
-    res.output_indices.reserve(bs.size());
+    res.blocks.reserve(blocks.size());
+    res.output_indices.reserve(blocks.size());
+    
     cryptonote::block blk;
     cryptonote::transaction tx_hash;
-    for(auto& bd: bs)
+    uint64_t block_count = 0;
+    for(auto& bd: blocks)
     {
+      std::cout << " Entered in the block " << std::endl;
       res.blocks.resize(res.blocks.size()+1);
-      // res.blocks.back().block_minor_tx = tools::type_to_hex(bd.first.second);
-      if(!parse_and_validate_block_from_blob(bd.first.first, blk))
+      if (!parse_and_validate_block_from_blob(bd.first.first, blk))
       {
+        res.blocks.clear();
         res.output_indices.clear();
-        MERROR("internal error, invalid block");
-        // res.status = "Failed";
+        res.status = "Failed";
+        return res;
       }
+      //----------blk data's key changed for lws -----------------------------------
       std::string block_json = obj_to_json_str(blk);
-      //  std::string it = json;
       auto t = json::parse(block_json);
     
       json::iterator it = t.find("miner_tx");
@@ -607,101 +611,142 @@ namespace cryptonote { namespace rpc {
       t["miner_tx"].erase("rct_signatures");
 
       res.blocks.back().block = t.dump();
-      size += bd.first.first.size();
-      res.output_indices.push_back(GET_BLOCKS_FAST_RPC::block_output_indices());
-      ntxes += bd.second.size();
-      res.output_indices.back().indices.reserve(1 + bd.second.size());
-      if (req.no_miner_tx)
-        res.output_indices.back().indices.push_back(GET_BLOCKS_FAST_RPC::tx_output_indices());
-      // res.blocks.back().txs.reserve(bd.second.size());
-      for (std::vector<std::pair<crypto::hash, cryptonote::blobdata>>::iterator i = bd.second.begin(); i != bd.second.end(); ++i)
+      //-----------------------------------------------------------------------
+      if (bd.second.size() != blk.tx_hashes.size())
       {
-        if (!parse_and_validate_tx_from_blob(i->second, tx_hash))
-        {
-          MERROR("Failed to parse block blob from tx pool when querying the missed transactions in block ");
-          // res.status = "Failed";
-        }
-        // res.blocks.back().transactions = obj_to_json_str(tx_hash);
-        std::string block_transactions = obj_to_json_str(tx_hash);
-
-        auto block_tx = json::parse(block_transactions);
-
-        // json::iterator tx_ringct = block_tx.find("rct_signatures");
-        // std::cout << "tx_ringct:" << tx_ringct.value() << std::endl;
-        if(block_tx.contains("rct_signatures")){
-           json::iterator tx_ringct = block_tx.find("rct_signatures");
-           std::swap(block_tx["ringct"], tx_ringct.value());
-           block_tx.erase("rct_signatures");
-        }
-        else {
-           block_tx["ringct"] = {};
-        }   
-        
-        json::iterator tx_vin = block_tx.find("vin");
-        json::iterator tx_vout = block_tx.find("vout");
-        std::swap(block_tx["inputs"], tx_vin.value());
-        std::swap(block_tx["outputs"], tx_vout.value());
-         for(auto &in :block_tx["inputs"])
-         {
-          json::iterator it = in.find("key");
-          std::swap(in["to_key"], it.value());
-          in.erase("key");
-           json::iterator it_to_key = in.find("to_key");
-           json::iterator inputs_k_image = it_to_key.value().find("k_image");
-           std::swap(in["to_key"]["key_image"], inputs_k_image.value());
-           in["to_key"].erase("k_image");
-         }
-         for(auto &out :block_tx["outputs"])
-         {
-          json::iterator it = out.find("target");
-          std::swap(out["to_key"], it.value());
-          out.erase("target");
-         }
-
-        block_tx.erase("vin");
-        block_tx.erase("vout");
-        res.blocks.back().transactions.push_back(block_tx.dump());
-        i->second.clear();
-        i->second.shrink_to_fit();
-        size += res.blocks.back().transactions.size();
-        std::cout << "size : " << size << std::endl;
+          res.blocks.clear();
+          res.output_indices.clear();
+          res.status = "Failed";
+          return res;
       }
-
-        if(bd.second.size() == 0)
-        {
-          std::cout << "entered into the tx_check" << std::endl;
-          json tx = json::array();
-          res.blocks.back().transactions.push_back(tx.dump());
-        }
-      // cryptonote::block_output_indices& indices = res.output_indices[block_count];
-      const size_t n_txes_to_lookup = bd.second.size() + (req.no_miner_tx ? 0 : 1);
-      // {
-        // cryptonote::rpc::tx_output_indices tx_indices;
-      //   if (!m_core.get_tx_outputs_gindexs(get_transaction_hash(blk.miner_tx), tx_indices))
-      //   {
-      //     res.status = Message::STATUS_FAILED;
-      //     res.error_details = "core::get_tx_outputs_gindexs() returned false";
-      //     return;
-      //   }
-      //   indices.push_back(std::move(tx_indices));
-      // }
-
-      if (n_txes_to_lookup > 0)
+      
+      block_output_indices_rpc indices;
+      // miner tx output indices
       {
-        std::vector<std::vector<uint64_t>> indices;
-        bool r = m_core.get_tx_outputs_gindexs(req.no_miner_tx ? bd.second.front().first : bd.first.second, n_txes_to_lookup, indices);
-        if (!r || indices.size() != n_txes_to_lookup || res.output_indices.back().indices.size() != (req.no_miner_tx ? 1 : 0))
+        tx_output_indices_rpc tx_indices;
+        if (!m_core.get_tx_outputs_gindexs(get_transaction_hash(blk.miner_tx), tx_indices))
         {
           res.status = "Failed";
           return res;
         }
-        for (size_t i = 0; i < indices.size(); ++i)
-          res.output_indices.back().indices.push_back({std::move(indices[i])});
+        indices.push_back(std::move(tx_indices));
       }
-    //  block_count++;
+      auto hash_it = blk.tx_hashes.begin();
+      // res.blocks.back().transactions.reserve(bd.second.size());
+      std::vector<std::string> tx;
+      uint64_t t_size =0;
+      for (const auto& blob : bd.second)
+      {
+        // res.blocks.transactions.emplace_back();
+        // std::cout << "transactions size : " << res.blocks.back().transactions.size() << std::endl;
+        tx_hash.pruned = req.prune;
+
+        // std::cout << "tx_hash : " << blob.first << std::endl;
+        const bool parsed = req.prune ?
+          parse_and_validate_tx_base_from_blob(blob.second, tx_hash) :
+          parse_and_validate_tx_from_blob(blob.second, tx_hash);
+          
+        if (!parsed)
+        {
+          // res.blocks.clear();
+          // res.output_indices.clear();
+          // res.status = "failed";
+          // return res;
+        }
+
+        tx_output_indices_rpc tx_indices;
+        if (!m_core.get_tx_outputs_gindexs(*hash_it, tx_indices))
+        {
+          res.status ="failed";
+          return res;
+        }
+        indices.push_back(std::move(tx_indices));
+        ++hash_it;
+               
+        if(parsed){
+          //----------tx_hash data's key changed -----------------------
+          std::string block_transactions = obj_to_json_str(tx_hash);
+          auto block_tx = json::parse(block_transactions);
+
+          if(block_tx.contains("rct_signatures")){
+             json::iterator tx_ringct = block_tx.find("rct_signatures");
+             std::swap(block_tx["ringct"], tx_ringct.value());
+             block_tx.erase("rct_signatures");
+          }
+          else {
+             block_tx["ringct"] = {};
+          }   
+
+          json::iterator tx_vin = block_tx.find("vin");
+          json::iterator tx_vout = block_tx.find("vout");
+          std::swap(block_tx["inputs"], tx_vin.value());
+          std::swap(block_tx["outputs"], tx_vout.value());
+           for(auto &in :block_tx["inputs"])
+           {
+            json::iterator it = in.find("key");
+            std::swap(in["to_key"], it.value());
+            in.erase("key");
+             json::iterator it_to_key = in.find("to_key");
+             json::iterator inputs_k_image = it_to_key.value().find("k_image");
+             std::swap(in["to_key"]["key_image"], inputs_k_image.value());
+             in["to_key"].erase("k_image");
+           }
+           for(auto &out :block_tx["outputs"])
+           {
+            json::iterator it = out.find("target");
+            std::swap(out["to_key"], it.value());
+            out.erase("target");
+           }
+
+          block_tx.erase("vin");
+          block_tx.erase("vout");
+          // std::cout << "parsing done" << std::endl;
+          tx.push_back(block_tx.dump());
+          //---------------------------------------------------------------------------------------
+        }
+        else
+        {
+          std::cout << "transactions size 121233: " << res.blocks.back().transactions.size() << std::endl;
+          std::cout << "invalid hash"<< std::endl;
+          // std::string block_transactions = obj_to_json_str(tx_hash);
+          // std::cout << block_transactions.dump() << std::endl;
+          // res.blocks.back().transactions.push_back(obj_to_json_str(tx_hash));
+          // json block_tx = json::array();
+          // tx[t_size] = block_tx.dump();
+        }
+        t_size++;
+      }
+        //  std::cout << "indices.size() : " << indices.size() << std::endl;
+        //  std::string block_indices = obj_to_json_str(indices);
+        //  auto blkindices = json::parse(block_indices);
+        //  std::cout << " indiceis in block : " << blkindices << std::endl;
+        std::cout << " bd.second.size() : " << bd.second.size() << std::endl;
+        std::cout << " tx data size() : " << tx.size() << std::endl;
+        if(bd.second.size() != 0)
+        {
+          for(auto it : tx)
+          {
+            res.blocks[block_count].transactions.push_back(it);
+          }
+        }
+        else
+        {
+          std::cout <<"transaction is empty" << std::endl;
+          json tx = json::array();
+          res.blocks[block_count].transactions.push_back(tx.dump());
+        }
+
+        output_indices_rpc.push_back(indices);
+        block_count++;
+        std::cout << "-----------------------------------------------" << std::endl;
     }
 
-    MDEBUG("on_get_blocks: " << bs.size() << " blocks, " << ntxes << " txes, size " << size);
+    std::string block_indices = obj_to_json_str(output_indices_rpc);
+    auto blkindices = json::parse(block_indices);
+    // std::cout << " indiceis in json : " << blkindices << std::endl;
+    res.output_indices = blkindices.dump();
+
+    MGINFO("on_get_blocks: " << blocks.size() << " blocks, " << ntxes << " txes, size " << size);
     res.status = STATUS_OK;
     return res;
   }

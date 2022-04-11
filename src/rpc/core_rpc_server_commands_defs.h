@@ -198,9 +198,9 @@ namespace rpc {
     };
   };
 
-    struct GET_BLOCKS_FAST_RPC : PUBLIC, LEGACY
+  struct GET_BLOCKS_FAST_RPC : PUBLIC, LEGACY
   {
-    static constexpr auto names() { return NAMES("get_blocks", "getblocks"); }
+    static constexpr auto names() { return NAMES("get_blocks_fast", "getblocks_fast"); }
 
     static constexpr size_t MAX_COUNT = 1000;
 
@@ -230,25 +230,15 @@ namespace rpc {
 
     struct response
     {
-      std::vector<block_complete_entry_rpc> blocks;         // Array of block complete entries
+      std::vector<block_complete_entry_rpc> blocks;     // Array of block complete entries
       uint64_t    start_height;                         // The starting block's height.
       uint64_t    current_height;                       // The current block height.
       std::string status;                               // General RPC error code. "OK" means everything looks good.
-      std::vector<block_output_indices> output_indices; // Array of indices.
-      // block_output_indices_rpc output_indices;
-      bool untrusted;                                   
+      std::string output_indices;                       // Array of indices.
+      bool untrusted;                                   // States if the result is obtained using the bootstrap mode, and is therefore not trusted (`true`), or when the daemon is fully synced (`false`).
+
      KV_MAP_SERIALIZABLE
     };
-    // obj_block_output_indices_rpc;
-    // struct responseData
-    // {
-    //  std::vector<cryptonote::block_with_transactions_rpc> blocks;
-    //  block_output_indices_rpc output_indices;
-    //  std::string status;
-    //  uint64_t start_height;
-    //  uint64_t current_height;
-    //  KV_MAP_SERIALIZABLE
-    // };
   };
 
   BELDEX_RPC_DOC_INTROSPECT
