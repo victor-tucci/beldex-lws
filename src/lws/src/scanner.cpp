@@ -103,7 +103,7 @@ namespace lws
       boost::optional<crypto::hash> prefix_hash;
       boost::optional<cryptonote::tx_extra_nonce> extra_nonce;
       std::pair<std::uint8_t, db::output::payment_id_> payment_id;
-
+      // std::cout <<"tx_hash : " << tx.hash << std::endl;
       {
         std::vector<cryptonote::tx_extra_field> extra;
         cryptonote::parse_tx_extra(tx.extra, extra);
@@ -112,6 +112,7 @@ namespace lws
         if (!cryptonote::find_tx_extra_field_by_type(extra, key))
           return;
 
+        // std::cout << "key : " << key << std::endl;
         extra_nonce.emplace();
         if (cryptonote::find_tx_extra_field_by_type(extra, *extra_nonce))
         {
@@ -124,7 +125,7 @@ namespace lws
 
       for (account& user : users)
       {
-        std::cout << "entered in users " << std::endl;
+        // std::cout << "entered in users " << std::endl;
         if (height <= user.scan_height())
           continue; // to next user
 
@@ -136,7 +137,7 @@ namespace lws
         std::uint32_t mixin = 0;
         for (auto const& in : tx.vin)
         {
-          std::cout << "entered in vin " << std::endl;
+          // std::cout << "entered in vin " << std::endl;
           cryptonote::txin_to_key const* const in_data =
             std::get_if<cryptonote::txin_to_key>(std::addressof(in));
           if (in_data)
@@ -174,7 +175,7 @@ namespace lws
         std::size_t index = -1;
         for (auto const& out : tx.vout)
         {
-          std::cout << "entered in vout " << std::endl;
+          // std::cout << "entered in vout " << std::endl;
           ++index;
 
           cryptonote::txout_to_key const* const out_data =
@@ -281,7 +282,7 @@ namespace lws
         auto start_height = std::uint64_t(users.begin()->scan_height());
       //   req.start_height = std::max(std::uint64_t(1), req.start_height);
         start_height = std::max(std::uint64_t(1), start_height);
-        start_height = 1006005;
+        start_height = 1028287;  // 1025580
       //  req.prune = true;
 
       //   epee::byte_slice block_request = rpc::client::make_message("get_blocks_fast", req);
@@ -327,33 +328,48 @@ namespace lws
 
           std::this_thread::sleep_for(5s);
           // parse the string format in_to json formate
-          // for(auto & t :details["blocks"])
-          // {
-          //   std::cout << " inside for parsing" << std::endl;
-          //   std::string it = t["block"];
-          //   t["block"] = json::parse(it);
-          //   std::string it_tx = t["transactions"];    // its in array
-          //   if(it_tx != "")
-          //   {
-          //    t["transactions"] = json::parse(it_tx);
-          //   }
-          //   else
-          //   {
-          //     std::cout <<"entered" << std::endl;
-          //     int a[] ={5,2}; 
-          //     t["transactions"] =a;
-          //   }         
-          // }
+          std::string out_indices = details["output_indices"];
+          details["output_indices"] = json::parse(out_indices);
+          for(auto & t :details["blocks"])
+          {
+            std::cout << " inside for parsing" << std::endl;
+            std::string it = t["block"];
+            t["block"] = json::parse(it);
+            std::cout << " t.size() : " << t["transactions"].size() << std::endl;
+            // std::string it_tx = t["transactions"];    // its in array
+            for(auto & data :t["transactions"])
+            {
+              // std::cout <<"transaction parsing" << std::endl;
+             std::string it = data;
+             data = json::parse(it);  
+            //  std::string ringct_ch = data["ringct"] ;
+             if(!data.empty())
+             {
+              
+              if(data["ringct"].is_null())
+              {
+               data["ringct"] = json::value_t::object;
+              }
+             }
+
+            }
+            if(t["block"]["tx_hashes"].size() == 0 || t["transactions"].size() == 0)
+            {
+              t["transactions"] = json::array();
+              t["block"]["tx_hashes"] = json::array();
+            }
+          }
           std::cout << "entered in" << std::endl;
           // std::cout <<"detat: "<< details << std::endl;
           json final_res = {{"jsonnrpc", "2.0"}, {"id", 0}, {"result",details}};
           // final_res["result"].erase("status");
           // final_res["result"].erase("untrusted");
           std::string resp = final_res.dump();
-          std::ifstream people_file("/home/apple-pro/Downloads/monero.json", std::ifstream::binary);
-          people_file >> final_res;
-          resp = final_res.dump();
-          std::cout << "resp : " << resp << std::endl;
+          // std::cout << resp << std::endl;
+          // std::ifstream people_file("/home/blockhash/Downloads/monero.json", std::ifstream::binary);
+          // people_file >> final_res;
+          // resp = final_res.dump();
+          std::cout << "resp : " <<  final_res << std::endl;
 
           auto fetched = MONERO_UNWRAP(wire::json::from_bytes<rpc::json<rpc::get_blocks_fast>::response>(std::move(resp)));
           if (fetched.result.blocks.empty())
@@ -436,22 +452,28 @@ namespace lws
             );
 
             indices.remove_prefix(1);
+
             if (txes.size() != indices.size())
+            {
               throw std::runtime_error{"Bad daemon respnse - need same number of txes and indices"};
+            }
 
             for (auto tx_data : boost::combine(block.tx_hashes, txes, indices))
             {
-              scan_transaction(
-                epee::to_mut_span(users),
-                db::block_id(fetched.result.start_height),
-                block.timestamp,
-                boost::get<0>(tx_data),
-                boost::get<1>(tx_data),
-                boost::get<2>(tx_data)
-              );
+              std::vector<std::uint64_t> const& out_ids_ch = boost::get<2>(tx_data);
+              std::cout << "indices.size() : " << out_ids_ch.size() << std::endl;
+                scan_transaction(
+                  epee::to_mut_span(users),
+                  db::block_id(fetched.result.start_height),
+                  block.timestamp,
+                  boost::get<0>(tx_data),
+                  boost::get<1>(tx_data),
+                  boost::get<2>(tx_data)
+                );
             }
 
             blockchain.push_back(cryptonote::get_block_hash(block));
+            std::cout << " blockchain.back() : " << blockchain.back() << std::endl;
           } // for each block
 
           expect<std::size_t> updated = disk.update(
@@ -653,32 +675,30 @@ namespace lws
       int a =0;
       std::vector<crypto::hash> blk_ids;
 
-    //  {
-    //   auto reader = disk.start_read();
-    //   if (!reader)
-    //   {
-    //     // return reader.error(); 
-    //   }
+     {
+      auto reader = disk.start_read();
+      if (!reader)
+      {
+        // return reader.error(); 
+      }
 
-    //   auto chain = reader->get_chain_sync();
-    //   std::cout << *chain << std::endl;
-    //   if (!chain)
-    //   {
-    //     // return chain.error();
-    //   }
+      auto chain = reader->get_chain_sync();
+      std::cout << *chain << std::endl;
+      if (!chain)
+      {
+        // return chain.error();
+      }
 
-    //   // req.known_hashes = std::move(*chain);
-    //   a = *chain;
+      // req.known_hashes = std::move(*chain);
+      a = *chain;
       
-    //  }
-     std::cout << " value of a : " << a << std::endl;
+     }
       for(;;)
       {
          break;
           m_LMQ->request(c,"rpc.get_hashes",[&details,a,&blk_ids](bool s , auto data){
           if(s==1 && data[0]=="200"){
-            //  std::cout << " get_hashes is : " << data[1] << "\n";
-            std::cout << " a : " << a << std::endl;
+            std::cout << " start_height : " << a << std::endl;
              json jf = json::parse(data[1]);
              details = jf;
              for (auto block_data : details["m_block_ids"])
@@ -696,7 +716,7 @@ namespace lws
            int start_height = details["start_height"];
            int current_height = details["current_height"];
 
-        //   MONERO_CHECK(disk.sync_chain(db::block_id(details["start_height"]), details["m_block_ids"]));
+        //   MONERO_CHECK(disk.sync_chain(db::block_id(details["start_height"]), epee::to_span(blk_ids)));
 
          disk.sync_chain(db::block_id(details["start_height"]), epee::to_span(blk_ids));
            a = block_ids_size + start_height;
