@@ -29,6 +29,7 @@
 #include "epee/span.h"
 #include "wire/filters.h"
 #include "wire/json.h"
+
 namespace lws
 {
 namespace db
@@ -328,12 +329,10 @@ namespace db
     }
     
     template<typename T>
-    expect<T> get_blocks(MDB_cursor& cur, std::size_t max_internal)
+    expect<T> get_blocks_kh(MDB_cursor& cur, std::size_t max_internal)
     {
       T out{};
 
-      //max_internal = std::min(std::size_t(64), max_internal);
-      //out.reserve(12 + max_internal);
       std::cout << " block version : " << blocks_version << std::endl;
 
       MDB_val key = lmdb::to_val(blocks_version);
@@ -348,46 +347,56 @@ namespace db
       
       out.push_back(std::move(*next));
       return out;
-      //for (unsigned i = 0; i < 10; ++i)
-      //{
-        // expect<block_info> next = blocks.get_value<block_info>(value);
-        // if (!next)
-        //   return next.error();
+    }
 
-        // out.push_back(std::move(*next));
-        // std::cout <<" out.back().id : " <<  out.back().id << std::endl;
+    template<typename T>
+    expect<T> get_blocks(MDB_cursor& cur, std::size_t max_internal)
+    {
+      T out{};
 
-        // const int err = mdb_cursor_get(&cur, &key, &value, MDB_PREV_DUP);
-        // if (err)
-        // {
-        //   if (err != MDB_NOTFOUND)
-        //     return {lmdb::error(err)};
-        //   if (out.back().id != block_id(0))
-        //     return {lws::error::bad_blockchain};
-        //   return out;
-        // }
-      //}
+      max_internal = std::min(std::size_t(64), max_internal);
+      out.reserve(12 + max_internal);
 
+      MDB_val key = lmdb::to_val(blocks_version);
+      MDB_val value{};
+      MONERO_LMDB_CHECK(mdb_cursor_get(&cur, &key, &value, MDB_SET));
+      MONERO_LMDB_CHECK(mdb_cursor_get(&cur, &key, &value, MDB_LAST_DUP));
+      for (unsigned i = 0; i < 10; ++i)
+      {
+        expect<block_info> next = blocks.get_value<block_info>(value);
+        if (!next)
+          return next.error();
+
+        out.push_back(std::move(*next));
+
+        const int err = mdb_cursor_get(&cur, &key, &value, MDB_PREV_DUP);
+        if (err)
+        {
+          if (err != MDB_NOTFOUND)
+            return {lmdb::error(err)};
+          if (out.back().id != block_id(0))
+            return {lws::error::bad_blockchain};
+          return out;
+        }
+      }
+
+      return out;
       // const auto add_block = [&cur, &out] (std::uint64_t id) -> expect<void>
       // {
       //   expect<crypto::hash> next = do_get_block_hash(cur, block_id(id));
       //   if (!next)
       //     return next.error();
       //   out.push_back(block_info{block_id(id), std::move(*next)});
-      //   const std::uint64_t start_height_from_db = lmdb::to_native(out.back().id);
-      //   std::cout << "start_height_from_db : " << start_height_from_db << std::endl;
       //   return success();
       // };
 
-      // const std::uint64_t checkpoint = get_checkpoints().get_max_height();
+      // // const std::uint64_t checkpoint = get_checkpoints().get_max_height();
       // const std::uint64_t anchor = lmdb::to_native(out.back().id);
-
-      // std::cout << "anchor : " << anchor << std::endl;
 
       // for (unsigned i = 1; i <= max_internal; ++i)
       // {
       //   const std::uint64_t offset = 2 << i;
-      //   if (anchor < offset || anchor - offset < checkpoint)
+      //   if (anchor < offset)
       //     break;
       //   MONERO_CHECK(add_block(anchor - offset));
       // }
@@ -476,7 +485,7 @@ namespace db
     MONERO_PRECOND(txn != nullptr);
     assert(db != nullptr);
     MONERO_CHECK(check_cursor(*txn, db->tables.blocks, curs.blocks_cur));
-    auto blocks = get_blocks<std::vector<block_info>>(*curs.blocks_cur, 64);
+    auto blocks = get_blocks_kh<std::vector<block_info>>(*curs.blocks_cur, 64);
     if (!blocks)
       return blocks.error();
 
@@ -1388,7 +1397,7 @@ namespace db
   
   expect<std::size_t> storage::update(block_id height, epee::span<const crypto::hash> chain, epee::span<const lws::account> users)
   {
-     std::cout << " in updated function " << std::endl;
+    //  std::cout << " in updated function " << std::endl;
     if (users.empty() && chain.empty())
       return 0;
 
@@ -1397,7 +1406,7 @@ namespace db
 
     return db->try_write([this, height, chain, users] (MDB_txn& txn) -> expect<std::size_t>
     {
-      std::cout << " in try_write function " << std::endl;
+      // std::cout << " in try_write function " << std::endl;
       epee::span<const crypto::hash> chain_copy{chain};
       const std::uint64_t last_update =
         lmdb::to_native(height) + chain.size() - 1;
@@ -1450,7 +1459,7 @@ namespace db
       MONERO_CHECK(check_cursor(txn, this->db->tables.outputs, outputs_cur));
       MONERO_CHECK(check_cursor(txn, this->db->tables.spends, spends_cur));
       MONERO_CHECK(check_cursor(txn, this->db->tables.images, images_cur));
-      std::cout << " in check_cursor function " << std::endl;
+      // std::cout << " in check_cursor function " << std::endl;
       // for bulk inserts
       boost::container::static_vector<account_lookup, 127> heights{};
       static_assert(sizeof(heights) <= 1024, "stack vector is large");
@@ -1458,7 +1467,7 @@ namespace db
       std::size_t updated = 0;
       for (auto user = users.begin() ;; ++user)
       {
-        std::cout << " in user function " << std::endl;
+        // std::cout << " in user function " << std::endl;
         if (heights.size() == heights.capacity() || user == users.end())
         {
           // bulk update account height index
