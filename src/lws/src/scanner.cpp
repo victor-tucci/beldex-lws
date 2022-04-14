@@ -282,9 +282,6 @@ namespace lws
         auto start_height = std::uint64_t(users.begin()->scan_height());
       //   req.start_height = std::max(std::uint64_t(1), req.start_height);
         start_height = std::max(std::uint64_t(1), start_height);
-        start_height = 1028287;  // 1025580
-      //  req.prune = true;
-
       //   epee::byte_slice block_request = rpc::client::make_message("get_blocks_fast", req);
       //   if (!send(client, block_request.clone()))
       //     return;
@@ -369,7 +366,7 @@ namespace lws
           // std::ifstream people_file("/home/blockhash/Downloads/monero.json", std::ifstream::binary);
           // people_file >> final_res;
           // resp = final_res.dump();
-          std::cout << "resp : " <<  final_res << std::endl;
+          // std::cout << "resp : " <<  final_res << std::endl;
 
           auto fetched = MONERO_UNWRAP(wire::json::from_bytes<rpc::json<rpc::get_blocks_fast>::response>(std::move(resp)));
           if (fetched.result.blocks.empty())
