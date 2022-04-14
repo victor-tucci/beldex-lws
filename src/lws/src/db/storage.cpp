@@ -487,8 +487,12 @@ namespace db
     MONERO_CHECK(check_cursor(*txn, db->tables.blocks, curs.blocks_cur));
     auto blocks = get_blocks_kh<std::vector<block_info>>(*curs.blocks_cur, 64);
     if (!blocks)
-      return blocks.error();
-
+    {
+      int last_stored_height = 0;
+      return last_stored_height;
+      //return blocks.error();
+    }
+      
     // std::list<crypto::hash> out{};
     std::vector<block_info> out{};
     for (block_info const& block : *blocks)
@@ -496,7 +500,7 @@ namespace db
        out.push_back(block);
     }
     const std::uint64_t anchor = lmdb::to_native(out.back().id);
-    std::cout << anchor << std::endl;
+    std::cout<<"Last_height_from Db : " << anchor << std::endl;
     return anchor;
   }
 
@@ -853,7 +857,10 @@ namespace db
           // std::cout << "hashes.size() in append : " << hashes.size() << std::endl;
           MONERO_CHECK(bulk_insert(cur, blocks_version, epee::to_span(hashes)));
           if (current == chain.end())
+          {
+            std::cout <<"last entered hash in DB : " << *current << std::endl;
             return success();
+          }           
           hashes.clear();
         }
 
@@ -905,7 +912,7 @@ namespace db
       auto chain = boost::make_iterator_range(++first, hashes.end());
       std::cout << "hashes.size() : " << hashes.size() << std::endl;
       std::cout << "chain.size() : " << chain.size() << std::endl;
-      static int a = 0;
+
       // for ( ; !chain.empty(); chain.advance_begin(1), ++current)
       // {
       //   a++;
@@ -925,8 +932,6 @@ namespace db
       //   //   break;
       //   // }
       // }
-      std::cout <<" no of loops : " << a << std::endl;
-      std::cout << "chain.size() : " << chain.size() << std::endl;
       std::cout <<"current : " << current << std::endl;
       return append_block_hashes(*blocks_cur, db::block_id(current), chain);
     });

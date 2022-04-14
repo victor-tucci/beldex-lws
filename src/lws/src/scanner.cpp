@@ -666,10 +666,12 @@ namespace lws
       LMQ_ptr m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
       m_LMQ->start();
 
+      bool daemon_connected = false;
       auto c = m_LMQ->connect_remote("tcp://127.0.0.1:4567",
-      [](ConnectionID conn) { std::cout << "for get_hashes_fast Connected \n";},
+      [&daemon_connected](ConnectionID conn) { daemon_connected = true;std::cout << "for get_hashes_fast Connected \n";},
       [](ConnectionID conn, std::string_view f) { std::cout << "connect failed: \n";} 
       );
+
       // std::this_thread::sleep_for(5s);
       json details;
       int a =0;
@@ -683,7 +685,6 @@ namespace lws
       }
 
       auto chain = reader->get_chain_sync();
-      std::cout << *chain << std::endl;
       if (!chain)
       {
         // return chain.error();
@@ -695,7 +696,6 @@ namespace lws
      }
       for(;;)
       {
-         break;
           m_LMQ->request(c,"rpc.get_hashes",[&details,a,&blk_ids](bool s , auto data){
           if(s==1 && data[0]=="200"){
             std::cout << " start_height : " << a << std::endl;
@@ -711,27 +711,31 @@ namespace lws
             std::cout << "timeout fetching get_hashes !";
           },"{\"start_height\": \"" + std::to_string(a) + "\"}");
 
-           std::this_thread::sleep_for(3s);
+            std::this_thread::sleep_for(5s);
+            if(!daemon_connected)
+            {
+              MERROR("Daemon not connected so stop action called");
+              lws::scanner::stop();
+            }
+           
            int block_ids_size = details["m_block_ids"].size();
            int start_height = details["start_height"];
            int current_height = details["current_height"];
 
-        //   MONERO_CHECK(disk.sync_chain(db::block_id(details["start_height"]), epee::to_span(blk_ids)));
+         std::cout <<"last hash from response : " << blk_ids.back() << std::endl;
+
+          if (blk_ids.size() <= 1 || (current_height - start_height) <=1)
+          {
+            MINFO("synced daemon upto the top chain");
+            break;
+          }
 
          disk.sync_chain(db::block_id(details["start_height"]), epee::to_span(blk_ids));
-           a = block_ids_size + start_height;
+         blk_ids.clear();
 
-           if (a>=current_height)
-           {
-                 std::cout <<"the current_height details : " << details["current_height"] << std::endl;
-                 std::cout <<" the size of the blockchain data    : " << a << std::endl;
-                 break;
-            }
-            std::cout << a << std::endl;
+           a = block_ids_size + start_height -1;
       }
-           std::this_thread::sleep_for(5s);
-           std::cout <<"the current_height details : " <<details["current_height"] << std::endl;
-           std::cout << " connection end " << std::endl;
+          //  std::this_thread::sleep_for(5s);
     }
 
    void scanner::run(db::storage disk, std::size_t thread_count)
