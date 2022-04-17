@@ -465,20 +465,26 @@ namespace cryptonote
     /* As I don't know if accessing hshd from core could be a good practice,
     I prefer pushing target height to the core at the same time it is pushed to the user.
     Nz. */
+
         auto nettype = m_core.get_nettype();
+        LOG_PRINT_CCONTEXT_L0("process_payload_sync_data hard_fork_begins");
         auto hf17 = hard_fork_begins(nettype, cryptonote::network_version_17_POS);
+        LOG_PRINT_CCONTEXT_L0("process_payload_sync_data hf17?");
         if (hf17)
         {
+            LOG_PRINT_CCONTEXT_L0("process_payload_sync_data hf17");
             std::chrono::seconds behindtime = 0 * TARGET_BLOCK_TIME;
             int64_t diff = static_cast<int64_t>(hshd.current_height) - static_cast<int64_t>(curr_height);
             uint64_t abs_diff = std::abs(diff);
 
             if (curr_height<*hf17){
+                LOG_PRINT_CCONTEXT_L0("process_payload_sync_data curr_height<hf17");
                 uint64_t old_diff = static_cast<int64_t>(*hf17) - static_cast<int64_t>(curr_height);
                 behindtime = old_diff * TARGET_BLOCK_TIME;
                 uint64_t max_block_height = std::max(hshd.current_height, curr_height);
                 behindtime = behindtime + ((max_block_height - *hf17)  * TARGET_BLOCK_TIME_V17);
             } else{
+                LOG_PRINT_CCONTEXT_L0("process_payload_sync_data curr_height>hf17");
                 behindtime =   (abs_diff * TARGET_BLOCK_TIME_V17);
             }
             MCLOG(is_inital ? el::Level::Info : el::Level::Debug, "global", context <<  "Sync data returned a new top block candidate: " << curr_height << " -> " << hshd.current_height
@@ -492,7 +498,7 @@ namespace cryptonote
         }
 
 
-
+        LOG_PRINT_CCONTEXT_L0("process_payload_sync_data after hf17");
       m_period_start_time = m_sync_start_time = std::chrono::steady_clock::now();
       m_sync_start_height = curr_height;
 
@@ -530,6 +536,7 @@ namespace cryptonote
     }
     else
     {
+        LOG_PRINT_CCONTEXT_L0("process_payload_sync_data state_synchronizing");
       context.m_state = cryptonote_connection_context::state_synchronizing;
     }
 
@@ -968,7 +975,7 @@ namespace cryptonote
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_notify_new_master_node_vote(int command, NOTIFY_NEW_MASTER_NODE_VOTE::request& arg, cryptonote_connection_context& context)
   {
-    MLOG_P2P_MESSAGE("Received NOTIFY_NEW_MASTER_NODE_VOTE (" << arg.votes.size() << " txes)");
+    MTRACE("Received NOTIFY_NEW_MASTER_NODE_VOTE (" << arg.votes.size() << " txes)");
 
     if(context.m_state != cryptonote_connection_context::state_normal)
       return 1;

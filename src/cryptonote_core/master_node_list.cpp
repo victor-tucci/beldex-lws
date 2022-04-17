@@ -3367,7 +3367,7 @@ namespace master_nodes
       return false;
     }
 
-    MDEBUG("Received " << type << (reachable ? " reachable" : " UNREACHABLE") << " report for MN " << pubkey);
+    MTRACE("Received " << type << (reachable ? " reachable" : " UNREACHABLE") << " report for MN " << pubkey);
 
     const auto now = std::chrono::steady_clock::now();
 
