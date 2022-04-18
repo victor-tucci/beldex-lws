@@ -511,14 +511,15 @@ namespace master_nodes
 
       result = crypto::check_signature(hash, key, vote.signature);
       if (result){
-          MDEBUG("Signature accepted for " << vote.type << " voter " << vote.index_in_group << "/" << key
+          /*MDEBUG("Signature accepted for " << vote.type << " voter " << vote.index_in_group << "/" << key
                                            << (vote.type == quorum_type::obligations ? " voting for worker " +
                                                                                        std::to_string(
                                                                                                vote.state_change.worker_index)
                                                                                      : "")
                                  << " at height " << vote.block_height);
+          */
           if(vote.type == quorum_type::obligations){
-              MDEBUG("Signature accepted for " << quorum.workers[vote.state_change.worker_index]);
+              //MDEBUG("Signature accepted for " << quorum.workers[vote.state_change.worker_index]);
           }
     }
     else {
