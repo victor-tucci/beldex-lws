@@ -187,6 +187,9 @@ namespace lws
           const bool received =
             crypto::wallet::derive_subaddress_public_key(out_data->key, derived, index, derived_pub) &&
             derived_pub == user.spend_public();
+            std::cout << "derived_pub : " << derived_pub << std::endl;
+            std::cout << "user.spend_public() : " <<  user.spend_public() << std::endl;
+            std::cout <<"--------------------------"<< std::endl;
 
           if (!received)
             continue; // to next output
@@ -327,12 +330,13 @@ namespace lws
           // parse the string format in_to json formate
           std::string out_indices = details["output_indices"];
           details["output_indices"] = json::parse(out_indices);
+          int ch =0;
           for(auto & t :details["blocks"])
           {
-            std::cout << " inside for parsing" << std::endl;
+            // std::cout << " inside for parsing" << std::endl;
             std::string it = t["block"];
             t["block"] = json::parse(it);
-            std::cout << " t.size() : " << t["transactions"].size() << std::endl;
+            // std::cout << " t.size() : " << t["transactions"].size() << std::endl;
             // std::string it_tx = t["transactions"];    // its in array
             for(auto & data :t["transactions"])
             {
@@ -350,13 +354,36 @@ namespace lws
              }
 
             }
+            // std::cout << "block_transaction_size() : " << t["block"]["tx_hashes"].size() << std::endl;
+            // std::cout << "t[transactions].size() : " << t["transactions"].size() << std::endl;
             if(t["block"]["tx_hashes"].size() == 0 || t["transactions"].size() == 0)
             {
               t["transactions"] = json::array();
               t["block"]["tx_hashes"] = json::array();
             }
+            if(t["transactions"].size() != (details["output_indices"][ch].size()-1))
+            {   
+              int let = 0;
+              json indis;  
+              for(auto &it :details["output_indices"][ch])
+              {
+                // std::cout << "let:" <<let<< std::endl;
+               if(it.empty())
+               {
+                //  std::cout << "inside 2";
+               }
+               else
+               {
+                 indis.push_back(it);
+               }
+                let++;
+              }
+              details["output_indices"][ch]= indis;
+              // std::cout<<details["output_indices"][ch]<<std::endl;
+            }
+            ch++;
           }
-          std::cout << "entered in" << std::endl;
+          // std::cout << "entered in" << std::endl;
           // std::cout <<"detat: "<< details << std::endl;
           json final_res = {{"jsonnrpc", "2.0"}, {"id", 0}, {"result",details}};
           // final_res["result"].erase("status");
@@ -458,7 +485,7 @@ namespace lws
             for (auto tx_data : boost::combine(block.tx_hashes, txes, indices))
             {
               std::vector<std::uint64_t> const& out_ids_ch = boost::get<2>(tx_data);
-              std::cout << "indices.size() : " << out_ids_ch.size() << std::endl;
+              // std::cout << "indices.size() : " << out_ids_ch.size() << std::endl;
                 scan_transaction(
                   epee::to_mut_span(users),
                   db::block_id(fetched.result.start_height),
@@ -470,7 +497,7 @@ namespace lws
             }
 
             blockchain.push_back(cryptonote::get_block_hash(block));
-            std::cout << " blockchain.back() : " << blockchain.back() << std::endl;
+            // std::cout << " blockchain.back() : " << blockchain.back() << std::endl;
           } // for each block
 
           expect<std::size_t> updated = disk.update(
@@ -695,7 +722,7 @@ namespace lws
       {
           m_LMQ->request(c,"rpc.get_hashes",[&details,a,&blk_ids](bool s , auto data){
           if(s==1 && data[0]=="200"){
-            std::cout << " start_height : " << a << std::endl;
+            // std::cout << " start_height : " << a << std::endl;
              json jf = json::parse(data[1]);
              details = jf;
              for (auto block_data : details["m_block_ids"])
@@ -719,7 +746,7 @@ namespace lws
            int start_height = details["start_height"];
            int current_height = details["current_height"];
 
-         std::cout <<"last hash from response : " << blk_ids.back() << std::endl;
+        //  std::cout <<"last hash from response : " << blk_ids.back() << std::endl;
 
           if (blk_ids.size() <= 1 || (current_height - start_height) <=1)
           {
@@ -780,8 +807,6 @@ namespace lws
 
         reader.finish_read();
       } // cleanup DB reader
-      
-      std::cout << " thread count : " << thread_count << std::endl;
 
       if (users.empty())
       {

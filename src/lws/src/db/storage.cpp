@@ -333,8 +333,6 @@ namespace db
     {
       T out{};
 
-      std::cout << " block version : " << blocks_version << std::endl;
-
       MDB_val key = lmdb::to_val(blocks_version);
       MDB_val value{};
       MONERO_LMDB_CHECK(mdb_cursor_get(&cur, &key, &value, MDB_SET));
@@ -457,8 +455,6 @@ namespace db
     explicit storage_internal(lmdb::environment env, unsigned create_queue_max)
       : lmdb::database(std::move(env)), tables{}, create_queue_max(create_queue_max)
     {
-      std::cout <<" storage-internal function called : " << __FILE__ << std::endl;
-
       lmdb::write_txn txn = this->create_write_txn().value();
       assert(txn != nullptr);
 
@@ -910,8 +906,8 @@ namespace db
       std::uint64_t current = std::uint64_t(height) + 1;
       auto first = hashes.begin();
       auto chain = boost::make_iterator_range(++first, hashes.end());
-      std::cout << "hashes.size() : " << hashes.size() << std::endl;
-      std::cout << "chain.size() : " << chain.size() << std::endl;
+      // std::cout << "hashes.size() : " << hashes.size() << std::endl;
+      // std::cout << "chain.size() : " << chain.size() << std::endl;
 
       // for ( ; !chain.empty(); chain.advance_begin(1), ++current)
       // {
@@ -932,7 +928,7 @@ namespace db
       //   //   break;
       //   // }
       // }
-      std::cout <<"current : " << current << std::endl;
+      // std::cout <<"current : " << current << std::endl;
       return append_block_hashes(*blocks_cur, db::block_id(current), chain);
     });
   }
@@ -1537,7 +1533,7 @@ namespace db
 
         ++updated;
       } // ... for every account being updated ...
-      std::cout << " in updated function " << std::endl;
+      // std::cout << " in updated function " << std::endl;
       return updated;
     });
   }

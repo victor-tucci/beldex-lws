@@ -847,13 +847,6 @@ namespace cryptonote { namespace rpc {
 
     res.start_height = req.start_height;
 
-    std::cout <<"req.block_ids size  :" << req.block_ids.size() << std::endl;
-    std::cout << "req.start_height : " << req.start_height << std::endl;
-
-    for (auto &req_blocks_id : req.block_ids)
-    {
-      std::cout << " req_blocks_id : " << req_blocks_id << std::endl;
-    }
     if(!m_core.get_blockchain_storage().find_blockchain_supplement(req.block_ids, res.m_block_ids, res.start_height, res.current_height, false))
     {
       res.status = "Failed";
@@ -869,18 +862,9 @@ namespace cryptonote { namespace rpc {
     GET_HASHES_FAST_RPC::response res{};
 
     PERF_TIMER(on_get_hashes);
-    std::cout <<"req.block_ids size  :" << req.block_ids.size() << std::endl;
+
     std::cout << "req.start_height : " << req.start_height << std::endl;
-
-      // req.block_ids.push_back("<a9676c3fbae6ad42434db2d1ebac90c2e75dbbd02a6b2d45c69d123554c7578f>");
-      // req.block_ids.push_back("<6ea477622339f61c5fba036dc75c08b6efcf9ee09c108e5c5591fcc233d17b20>");
     
-    std::cout <<"req.block_ids size after insert :" << req.block_ids.size() << std::endl;
-
-    for (auto &req_blocks_id_rpc : req.block_ids)
-    {
-      std::cout << " req_blocks_id_rpc : " << req_blocks_id_rpc << std::endl;
-    }
     if (use_bootstrap_daemon_if_necessary<GET_HASHES_FAST_RPC>(req, res))
       return res;
 
