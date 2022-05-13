@@ -633,7 +633,7 @@ namespace master_nodes
 
   }
 
-  static bool handle_checkpoint_vote(cryptonote::core& core, const quorum_vote_t& vote, const std::vector<pool_vote_entry>& votes, const quorum& quorum)
+  static bool handle_checkpoint_vote(cryptonote::core& core, const quorum_vote_t& vote, const std::vector<pool_vote_entry>& votes)
   {
     if (votes.size() < CHECKPOINT_MIN_VOTES)
     {
@@ -745,7 +745,7 @@ namespace master_nodes
         break;
 
       case quorum_type::checkpointing:
-        result &= handle_checkpoint_vote(m_core, vote, votes, *quorum);
+        result &= handle_checkpoint_vote(m_core, vote, votes);
         break;
     }
     return result;
