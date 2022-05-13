@@ -194,7 +194,6 @@ namespace master_nodes
       if (!by_pop_blocks)
       {
         LOG_ERROR("The blockchain was detached to height: " << height << ", but quorum cop has already processed votes for obligations up to " << m_obligations_height);
-        LOG_ERROR("This implies a reorg occured that was over " << REORG_SAFETY_BUFFER_BLOCKS << ". This should rarely happen! Please report this to the devs.");
       }
       m_obligations_height = height;
     }
