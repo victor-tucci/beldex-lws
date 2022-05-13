@@ -249,7 +249,7 @@ std::bitset<sizeof(uint16_t) * 8> bitset_view16(uint16_t val)
 }
 
 //
-// NOTE: POS::message Utiliities
+// NOTE: POS::message Utilities
 //
 POS::message msg_init_from_context(round_context const &context)
 {
@@ -722,7 +722,7 @@ void POS::handle_message(void *quorumnet_state, POS::message const &msg)
     cryptonote::quorumnet_POS_relay_message_to_quorum(quorumnet_state, msg, context.prepare_for_round.quorum, context.prepare_for_round.participant == mn_type::producer);
 }
 
-// TODO(doyle): Update POS::perpare_for_round with this function after the hard fork and sanity check it on testnet.
+// TODO(doyle): Update POS::prepare_for_round with this function after the hard fork and sanity check it on testnet.
 bool POS::convert_time_to_round(POS::time_point const &time, POS::time_point const &r0_timestamp, uint8_t *round)
 {
   auto const time_since_round_started = time <= r0_timestamp ? std::chrono::seconds(0) : (time - r0_timestamp);
@@ -956,7 +956,7 @@ Yes +-----[Block can not be added to blockchain]
       random value and proceed to the next stage.
 
   Send And Wait For Random Value Hashes (Validator)
-    - On first invcation, send the hash of our random value prepared in the
+    - On first invocation, send the hash of our random value prepared in the
       'Wait For Block Template' stage, followed by waiting for the other random
       value hashes from validators.
 
@@ -964,7 +964,7 @@ Yes +-----[Block can not be added to blockchain]
       in the block, we revert to 'Prepare For Round'.
 
   Send And Wait For Random Value (Validator)
-    - On first invcation, send the random value prepared in the 'Wait For Block
+    - On first invocation, send the random value prepared in the 'Wait For Block
       Template' stage, followed by waiting for the other random values from
       validators.
 
@@ -972,7 +972,7 @@ Yes +-----[Block can not be added to blockchain]
       in the block, we revert to 'Prepare For Round'.
 
   Send And Wait For Signed Block (Validator)
-    - On first invcation, send our signature, signing the block template with
+    - On first invocation, send our signature, signing the block template with
       all the random values combined into 1 to other validators and await for
       the other signatures to arrive.
 

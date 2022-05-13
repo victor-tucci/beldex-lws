@@ -74,7 +74,7 @@ namespace master_nodes
     m_last_checkpointed_height = 0;
   }
 
-  // Perform master node tests -- this returns true is the server node is in a good state, that is,
+  // Perform master node tests -- this returns true if the server node is in a good state, that is,
   // has submitted uptime proofs, participated in required quorums, etc.
   master_node_test_results quorum_cop::check_master_node(uint8_t hf_version, const crypto::public_key &pubkey, const master_node_info &info) const
   {
