@@ -276,7 +276,7 @@ namespace master_nodes
           remove_excess_mnode_from_swarm(excess_mnode, swarm_to_mnodes);
           /// Add public key to poor swarm
           poor_swarm_mnodes.push_back(excess_mnode.public_key);
-          LOG_PRINT_L2("Stolen 1 mnode from " << excess_mnode.public_key << " and donated to " << swarm.swarm_id);
+          LOG_PRINT_L2("Stolen 1 mnode " << excess_mnode.public_key << " from " << excess_mnode.swarm_id << " and donated to " << swarm.swarm_id);
         } while (poor_swarm_mnodes.size() < MIN_SWARM_SIZE);
 
         /// If there is not enough excess for the current swarm,
