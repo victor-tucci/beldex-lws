@@ -8,6 +8,8 @@ constexpr uint64_t EMISSION_SUPPLY_MULTIPLIER = 19;
 constexpr uint64_t EMISSION_SUPPLY_DIVISOR    = 10;
 constexpr uint64_t EMISSION_DIVISOR           = 2000000;
 
+constexpr uint64_t MODIFIED_STAKING_REQUIREMENT_HEIGHT = 56500;
+
 // HF15 money supply parameters:
 constexpr uint64_t BLOCK_REWARD_HF16      = 2 * COIN;
 constexpr uint64_t BLOCK_REWARD_HF17_POS  = 10 *COIN;
