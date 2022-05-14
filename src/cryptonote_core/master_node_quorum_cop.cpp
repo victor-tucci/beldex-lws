@@ -771,9 +771,7 @@ namespace master_nodes
 
 
     if (blocks_up > 0) {
-
-        int64_t decommission_credit_per_day = BLOCKS_EXPECTED_IN_HOURS(24,hf_version) / 30;
-        credit += blocks_up * decommission_credit_per_day / BLOCKS_EXPECTED_IN_HOURS(24,hf_version);
+        credit += blocks_up / BLOCKS_PER_CREDIT_EARNED;
     }
 
 
