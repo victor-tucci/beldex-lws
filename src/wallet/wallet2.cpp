@@ -8396,7 +8396,7 @@ wallet2::register_master_node_result wallet2::create_register_master_node_tx(con
       }
     }
 
-    staking_requirement = master_nodes::get_staking_requirement(nettype(), bc_height);
+    staking_requirement = master_nodes::get_staking_requirement(bc_height);
     std::vector<std::string> const args(local_args.begin(), local_args.begin() + local_args.size() - 3);
     contributor_args = master_nodes::convert_registration_args(nettype(), args, staking_requirement, *hf_version);
 
@@ -8658,7 +8658,7 @@ wallet2::request_stake_unlock_result wallet2::can_request_stake_unlock(const cry
         result.msg    = ERR_MSG_NETWORK_VERSION_QUERY_FAILED;
         return result;
       }
-      uint64_t unlock_height = master_nodes::get_locked_key_image_unlock_height(nettype(), node_info.registration_height, curr_height,*hf_version);
+      uint64_t unlock_height = master_nodes::get_locked_key_image_unlock_height(nettype(), curr_height,*hf_version);
       result.msg.append("You will continue receiving rewards until the master node expires at the estimated height: ");
       result.msg.append(std::to_string(unlock_height));
       result.msg.append(" (about ");

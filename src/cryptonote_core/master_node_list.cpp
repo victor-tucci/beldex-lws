@@ -828,7 +828,7 @@ namespace master_nodes
       return false;
     }
 
-    uint64_t unlock_height = get_locked_key_image_unlock_height(nettype, node_info.registration_height, block_height,version );
+    uint64_t unlock_height = get_locked_key_image_unlock_height(nettype, block_height,version );
     for (const auto &contributor : node_info.contributors)
     {
       auto cit = std::find_if(contributor.locked_contributions.begin(),
@@ -889,7 +889,7 @@ namespace master_nodes
 
     // check the initial contribution exists
 
-    uint64_t staking_requirement = get_staking_requirement(nettype, block_height);
+    uint64_t staking_requirement = get_staking_requirement(block_height);
     cryptonote::account_public_address address;
 
     staking_components stake = {};
