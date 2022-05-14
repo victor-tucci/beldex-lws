@@ -181,7 +181,7 @@ namespace master_nodes
               });
   }
 
-  /// Assign each mnode from mnode_pubkeys into the FILL_SWARM_LOWER_PERCENTILE percentile of swarms
+  /// Assign each mnode from mnode_pubkeys into the FILL_SWARM_LOWER_PERCENTILE or DECOMMISSIONED_REDISTRIBUTION_LOWER_PERCENTILE  percentile of swarms
   /// and run the excess/threshold logic after each assignment to ensure new swarms are generated when required.
   prod_static void assign_mnodes(const std::vector<crypto::public_key> &mnode_pubkeys, swarm_mnode_map_t &swarm_to_mnodes, std::mt19937_64 &mt, size_t percentile)
   {
