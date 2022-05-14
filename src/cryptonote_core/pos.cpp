@@ -728,7 +728,7 @@ bool POS::convert_time_to_round(POS::time_point const &time, POS::time_point con
   auto const time_since_round_started = time <= r0_timestamp ? std::chrono::seconds(0) : (time - r0_timestamp);
   size_t result_usize                 = time_since_round_started / master_nodes::POS_ROUND_TIME;
   if (round) *round = static_cast<uint8_t>(result_usize);
-  return result_usize <= 255;
+  return result_usize <= master_nodes::POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED;
 }
 
 bool POS::get_round_timings(cryptonote::Blockchain const &blockchain, uint64_t block_height, uint64_t prev_timestamp, POS::timings &times)
@@ -756,7 +756,7 @@ bool POS::get_round_timings(cryptonote::Blockchain const &blockchain, uint64_t b
   times.r0_timestamp = times.prev_timestamp + master_nodes::POS_ROUND_TIME;
 #endif
 
-  times.miner_fallback_timestamp = times.r0_timestamp + (master_nodes::POS_ROUND_TIME * 255);
+  times.miner_fallback_timestamp = times.r0_timestamp + (master_nodes::POS_ROUND_TIME * master_nodes::POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED);
   return true;
 }
 
@@ -910,7 +910,7 @@ Yes +-----[Block can not be added to blockchain]
       subsequent stage fails, except in the cases where POS can not proceed
       because of an insufficient Master Node network.
 
-    - If the next round to prepare for is >255, we disable POS and re-allow
+    - If the next round to prepare for is >POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED, we disable POS and re-allow
       PoW blocks to be added to the chain, the POS state machine resets and
       waits for the next block to arrive and re-evaluates if POS is possible
       again.
@@ -1112,7 +1112,7 @@ round_state prepare_for_round(round_context &context, master_nodes::master_node_
 
   if (context.prepare_for_round.queue_for_next_round)
   {
-    if (context.prepare_for_round.round >= 255)
+    if (context.prepare_for_round.round >= master_nodes::POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED)
     {
       // If the next round overflows, we consider the network stalled. Wait for
       // the next block and allow PoW to return.
@@ -1138,7 +1138,7 @@ round_state prepare_for_round(round_context &context, master_nodes::master_node_
     auto const time_since_block  = now <= context.wait_for_next_block.round_0_start_time ? std::chrono::seconds(0) : (now - context.wait_for_next_block.round_0_start_time);
     size_t round_usize           = time_since_block / master_nodes::POS_ROUND_TIME;
 
-    if (round_usize > 255) // Network stalled
+    if (round_usize > master_nodes::POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED) // Network stalled
     {
       MINFO(log_prefix(context) << "POS has timed out, reverting to accepting miner blocks only.");
       return goto_wait_for_next_block_and_clear_round_data(context);
