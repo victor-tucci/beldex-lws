@@ -1740,7 +1740,7 @@ static void append_printable_master_node_list_entry(cryptonote::network_type net
     stream << indent2 << "Downtime Credits: " << entry.earned_downtime_blocks << " blocks"
       << " (about " << to_string_rounded(entry.earned_downtime_blocks / (double) BLOCKS_EXPECTED_IN_HOURS(1,hf_version), 2)  << " hours)";
 
-    int64_t decommission_minimum    = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    int64_t decommission_minimum    = BLOCKS_EXPECTED_IN_HOURS(MINIMUM_CREDIT_HOURS,hf_version);
     if (entry.earned_downtime_blocks < decommission_minimum)
       stream << " (Note: " << decommission_minimum << " blocks required to enable deregistration delay)";
   } else if (is_registered) {
