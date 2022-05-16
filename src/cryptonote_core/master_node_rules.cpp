@@ -15,7 +15,7 @@ namespace master_nodes {
 uint64_t get_staking_requirement(cryptonote::network_type m_nettype, uint64_t height)
 {
   uint64_t result = COIN * 100000;
-  if(height>=56500) result = COIN * 10000;
+  if(height>=MODIFIED_STAKING_REQUIREMENT_HEIGHT) result = COIN * 10000;
   return result;
 }
 

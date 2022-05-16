@@ -504,3 +504,5 @@ namespace cryptonote
 constexpr uint64_t BLOCKS_EXPECTED_IN_HOURS(int hours, uint8_t hf_version) { return (1h / (hf_version>=cryptonote::network_version_17_POS?TARGET_BLOCK_TIME_V17:TARGET_BLOCK_TIME)) * hours; }
 constexpr uint64_t BLOCKS_EXPECTED_IN_DAYS(int days, uint8_t hf_version)   { return BLOCKS_EXPECTED_IN_HOURS(24,hf_version) * days; }
 constexpr uint64_t BLOCKS_EXPECTED_IN_YEARS(int years, uint8_t hf_version) { return BLOCKS_EXPECTED_IN_DAYS(365,hf_version) * years; }
+
+constexpr uint64_t BLOCKS_PER_CREDIT_EARNED = 30;
