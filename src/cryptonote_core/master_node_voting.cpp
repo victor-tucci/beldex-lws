@@ -420,7 +420,7 @@ namespace master_nodes
   {
     bool result           = true;
     bool height_in_buffer = false;
-    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
     if (latest_height > vote.block_height + vote_lifetime)
     {
       height_in_buffer = latest_height <= vote.block_height + (vote_lifetime + VOTE_OR_TX_VERIFY_HEIGHT_BUFFER);
@@ -599,7 +599,7 @@ namespace master_nodes
 #else
     constexpr uint64_t TIME_BETWEEN_RELAY = 60 * 2;
 #endif
-    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
     const uint64_t max_last_sent = static_cast<uint64_t>(time(nullptr)) - TIME_BETWEEN_RELAY;
     const uint64_t min_height = height > vote_lifetime ? height - vote_lifetime : 0;
 
@@ -688,7 +688,7 @@ namespace master_nodes
   void voting_pool::remove_expired_votes(uint64_t height,uint8_t hf_version)
   {
     std::unique_lock lock{m_lock};
-    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
     uint64_t min_height = (height < vote_lifetime) ? 0 : height - vote_lifetime;
     cull_votes(m_obligations_pool, min_height, height);
     cull_votes(m_checkpoint_pool, min_height, height);
