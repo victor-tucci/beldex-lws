@@ -60,7 +60,7 @@ namespace master_nodes
     return all_ids[best_idx] + diff;
   }
 
-/// The excess is calculated as the total number of mnodes above EXCESS_BASE(MIN_SWARM_SIZE) across all swarms
+  /// The excess is calculated as the total number of mnodes above MIN_SWARM_SIZE across all swarms
   prod_static size_t calc_excess(const swarm_mnode_map_t &swarm_to_mnodes)
   {
     const size_t excess = std::accumulate(swarm_to_mnodes.begin(),

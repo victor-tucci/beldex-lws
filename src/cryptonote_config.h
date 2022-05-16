@@ -192,9 +192,6 @@ constexpr uint64_t DIFFICULTY_BLOCKS_COUNT(bool before_hf16)
 
 #define HASH_OF_HASHES_STEP                     256
 
-#define VOTE_LIFETIME_HOURS                     2
-#define MINIMUM_CREDIT_HOURS                    2
-
 #define DEFAULT_TXPOOL_MAX_WEIGHT               648000000ull // 3 days at 300000, in bytes
 
 #define BULLETPROOF_MAX_OUTPUTS                 16

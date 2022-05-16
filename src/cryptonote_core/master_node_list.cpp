@@ -2127,7 +2127,7 @@ namespace master_nodes
     uint64_t cull_height = short_term_state_cull_height(hf_version, block_height);
     {
       auto end_it = m_transient.state_history.upper_bound(cull_height);
-      uint64_t vote_lifetime =   BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
+      uint64_t vote_lifetime =   BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
       for (auto it = m_transient.state_history.begin(); it != end_it; it++)
       {
         if (m_store_quorum_history)
@@ -2699,7 +2699,7 @@ namespace master_nodes
     // first (vote_lifetime + VOTE_OR_TX_VERIFY_HEIGHT_BUFFER) states we only
     // store their quorums, such that the following states have quorum
     // information preceeding it.
-    uint64_t vote_lifetime =   BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
+    uint64_t vote_lifetime =   BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
     uint64_t const max_short_term_height = short_term_state_cull_height(hf_version, (m_state.height - 1)) + vote_lifetime + VOTE_OR_TX_VERIFY_HEIGHT_BUFFER;
     for (auto it = m_transient.state_history.begin();
          it != m_transient.state_history.end() && it->height <= max_short_term_height;
@@ -3441,7 +3441,7 @@ namespace master_nodes
         auto hf_version = mn_list->m_blockchain.get_network_version();
         if (info.decommission_count <= info.is_decommissioned()) // Has never been decommissioned (or is currently in the first decommission), so add initial starting credit
 
-            info.recommission_credit = BLOCKS_EXPECTED_IN_HOURS(MINIMUM_CREDIT_HOURS,hf_version);
+            info.recommission_credit = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
         else
           info.recommission_credit = 0;
 
