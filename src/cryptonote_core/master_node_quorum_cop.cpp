@@ -246,7 +246,7 @@ namespace master_nodes
 
     uint64_t const height        = cryptonote::get_block_height(block);
     uint64_t const latest_height = std::max(m_core.get_current_blockchain_height(), m_core.get_target_blockchain_height());
-    uint64_t VOTE_LIFETIME                           = BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
+    uint64_t VOTE_LIFETIME                           = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
     if (latest_height < VOTE_LIFETIME)
       return;
 
@@ -412,7 +412,7 @@ namespace master_nodes
                     LOG_PRINT_L3("Decommissioned master node " << quorum->workers[node_index] << " has no remaining credit; voting to deregister");
                     vote_for_state = new_state::deregister; // Credit ran out!
                   } else {
-                    int64_t decommission_minimum    = BLOCKS_EXPECTED_IN_HOURS(MINIMUM_CREDIT_HOURS,hf_version);
+                    int64_t decommission_minimum    = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
                     if (credit >= decommission_minimum) {
                       vote_for_state = new_state::decommission;
                       LOG_PRINT_L3("Master node "
