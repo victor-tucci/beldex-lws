@@ -181,7 +181,7 @@ namespace master_nodes
               });
   }
 
-  /// Assign each mnode from mnode_pubkeys into the FILL_SWARM_LOWER_PERCENTILE percentile of swarms
+  /// Assign each mnode from mnode_pubkeys into the FILL_SWARM_LOWER_PERCENTILE or DECOMMISSIONED_REDISTRIBUTION_LOWER_PERCENTILE  percentile of swarms
   /// and run the excess/threshold logic after each assignment to ensure new swarms are generated when required.
   prod_static void assign_mnodes(const std::vector<crypto::public_key> &mnode_pubkeys, swarm_mnode_map_t &swarm_to_mnodes, std::mt19937_64 &mt, size_t percentile)
   {
@@ -276,7 +276,7 @@ namespace master_nodes
           remove_excess_mnode_from_swarm(excess_mnode, swarm_to_mnodes);
           /// Add public key to poor swarm
           poor_swarm_mnodes.push_back(excess_mnode.public_key);
-          LOG_PRINT_L2("Stolen 1 mnode from " << excess_mnode.public_key << " and donated to " << swarm.swarm_id);
+          LOG_PRINT_L2("Stolen 1 mnode " << excess_mnode.public_key << " from " << excess_mnode.swarm_id << " and donated to " << swarm.swarm_id);
         } while (poor_swarm_mnodes.size() < MIN_SWARM_SIZE);
 
         /// If there is not enough excess for the current swarm,

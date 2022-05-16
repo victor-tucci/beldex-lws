@@ -2975,7 +2975,7 @@ namespace cryptonote { namespace rpc {
     std::vector<std::string> args;
 
     uint64_t const curr_height   = m_core.get_current_blockchain_height();
-    uint64_t staking_requirement = master_nodes::get_staking_requirement(nettype(), curr_height);
+    uint64_t staking_requirement = master_nodes::get_staking_requirement( curr_height);
 
     {
       uint64_t portions_cut;
@@ -3304,7 +3304,7 @@ namespace cryptonote { namespace rpc {
     PERF_TIMER(on_get_staking_requirement);
     res.height = req.height > 0 ? req.height : m_core.get_current_blockchain_height();
 
-    res.staking_requirement = master_nodes::get_staking_requirement(nettype(), res.height);
+    res.staking_requirement = master_nodes::get_staking_requirement(res.height);
     res.status = STATUS_OK;
     return res;
   }

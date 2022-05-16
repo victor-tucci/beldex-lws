@@ -106,7 +106,7 @@ namespace master_nodes
     if (worker_index >= quorum.workers.size())
     {
       if (vvc) vvc->m_worker_index_out_of_bounds = true;
-      LOG_PRINT_L1("Quorum worker index in was out of bounds: " << worker_index << ", expected to be in range of: [0, " << quorum.workers.size() << ")");
+      LOG_PRINT_L1("Quorum worker index was out of bounds: " << worker_index << ", expected to be in range of: [0, " << quorum.workers.size() << ")");
       return false;
     }
     return true;
