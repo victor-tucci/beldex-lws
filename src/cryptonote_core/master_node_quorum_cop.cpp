@@ -625,8 +625,12 @@ namespace master_nodes
       }
     }
     else
+    {
       LOG_PRINT_L1("Failed to add state change to tx extra for height: "
-          << vote.block_height << " and master node: " << vote.state_change.worker_index);
+                   << vote.block_height << " and master node: " << vote.state_change.worker_index);
+         return false;
+    }
+
     LOG_PRINT_L3("handle_obligations_vote returned true");
     return true;
 
