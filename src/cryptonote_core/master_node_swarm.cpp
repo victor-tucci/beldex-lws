@@ -67,7 +67,7 @@ namespace master_nodes
                                           swarm_to_mnodes.end(),
                                           size_t(0),
                                           [](size_t result, const swarm_mnode_map_t::value_type &pair) {
-                                            const ssize_t margin = pair.second.size() - EXCESS_BASE;
+                                            const ssize_t margin = pair.second.size() - MIN_SWARM_SIZE;
                                             return result + std::max(margin, ssize_t(0));
                                           });
     LOG_PRINT_L2("Calculated excess: " << excess);
@@ -143,7 +143,7 @@ namespace master_nodes
       while (new_swarm_mnodes.size() < NEW_SWARM_SIZE)
       {
         size_t excess;
-        get_excess_pool(EXCESS_BASE, swarm_to_mnodes, pool_mnodes, excess);
+        get_excess_pool(MIN_SWARM_SIZE, swarm_to_mnodes, pool_mnodes, excess);
         if (pool_mnodes.size() == 0)
         {
           MERROR("Error while getting excess pool for new swarm creation");

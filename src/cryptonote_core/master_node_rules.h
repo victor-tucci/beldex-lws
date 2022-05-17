@@ -171,7 +171,7 @@ namespace master_nodes {
   constexpr size_t   MIN_SWARM_SIZE                   = 5;
   constexpr size_t   IDEAL_SWARM_MARGIN               = 2;
   constexpr size_t   IDEAL_SWARM_SIZE                 = MIN_SWARM_SIZE + IDEAL_SWARM_MARGIN;
-  constexpr size_t   EXCESS_BASE                      = MIN_SWARM_SIZE;
+  // constexpr size_t   EXCESS_BASE                      = MIN_SWARM_SIZE;
   constexpr size_t   NEW_SWARM_SIZE                   = IDEAL_SWARM_SIZE;
   // The lower swarm percentile that will be randomly filled with new master nodes
   constexpr size_t   FILL_SWARM_LOWER_PERCENTILE      = 25;
