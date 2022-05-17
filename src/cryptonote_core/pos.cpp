@@ -1628,11 +1628,11 @@ round_state send_and_wait_for_signed_blocks(round_context &context, master_nodes
 
   auto const &quorum   = context.transient.signed_block.wait.data;
   bool const timed_out = POS::clock::now() >= stage.end_time;
-  bool const enough    = stage.bitset >= context.transient.wait_for_handshake_bitsets.best_bitset;
+  bool const all_received   = stage.bitset == context.transient.wait_for_handshake_bitsets.best_bitset;
 
-  if (timed_out || enough)
+  if (timed_out || all_received)
   {
-    if (!enforce_validator_participation_and_timeouts(context, stage, node_list, timed_out, enough))
+    if (!enforce_validator_participation_and_timeouts(context, stage, node_list, timed_out, all_received))
       return goto_preparing_for_next_round(context);
 
     // Select signatures randomly so we don't always just take the first N required signatures.
