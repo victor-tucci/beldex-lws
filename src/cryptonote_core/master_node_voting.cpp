@@ -453,7 +453,7 @@ namespace master_nodes
           result = false;
       }
 
-      if (vote.group > quorum_group::worker || vote.group < quorum_group::validator) {
+      if (!(vote.group == quorum_group::worker || vote.group == quorum_group::validator)) {
           vvc.m_incorrect_voting_group = true;
           result = false;
       }
