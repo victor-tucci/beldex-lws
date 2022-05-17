@@ -290,9 +290,9 @@ namespace master_nodes
     create_new_swarm_from_excess(swarm_to_mnodes, mersenne_twister);
 
     /// 4. If there is a swarm with less than MIN_SWARM_SIZE, decommission that swarm.
-    if (swarm_to_mnodes.size() > 1)
-    {
-      while (true)
+    // Ensure there is always 1 swarm.
+
+      while (swarm_to_mnodes.size() > 1)
       {
         auto it = std::find_if(swarm_to_mnodes.begin(),
                               swarm_to_mnodes.end(),
@@ -311,7 +311,6 @@ namespace master_nodes
         /// Assign mnodes to the 0 percentile, i.e. the smallest swarms
         assign_mnodes(decommissioned_mnodes, swarm_to_mnodes, mersenne_twister, DECOMMISSIONED_REDISTRIBUTION_LOWER_PERCENTILE);
       }
-    }
 
     /// print
     LOG_PRINT_L2("Swarm outputs:");
