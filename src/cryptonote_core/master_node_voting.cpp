@@ -214,6 +214,12 @@ namespace master_nodes
       if (!bounds_check_validator_index(quorum, vote.validator_index, &vvc))
         return bad_tx(tvc);
 
+      if(vote.validator_index > STATE_CHANGE_QUORUM_SIZE)
+      {
+        LOG_PRINT_L1("Vote validator index is out of scope");
+        return bad_tx(tvc);
+      }
+
       if (++validator_set[vote.validator_index] > 1)
       {
         vvc.m_duplicate_voters = true;
