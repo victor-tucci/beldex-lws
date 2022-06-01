@@ -2645,8 +2645,7 @@ skip:
   template<class t_core>
   bool t_cryptonote_protocol_handler<t_core>::relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg, cryptonote_connection_context& exclude_context)
   {
-
-    LOG_PRINT_L2("relay_transactions");
+    MTRACE("relay_transactions");
     for(auto& tx_blob : arg.txs)
       m_core.on_transaction_relayed(tx_blob);
 
