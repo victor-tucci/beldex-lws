@@ -131,6 +131,9 @@ namespace master_nodes
 
   private:
     void process_quorums(cryptonote::block const &block);
+    void quorum_checkpoint_handle(uint64_t const start_voting_from_height_,uint64_t const height,uint8_t const hf_version);
+    void handling_master_nodes_states(uint8_t const obligations_height_hf_version_,uint8_t const hf_version,std::shared_ptr<const master_nodes::quorum> quorum,int index_in_group,uint64_t const latest_height);
+    void handling_my_master_node_states(uint8_t const obligations_height_hf_version,uint8_t const hf_version,bool &tested_myself_once_per_block,std::chrono::seconds live_time);
     master_node_test_results check_master_node(uint8_t hf_version, const crypto::public_key &pubkey, const master_node_info &info) const;
 
     cryptonote::core& m_core;
