@@ -12,10 +12,10 @@
 namespace master_nodes {
 
 // TODO(beldex): Move to beldex_economy, this will also need access to beldex::exp2
-uint64_t get_staking_requirement(cryptonote::network_type m_nettype, uint64_t height)
+uint64_t get_staking_requirement(uint64_t height)
 {
   uint64_t result = COIN * 100000;
-  if(height>=56500) result = COIN * 10000;
+  if(height>=MODIFIED_STAKING_REQUIREMENT_HEIGHT) result = COIN * 10000;
   return result;
 }
 
@@ -52,7 +52,7 @@ crypto::hash generate_request_stake_unlock_hash(uint32_t nonce)
   return result;
 }
 
-uint64_t get_locked_key_image_unlock_height(cryptonote::network_type nettype, uint64_t node_register_height, uint64_t curr_height,uint8_t version)
+uint64_t get_locked_key_image_unlock_height(cryptonote::network_type nettype, uint64_t curr_height,uint8_t version)
 {
   uint64_t blocks_to_lock = staking_num_lock_blocks(nettype,version);
   uint64_t result         = curr_height + (blocks_to_lock / 2);

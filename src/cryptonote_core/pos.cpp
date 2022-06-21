@@ -249,7 +249,7 @@ std::bitset<sizeof(uint16_t) * 8> bitset_view16(uint16_t val)
 }
 
 //
-// NOTE: POS::message Utiliities
+// NOTE: POS::message Utilities
 //
 POS::message msg_init_from_context(round_context const &context)
 {
@@ -722,13 +722,13 @@ void POS::handle_message(void *quorumnet_state, POS::message const &msg)
     cryptonote::quorumnet_POS_relay_message_to_quorum(quorumnet_state, msg, context.prepare_for_round.quorum, context.prepare_for_round.participant == mn_type::producer);
 }
 
-// TODO(doyle): Update POS::perpare_for_round with this function after the hard fork and sanity check it on testnet.
+// TODO(doyle): Update POS::prepare_for_round with this function after the hard fork and sanity check it on testnet.
 bool POS::convert_time_to_round(POS::time_point const &time, POS::time_point const &r0_timestamp, uint8_t *round)
 {
   auto const time_since_round_started = time <= r0_timestamp ? std::chrono::seconds(0) : (time - r0_timestamp);
   size_t result_usize                 = time_since_round_started / master_nodes::POS_ROUND_TIME;
   if (round) *round = static_cast<uint8_t>(result_usize);
-  return result_usize <= 255;
+  return result_usize <= master_nodes::POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED;
 }
 
 bool POS::get_round_timings(cryptonote::Blockchain const &blockchain, uint64_t block_height, uint64_t prev_timestamp, POS::timings &times)
@@ -756,7 +756,7 @@ bool POS::get_round_timings(cryptonote::Blockchain const &blockchain, uint64_t b
   times.r0_timestamp = times.prev_timestamp + master_nodes::POS_ROUND_TIME;
 #endif
 
-  times.miner_fallback_timestamp = times.r0_timestamp + (master_nodes::POS_ROUND_TIME * 255);
+  times.miner_fallback_timestamp = times.r0_timestamp + (master_nodes::POS_ROUND_TIME * master_nodes::POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED);
   return true;
 }
 
@@ -910,7 +910,7 @@ Yes +-----[Block can not be added to blockchain]
       subsequent stage fails, except in the cases where POS can not proceed
       because of an insufficient Master Node network.
 
-    - If the next round to prepare for is >255, we disable POS and re-allow
+    - If the next round to prepare for is >POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED, we disable POS and re-allow
       PoW blocks to be added to the chain, the POS state machine resets and
       waits for the next block to arrive and re-evaluates if POS is possible
       again.
@@ -956,7 +956,7 @@ Yes +-----[Block can not be added to blockchain]
       random value and proceed to the next stage.
 
   Send And Wait For Random Value Hashes (Validator)
-    - On first invcation, send the hash of our random value prepared in the
+    - On first invocation, send the hash of our random value prepared in the
       'Wait For Block Template' stage, followed by waiting for the other random
       value hashes from validators.
 
@@ -964,7 +964,7 @@ Yes +-----[Block can not be added to blockchain]
       in the block, we revert to 'Prepare For Round'.
 
   Send And Wait For Random Value (Validator)
-    - On first invcation, send the random value prepared in the 'Wait For Block
+    - On first invocation, send the random value prepared in the 'Wait For Block
       Template' stage, followed by waiting for the other random values from
       validators.
 
@@ -972,7 +972,7 @@ Yes +-----[Block can not be added to blockchain]
       in the block, we revert to 'Prepare For Round'.
 
   Send And Wait For Signed Block (Validator)
-    - On first invcation, send our signature, signing the block template with
+    - On first invocation, send our signature, signing the block template with
       all the random values combined into 1 to other validators and await for
       the other signatures to arrive.
 
@@ -1112,7 +1112,7 @@ round_state prepare_for_round(round_context &context, master_nodes::master_node_
 
   if (context.prepare_for_round.queue_for_next_round)
   {
-    if (context.prepare_for_round.round >= 255)
+    if (context.prepare_for_round.round >= master_nodes::POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED)
     {
       // If the next round overflows, we consider the network stalled. Wait for
       // the next block and allow PoW to return.
@@ -1138,7 +1138,7 @@ round_state prepare_for_round(round_context &context, master_nodes::master_node_
     auto const time_since_block  = now <= context.wait_for_next_block.round_0_start_time ? std::chrono::seconds(0) : (now - context.wait_for_next_block.round_0_start_time);
     size_t round_usize           = time_since_block / master_nodes::POS_ROUND_TIME;
 
-    if (round_usize > 255) // Network stalled
+    if (round_usize > master_nodes::POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED) // Network stalled
     {
       MINFO(log_prefix(context) << "POS has timed out, reverting to accepting miner blocks only.");
       return goto_wait_for_next_block_and_clear_round_data(context);
@@ -1628,11 +1628,11 @@ round_state send_and_wait_for_signed_blocks(round_context &context, master_nodes
 
   auto const &quorum   = context.transient.signed_block.wait.data;
   bool const timed_out = POS::clock::now() >= stage.end_time;
-  bool const enough    = stage.bitset >= context.transient.wait_for_handshake_bitsets.best_bitset;
+  bool const all_received   = stage.bitset == context.transient.wait_for_handshake_bitsets.best_bitset;
 
-  if (timed_out || enough)
+  if (timed_out || all_received)
   {
-    if (!enforce_validator_participation_and_timeouts(context, stage, node_list, timed_out, enough))
+    if (!enforce_validator_participation_and_timeouts(context, stage, node_list, timed_out, all_received))
       return goto_preparing_for_next_round(context);
 
     // Select signatures randomly so we don't always just take the first N required signatures.
