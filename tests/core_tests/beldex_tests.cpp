@@ -2924,7 +2924,7 @@ bool beldex_master_nodes_test_swarms_basic::generate(std::vector<test_event_entr
   });
 
   std::vector<cryptonote::transaction> dereg_txs; /// deregister enough mnode to bring all 3 swarm to the min size
-  const size_t excess = TOTAL_SN_COUNT - 3 * master_nodes::EXCESS_BASE;
+  const size_t excess = TOTAL_SN_COUNT - 3 * master_nodes::MIN_SWARM_SIZE;
   master_nodes::quorum_manager top_quorum = gen.top_quorum();
   for (size_t i = 0; i < excess; ++i)
   {

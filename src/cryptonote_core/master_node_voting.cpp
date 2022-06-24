@@ -106,7 +106,7 @@ namespace master_nodes
     if (worker_index >= quorum.workers.size())
     {
       if (vvc) vvc->m_worker_index_out_of_bounds = true;
-      LOG_PRINT_L1("Quorum worker index in was out of bounds: " << worker_index << ", expected to be in range of: [0, " << quorum.workers.size() << ")");
+      LOG_PRINT_L1("Quorum worker index was out of bounds: " << worker_index << ", expected to be in range of: [0, " << quorum.workers.size() << ")");
       return false;
     }
     return true;
@@ -213,6 +213,12 @@ namespace master_nodes
 
       if (!bounds_check_validator_index(quorum, vote.validator_index, &vvc))
         return bad_tx(tvc);
+
+      if(vote.validator_index > STATE_CHANGE_QUORUM_SIZE)
+      {
+        LOG_PRINT_L1("Vote validator index is out of scope");
+        return bad_tx(tvc);
+      }
 
       if (++validator_set[vote.validator_index] > 1)
       {
@@ -420,7 +426,7 @@ namespace master_nodes
   {
     bool result           = true;
     bool height_in_buffer = false;
-    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
     if (latest_height > vote.block_height + vote_lifetime)
     {
       height_in_buffer = latest_height <= vote.block_height + (vote_lifetime + VOTE_OR_TX_VERIFY_HEIGHT_BUFFER);
@@ -453,7 +459,7 @@ namespace master_nodes
           result = false;
       }
 
-      if (vote.group > quorum_group::worker || vote.group < quorum_group::validator) {
+      if (!(vote.group == quorum_group::worker || vote.group == quorum_group::validator)) {
           vvc.m_incorrect_voting_group = true;
           result = false;
       }
@@ -599,7 +605,7 @@ namespace master_nodes
 #else
     constexpr uint64_t TIME_BETWEEN_RELAY = 60 * 2;
 #endif
-    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
     const uint64_t max_last_sent = static_cast<uint64_t>(time(nullptr)) - TIME_BETWEEN_RELAY;
     const uint64_t min_height = height > vote_lifetime ? height - vote_lifetime : 0;
 
@@ -688,7 +694,7 @@ namespace master_nodes
   void voting_pool::remove_expired_votes(uint64_t height,uint8_t hf_version)
   {
     std::unique_lock lock{m_lock};
-    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    uint64_t vote_lifetime = BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
     uint64_t min_height = (height < vote_lifetime) ? 0 : height - vote_lifetime;
     cull_votes(m_obligations_pool, min_height, height);
     cull_votes(m_checkpoint_pool, min_height, height);

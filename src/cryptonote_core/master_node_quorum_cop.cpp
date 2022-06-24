@@ -74,7 +74,7 @@ namespace master_nodes
     m_last_checkpointed_height = 0;
   }
 
-  // Perform master node tests -- this returns true is the server node is in a good state, that is,
+  // Perform master node tests -- this returns true if the server node is in a good state, that is,
   // has submitted uptime proofs, participated in required quorums, etc.
   master_node_test_results quorum_cop::check_master_node(uint8_t hf_version, const crypto::public_key &pubkey, const master_node_info &info) const
   {
@@ -194,7 +194,6 @@ namespace master_nodes
       if (!by_pop_blocks)
       {
         LOG_ERROR("The blockchain was detached to height: " << height << ", but quorum cop has already processed votes for obligations up to " << m_obligations_height);
-        LOG_ERROR("This implies a reorg occured that was over " << REORG_SAFETY_BUFFER_BLOCKS << ". This should rarely happen! Please report this to the devs.");
       }
       m_obligations_height = height;
     }
@@ -432,7 +431,7 @@ namespace master_nodes
 
     uint64_t const height        = cryptonote::get_block_height(block);
     uint64_t const latest_height = std::max(m_core.get_current_blockchain_height(), m_core.get_target_blockchain_height());
-    uint64_t VOTE_LIFETIME                           = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    uint64_t VOTE_LIFETIME                           = BLOCKS_EXPECTED_IN_HOURS(VOTE_LIFETIME_HOURS,hf_version);
     if (latest_height < VOTE_LIFETIME)
       return;
 
@@ -646,14 +645,18 @@ namespace master_nodes
       }
     }
     else
+    {
       LOG_PRINT_L1("Failed to add state change to tx extra for height: "
-          << vote.block_height << " and master node: " << vote.state_change.worker_index);
+                   << vote.block_height << " and master node: " << vote.state_change.worker_index);
+         return false;
+    }
+
     LOG_PRINT_L3("handle_obligations_vote returned true");
     return true;
 
   }
 
-  static bool handle_checkpoint_vote(cryptonote::core& core, const quorum_vote_t& vote, const std::vector<pool_vote_entry>& votes, const quorum& quorum)
+  static bool handle_checkpoint_vote(cryptonote::core& core, const quorum_vote_t& vote, const std::vector<pool_vote_entry>& votes)
   {
     if (votes.size() < CHECKPOINT_MIN_VOTES)
     {
@@ -765,7 +768,7 @@ namespace master_nodes
         break;
 
       case quorum_type::checkpointing:
-        result &= handle_checkpoint_vote(m_core, vote, votes, *quorum);
+        result &= handle_checkpoint_vote(m_core, vote, votes);
         break;
     }
     return result;
@@ -791,9 +794,7 @@ namespace master_nodes
 
 
     if (blocks_up > 0) {
-
-        int64_t decommission_credit_per_day = BLOCKS_EXPECTED_IN_HOURS(24,hf_version) / 30;
-        credit += blocks_up * decommission_credit_per_day / BLOCKS_EXPECTED_IN_HOURS(24,hf_version);
+        credit += blocks_up / BLOCKS_PER_CREDIT_EARNED;
     }
 
 
