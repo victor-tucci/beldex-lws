@@ -6220,9 +6220,9 @@ struct master_node_proof_serialized : master_node_proof_serialized_old {
       storage_server_version{native_to_little_container(info.proof->storage_server_version)},
       belnet_version{native_to_little_container(info.proof->belnet_version)}
   {}
-  std::array<uint16_t, 3> storage_server_version;
-  std::array<uint16_t, 3> belnet_version;
-  char _padding[4];
+  std::array<uint16_t, 3> storage_server_version{};
+  std::array<uint16_t, 3> belnet_version{};
+  char _padding[4]{};
 
   void update(master_nodes::proof_info& info) const {
     if (!info.proof) info.proof = std::unique_ptr<uptime_proof::Proof>(new uptime_proof::Proof());

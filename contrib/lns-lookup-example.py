@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Example script using Python to query and decode and decrypt a .beldex address or HF16+ Bchat address
+# Example script using Python to query and decode and decrypt a .bdx address or HF16+ Bchat address
 
 import requests
 import nacl.hash
@@ -8,10 +8,10 @@ import nacl.secret
 from base64 import b64encode, b32encode
 import sys
 
-name = "victor.beldex"
+name = "victor.bdx"
 type = 2 # 2 == belnet, 0 == bchat
 
-# Calculate the blake2b hash of the lower-case full name (including the .beldex):
+# Calculate the blake2b hash of the lower-case full name (including the .bdx):
 name_hash = nacl.hash.blake2b(name.lower().encode(), encoder=nacl.encoding.RawEncoder)
 
 # Encode name_hash in base64.  (The RPC call below will also accept the value as hex, if easier, but
@@ -62,7 +62,7 @@ val = val.translate(str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", "ybndrfg8e
 # Base32 is also padded with '=', which isn't used in z-base-32:
 val = val.rstrip('=')
 
-# Finally slap ".beldex" on the end:
-val += ".beldex"
+# Finally slap ".bdx" on the end:
+val += ".bdx"
 
 print("Result: {}".format(val))

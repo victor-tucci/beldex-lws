@@ -30,8 +30,8 @@ namespace bns
 constexpr size_t WALLET_NAME_MAX                  = 64;
 constexpr size_t WALLET_ACCOUNT_BINARY_LENGTH_INC_PAYMENT_ID     = 73;  // Wallet will encrypt an identifier (1 byte) a public spend and view key (2x 32 bytes) = 65 bytes plus an additional item for payment id (8 bytes) if necessary. The identifier 0 -> No Subaddress or Payment ID, 1 -> Has Subaddress, 2-> Has Payment ID
 constexpr size_t WALLET_ACCOUNT_BINARY_LENGTH_NO_PAYMENT_ID     = 65;
-constexpr size_t BELNET_DOMAIN_NAME_MAX          = 63 + 4; // DNS components name must be at most 63 (+ 5 for .beldex); this limit applies if there is at least one hyphen (and thus includes punycode)
-constexpr size_t BELNET_DOMAIN_NAME_MAX_NOHYPHEN = 32 + 4; // If the name does not contain a - then we restrict it to 32 characters so that it cannot be (and is obviously not) an encoded .beldex address (52 characters)
+constexpr size_t BELNET_DOMAIN_NAME_MAX          = 63 + 4; // DNS components name must be at most 63 (+ 4 for .bdx); this limit applies if there is at least one hyphen (and thus includes punycode)
+constexpr size_t BELNET_DOMAIN_NAME_MAX_NOHYPHEN = 32 + 4; // If the name does not contain a - then we restrict it to 32 characters so that it cannot be (and is obviously not) an encoded .bdx address (52 characters)
 constexpr size_t BELNET_ADDRESS_BINARY_LENGTH    = sizeof(crypto::ed25519_public_key);
 constexpr size_t BCHAT_DISPLAY_NAME_MAX         = 64;
 constexpr size_t BCHAT_PUBLIC_KEY_BINARY_LENGTH = 1 + sizeof(crypto::ed25519_public_key); // Bchat keys at prefixed with 0xbd + ed25519 key

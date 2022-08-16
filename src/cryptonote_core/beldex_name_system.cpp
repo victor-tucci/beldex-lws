@@ -109,7 +109,7 @@ std::string bns::mapping_value::to_readable_value(cryptonote::network_type netty
   std::string result;
   if (is_belnet_type(type))
   {
-    result = oxenmq::to_base32z(to_view()) + ".beldex";
+    result = oxenmq::to_base32z(to_view()) + ".bdx";
   } else if (type == bns::mapping_type::wallet) {
     std::optional<cryptonote::address_parse_info> addr = get_wallet_address_info();
     if(addr)
@@ -781,34 +781,34 @@ bool validate_bns_name(mapping_type type, std::string name, std::string *reason)
   if (is_belnet)
   {
     // BELNET
-    // Domain has to start with an alphanumeric, and can have (alphanumeric or hyphens) in between, the character before the suffix <char>'.beldex' must be alphanumeric followed by the suffix '.beldex'
+    // Domain has to start with an alphanumeric, and can have (alphanumeric or hyphens) in between, the character before the suffix <char>'.bdx' must be alphanumeric followed by the suffix '.bdx'
     // It's *approximately* this regex, but there are some extra restrictions below
-    // ^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.beldex$
+    // ^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.bdx$
 
     // Reserved names:
-    // - localhost.beldex has special meaning within belnet (it is always a CNAME to the local
+    // - localhost.bdx has special meaning within belnet (it is always a CNAME to the local
     //   address)
-    // - beldex.beldex and mnode.beldex are prohibited in case someone added .beldex or .mnode as search
-    //   domains (in which case the user looking up "foo.beldex" would try end up trying to resolve
-    //   "foo.beldex.beldex").
-    for (auto& reserved : {"localhost.beldex"sv, "beldex.beldex"sv, "mnode.beldex"sv})
+    // - beldex.bdx and mnode.bdx are prohibited in case someone added .bdx or .mnode as search
+    //   domains (in which case the user looking up "foo.bdx" would try end up trying to resolve
+    //   "foo.bdx.bdx").
+    for (auto& reserved : {"localhost.bdx"sv, "beldex.bdx"sv, "mnode.bdx"sv})
       if (check_condition(name == reserved, reason, "BNS type=", type, ", specifies mapping from name->value using protocol reserved name=", name))
         return false;
 
-    auto constexpr SHORTEST_DOMAIN = "a.beldex"sv;
+    auto constexpr SHORTEST_DOMAIN = "a.bdx"sv;
     if (check_condition(name.size() < SHORTEST_DOMAIN.size(), reason, "BNS type=", type, ", specifies mapping from name->value where the name is shorter than the shortest possible name=", SHORTEST_DOMAIN, ", given name=", name))
       return false;
 
-    // Must end with .beldex
-    auto constexpr SUFFIX = ".beldex"sv;
-    if (check_condition(!tools::ends_with(name_view, SUFFIX), reason, "BNS type=", type, ", specifies mapping from name->value where the name does not end with the domain .beldex, name=", name))
+    // Must end with .bdx
+    auto constexpr SUFFIX = ".bdx"sv;
+    if (check_condition(!tools::ends_with(name_view, SUFFIX), reason, "BNS type=", type, ", specifies mapping from name->value where the name does not end with the domain .bdx, name=", name))
       return false;
 
     name_view.remove_suffix(SUFFIX.size());
 
     // All domains containing '--' as 3rd/4th letter are reserved except for xn-- punycode domains
     if (check_condition(name_view.size() >= 4 && name_view.substr(2, 2) == "--"sv && !tools::starts_with(name_view, "xn--"sv),
-          reason, "BNS type=", type, ", specifies reserved name `?\?--*.beldex': ", name))
+          reason, "BNS type=", type, ", specifies reserved name `?\?--*.bdx': ", name))
       return false;
 
     // Must start with alphanumeric
@@ -818,8 +818,8 @@ bool validate_bns_name(mapping_type type, std::string name, std::string *reason)
     name_view.remove_prefix(1);
 
     if (!name_view.empty()) {
-      // Character preceding .beldex must be alphanumeric
-      if (check_condition(!char_is_alphanum(name_view.back()), reason, "BNS type=", type ,", specifies mapping from name->value where the character preceding the .beldex is not alphanumeric, char=", name_view.back(), ", name=", name))
+      // Character preceding .bdx must be alphanumeric
+      if (check_condition(!char_is_alphanum(name_view.back()), reason, "BNS type=", type ,", specifies mapping from name->value where the character preceding the .bdx is not alphanumeric, char=", name_view.back(), ", name=", name))
         return false;
       name_view.remove_suffix(1);
     }
@@ -950,7 +950,7 @@ bool mapping_value::validate(cryptonote::network_type nettype, mapping_type type
     // We need a 52 char base32z string that decodes to a 32-byte value, which really means we need
     // 51 base32z chars (=255 bits) followed by a 1-bit value ('y'=0, or 'o'=0b10000); anything else
     // in the last spot isn't a valid belnet address.
-    if (check_condition(value.size() != 56 || !tools::ends_with(value, ".beldex") || !oxenmq::is_base32z(value.substr(0, 52)) || !(value[51] == 'y' || value[51] == 'o'),
+    if (check_condition(value.size() != 56 || !tools::ends_with(value, ".bdx") || !oxenmq::is_base32z(value.substr(0, 52)) || !(value[51] == 'y' || value[51] == 'o'),
                 reason, "'", value, "' is not a valid belnet address"))
       return false;
 

@@ -1123,7 +1123,7 @@ bool beldex_name_system_expiration::generate(std::vector<test_event_entry> &even
        mapping_type     <= bns::mapping_type::belnet_10years;
        mapping_type      = static_cast<bns::mapping_type>(static_cast<uint16_t>(mapping_type) + 1))
   {
-    std::string const name     = "mydomain.beldex";
+    std::string const name     = "mydomain.bdx";
     if (bns::mapping_type_allowed(gen.hardfork(), mapping_type))
     {
       cryptonote::transaction tx = gen.create_and_add_beldex_name_system_tx(miner, gen.hardfork(), mapping_type, name, miner_key.belnet_value);
@@ -1220,9 +1220,9 @@ bool beldex_name_system_get_mappings_by_owner::generate(std::vector<test_event_e
   uint64_t bchat_height = gen.height();
 
   // NOTE: Register some Belnet names
-  std::string belnet_name1 = "Lorem.beldex";
+  std::string belnet_name1 = "Lorem.bdx";
   std::string belnet_name_hash1 = "GsM6OUk5E5D9keBIK2PlA4kjwiPe+/UB0nUurjKvFJQ=";
-  std::string belnet_name2 = "ipSum.beldex";
+  std::string belnet_name2 = "ipSum.bdx";
   std::string belnet_name_hash2 = "p8IYR3ZWr0KSU4ZPazYxTkwvXsm0dzq5dmour7VmIDY=";
   crypto::hash belnet_name1_txid = {}, belnet_name2_txid = {};
   if (bns::mapping_type_allowed(gen.hardfork(), bns::mapping_type::belnet))
@@ -1428,7 +1428,7 @@ bool beldex_name_system_handles_duplicate_in_bns_db::generate(std::vector<test_e
 
   bns_keys_t miner_key     = make_bns_keys(miner);
   bns_keys_t bob_key       = make_bns_keys(bob);
-  std::string bchat_name = "myfriendlydisplayname.beldex";
+  std::string bchat_name = "myfriendlydisplayname.bdx";
   std::string belnet_name = bchat_name;
   auto custom_type         = static_cast<bns::mapping_type>(3928);
   crypto::hash bchat_tx_hash = {}, belnet_tx_hash = {};
@@ -1506,7 +1506,7 @@ bool beldex_name_system_handles_duplicate_in_tx_pool::generate(std::vector<test_
   }
 
   bns_keys_t bob_key       = make_bns_keys(bob);
-  std::string bchat_name = "myfriendlydisplayname.beldex";
+  std::string bchat_name = "myfriendlydisplayname.bdx";
 
   auto custom_type = static_cast<bns::mapping_type>(3928);
   {
@@ -1674,7 +1674,7 @@ bool beldex_name_system_large_reorg::generate(std::vector<test_event_entry> &eve
 
   // NOTE: Generate the first round of BNS transactions belonging to miner
   uint64_t first_ons_height                 = 0;
-  std::string const belnet_name1           = "website.beldex";
+  std::string const belnet_name1           = "website.bdx";
   std::string const wallet_name1            = "MyWallet";
   std::string const bchat_name1           = "I-Like-beldex";
   crypto::hash bchat_tx_hash1 = {}, wallet_tx_hash1 = {}, belnet_tx_hash1 = {};
@@ -1881,7 +1881,7 @@ bool beldex_name_system_name_renewal::generate(std::vector<test_event_entry> &ev
   }
 
   bns_keys_t miner_key = make_bns_keys(miner);
-  std::string const name    = "mydomain.beldex";
+  std::string const name    = "mydomain.bdx";
   cryptonote::transaction tx = gen.create_and_add_beldex_name_system_tx(miner, gen.hardfork(), bns::mapping_type::belnet, name, miner_key.belnet_value);
   gen.create_and_add_next_block({tx});
   crypto::hash prev_txid = get_transaction_hash(tx);
@@ -1999,7 +1999,7 @@ bool beldex_name_system_name_value_max_lengths::generate(std::vector<test_event_
   if (bns::mapping_type_allowed(gen.hardfork(), bns::mapping_type::belnet))
   {
     std::string name(bns::BELNET_DOMAIN_NAME_MAX, 'a');
-    name.replace(name.size() - 6, 5, ".beldex");
+    name.replace(name.size() - 6, 5, ".bdx");
 
     data.type            = bns::mapping_type::belnet;
     data.name_hash       = bns::name_to_hash(name);
@@ -2031,7 +2031,7 @@ bool beldex_name_system_update_mapping_after_expiry_fails::generate(std::vector<
   bns_keys_t miner_key = make_bns_keys(miner);
   if (bns::mapping_type_allowed(gen.hardfork(), bns::mapping_type::belnet))
   {
-    std::string const name     = "mydomain.beldex";
+    std::string const name     = "mydomain.bdx";
     cryptonote::transaction tx = gen.create_and_add_beldex_name_system_tx(miner, gen.hardfork(), bns::mapping_type::belnet, name, miner_key.belnet_value);
     crypto::hash tx_hash = cryptonote::get_transaction_hash(tx);
     gen.create_and_add_next_block({tx});
@@ -2542,7 +2542,7 @@ bool beldex_name_system_wrong_burn::generate(std::vector<test_event_entry> &even
         else if (type == bns::mapping_type::belnet)
         {
           value = ons_keys.belnet_value;
-          name  = "myfriendlybelnetname.beldex";
+          name  = "myfriendlybelnetname.bdx";
         }
         else
             assert("Unhandled type enum" == nullptr);

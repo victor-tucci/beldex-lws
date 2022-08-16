@@ -6464,9 +6464,9 @@ static std::optional<bns::mapping_type> guess_bns_type(tools::wallet2& wallet, s
 {
   if (typestr.empty())
   {
-    if (tools::ends_with(name, ".beldex") && (tools::ends_with(value, ".beldex") || value.empty()))
+    if (tools::ends_with(name, ".bdx") && (tools::ends_with(value, ".bdx") || value.empty()))
       return bns::mapping_type::belnet;
-    if (!tools::ends_with(name, ".beldex") && tools::starts_with(value, "bd") && value.length() == 2*bns::BCHAT_PUBLIC_KEY_BINARY_LENGTH)
+    if (!tools::ends_with(name, ".bdx") && tools::starts_with(value, "bd") && value.length() == 2*bns::BCHAT_PUBLIC_KEY_BINARY_LENGTH)
       return bns::mapping_type::bchat;
     if (cryptonote::is_valid_address(std::string{value}, wallet.nettype()))
       return bns::mapping_type::wallet;
