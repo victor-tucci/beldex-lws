@@ -176,11 +176,11 @@ namespace master_nodes
         bool unreachable_for(std::chrono::seconds threshold, const std::chrono::steady_clock::time_point& now = std::chrono::steady_clock::now()) const;
 
     };
-    reachable_stats ss_reachable;
-    reachable_stats belnet_reachable;
+    reachable_stats ss_reachable{};
+    reachable_stats belnet_reachable{};
 
     // Unlike all of the above (except for timestamp), these values *do* get serialized
-    std::unique_ptr<uptime_proof::Proof> proof;
+    std::unique_ptr<uptime_proof::Proof> proof{};
 
     // Derived from pubkey_ed25519, not serialized
     crypto::x25519_public_key pubkey_x25519 = crypto::x25519_public_key::null();
