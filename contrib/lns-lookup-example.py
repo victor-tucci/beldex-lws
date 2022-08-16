@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Example script using Python to query and decode and decrypt a .beldex address or HF16+ Session address
+# Example script using Python to query and decode and decrypt a .beldex address or HF16+ Bchat address
 
 import requests
 import nacl.hash
@@ -8,8 +8,8 @@ import nacl.secret
 from base64 import b64encode, b32encode
 import sys
 
-name = "Jason.beldex"
-type = 2 # 2 == belnet, 0 == session
+name = "victor.beldex"
+type = 2 # 2 == belnet, 0 == bchat
 
 # Calculate the blake2b hash of the lower-case full name (including the .beldex):
 name_hash = nacl.hash.blake2b(name.lower().encode(), encoder=nacl.encoding.RawEncoder)
@@ -31,8 +31,8 @@ if 'result' in r:
 else:
     raise RuntimeError("BNS request failed: didn't get any result")
 
-# For belnet addresses and HF16+ session addresses we'll always have an encrypted value and an
-# encryption nonce.  (For HF15 Session addresses the nonce can be missing, in which case the
+# For belnet addresses and HF16+ bchat addresses we'll always have an encrypted value and an
+# encryption nonce.  (For HF15 Bchat addresses the nonce can be missing, in which case the
 # encryption involves a much more expensive argon2-based calculation; most external code isn't
 # expected to support them and existing registration owners should submit an update after HF16 to
 # re-store it with the newer encryption format).

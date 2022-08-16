@@ -594,7 +594,7 @@ namespace master_nodes
     //   once in the last 1h5min *or* SS stopped pinging it, perhaps because it restarted).
     //
     // Belnet works essentially the same, except that its concept of a "ping" is being able to
-    // successfully establish a session with the given remote belnet mnode.
+    // successfully establish a bchat with the given remote belnet mnode.
     //
     // We do all this by tracking three values:
     // - last_reachable

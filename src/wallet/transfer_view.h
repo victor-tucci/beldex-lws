@@ -59,7 +59,7 @@ inline const char *pay_type_string(pay_type type)
     case pay_type::out:          return "out";
     case pay_type::stake:        return "stake";
     case pay_type::miner:        return "miner";
-    case pay_type::bns:          return "ons";
+    case pay_type::bns:          return "bns";
     case pay_type::master_node: return "mnode";
     case pay_type::governance:   return "gov";
     default: assert(false);      return "xxxxx";
