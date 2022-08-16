@@ -36,6 +36,7 @@ public:
   cryptonote::NOTIFY_BTENCODED_UPTIME_PROOF::request generate_request() const;
 };
 
+bool operator==(const Proof& lhs, const Proof& rhs);
+bool operator!=(const Proof& lhs, const Proof& rhs);
+
 }
-bool operator==(const uptime_proof::Proof& lhs, const uptime_proof::Proof& rhs);
-bool operator!=(const uptime_proof::Proof& lhs, const uptime_proof::Proof& rhs);
