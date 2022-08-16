@@ -3465,7 +3465,7 @@ namespace {
     if (!bns::mapping_value::validate(m_wallet->nettype(), type, req.value, &value, &reason))
       throw wallet_rpc_error{error_code::BNS_BAD_VALUE, "Invalid BNS value '" + req.value + "': " + reason};
 
-    bool old_argon2 = type == bns::mapping_type::session && *hf_version < cryptonote::network_version_17_POS;
+    bool old_argon2 = type == bns::mapping_type::bchat && *hf_version < cryptonote::network_version_17_POS;
     if (!value.encrypt(req.name, nullptr, old_argon2))
       throw wallet_rpc_error{error_code::BNS_VALUE_ENCRYPT_FAILED, "Value encryption failure"};
 

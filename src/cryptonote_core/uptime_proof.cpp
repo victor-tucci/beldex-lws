@@ -138,9 +138,8 @@ cryptonote::NOTIFY_BTENCODED_UPTIME_PROOF::request Proof::generate_request() con
   return request;
 }
 
-}
 
-bool operator==(const uptime_proof::Proof& lhs, const uptime_proof::Proof& rhs)
+bool operator==(const Proof& lhs, const Proof& rhs)
 {
    bool result = true;
 
@@ -161,8 +160,9 @@ bool operator==(const uptime_proof::Proof& lhs, const uptime_proof::Proof& rhs)
    return result;
 }
 
-bool operator!=(const uptime_proof::Proof& lhs, const uptime_proof::Proof& rhs)
+bool operator!=(const Proof& lhs, const Proof& rhs)
 {
   return !(lhs == rhs);
 }
 
+}

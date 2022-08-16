@@ -82,7 +82,7 @@ namespace epee
       */
 
       // Extremely bizarrely, IPs are stored in little-endian order in epee, which is just plain
-      // wrong, but we have to deal with.  (Jason)
+      // wrong, but we have to deal with. (Beldex)
       if ((ip & 0xff) == 0x0a) // 10.0.0.0/8
         return true;
 

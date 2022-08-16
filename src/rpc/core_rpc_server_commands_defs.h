@@ -305,8 +305,8 @@ namespace rpc {
         std::optional<bool> buy;                 // Provided and true iff this is an BNS buy record
         std::optional<bool> update;              // Provided and true iff this is an BNS record update
         std::optional<bool> renew;               // Provided and true iff this is an BNS record renewal
-        std::string type;                        // The BNS request type.  For registrations: "belnet", "session", "wallet"; for a record update: "update"
-        std::optional<uint64_t> blocks;          // The registration length in blocks (only applies to belnet registrations; session/wallet registrations do not expire)
+        std::string type;                        // The BNS request type.  For registrations: "belnet", "bchat", "wallet"; for a record update: "update"
+        std::optional<uint64_t> blocks;          // The registration length in blocks (only applies to belnet registrations; bchat/wallet registrations do not expire)
         std::string name_hash;                   // The hashed name of the record being purchased/updated, in hex (the actual name is not provided on the blockchain).
         std::optional<std::string> prev_txid;    // For an update, this points at the txid of the previous bns update transaction.
         std::optional<std::string> value;        // The encrypted value of the record, in hex.  Note that this is encrypted using the actual name itself (*not* the hashed name).
@@ -641,7 +641,7 @@ namespace rpc {
       uint64_t block_weight_limit;          // Maximum allowed block weight.
       uint64_t block_size_median;           // Median block size of latest 100 blocks.
       uint64_t block_weight_median;         // Median block weight of latest 100 blocks.
-      std::array<int, 3> bns_counts;        // BNS registration counts, [session, wallet, belnet]
+      std::array<int, 3> bns_counts;        // BNS registration counts, [bchat, wallet, belnet]
       std::optional<bool> master_node;                    // Will be true if the node is running in --service-node mode.
       std::optional<uint64_t> start_time;                  // Start time of the daemon, as UNIX time.
       std::optional<uint64_t> last_storage_server_ping;    // Last ping time of the storage server (0 if never or not running as a service node)
@@ -2429,7 +2429,7 @@ namespace rpc {
 
   BELDEX_RPC_DOC_INTROSPECT
   // Get the name mapping for a Beldex Name Service entry. Beldex currently supports mappings
-  // for Session and Belnet.
+  // for Bchat and Belnet.
   struct BNS_NAMES_TO_OWNERS : PUBLIC
   {
     static constexpr auto names() { return NAMES("bns_names_to_owners", "lns_names_to_owners"); }
@@ -2439,7 +2439,7 @@ namespace rpc {
     struct request_entry
     {
       std::string name_hash; // The 32-byte BLAKE2b hash of the name to resolve to a public key via Beldex Name Service. The value must be provided either in hex (64 hex digits) or base64 (44 characters with padding, or 43 characters without).
-      std::vector<uint16_t> types; // If empty, query all types. Currently supported types are 0 (session) and 2 (belnet). In future updates more mapping types will be available.
+      std::vector<uint16_t> types; // If empty, query all types. Currently supported types are 0 (bchat) and 2 (belnet). In future updates more mapping types will be available.
 
       KV_MAP_SERIALIZABLE
     };
@@ -2455,7 +2455,7 @@ namespace rpc {
     struct response_entry
     {
       uint64_t entry_index;     // The index in request_entry's `entries` array that was resolved via Beldex Name Service.
-      bns::mapping_type type;   // The type of Beldex Name Service entry that the owner owns: currently supported values are 0 (session), 1 (wallet) and 2 (belnet)
+      bns::mapping_type type;   // The type of Beldex Name Service entry that the owner owns: currently supported values are 0 (bchat), 1 (wallet) and 2 (belnet)
       std::string name_hash;    // The hash of the name that was queried, in base64
       std::string owner;        // The public key that purchased the Beldex Name Service entry.
       std::optional<std::string> backup_owner; // The backup public key that the owner specified when purchasing the Beldex Name Service entry. Omitted if no backup owner.
@@ -2495,7 +2495,7 @@ namespace rpc {
     struct response_entry
     {
       uint64_t    request_index;   // (Deprecated) The index in request's `entries` array that was resolved via Beldex Name Service.
-      bns::mapping_type type;      // The category the Beldex Name Service entry belongs to; currently 0 for Session, 1 for Wallet and 2 for Belnet.
+      bns::mapping_type type;      // The category the Beldex Name Service entry belongs to; currently 0 for Bchat, 1 for Wallet and 2 for Belnet.
       std::string name_hash;       // The hash of the name that the owner purchased via Beldex Name Service in base64
       std::string owner;           // The backup public key specified by the owner that purchased the Beldex Name Service entry.
       std::optional<std::string> backup_owner; // The backup public key specified by the owner that purchased the Beldex Name Service entry. Omitted if no backup owner.
@@ -2541,7 +2541,7 @@ namespace rpc {
 
     struct request
     {
-      uint16_t type;         // The BNS type (mandatory); currently supported values are: 0 = session, 1 = wallet, 2 = belnet.
+      uint16_t type;         // The BNS type (mandatory); currently supported values are: 0 = bchat, 1 = wallet, 2 = belnet.
       std::string name_hash; // The 32-byte BLAKE2b hash of the name to look up, encoded as 64 hex digits or 44/43 base64 characters (with/without padding).
 
       KV_MAP_SERIALIZABLE

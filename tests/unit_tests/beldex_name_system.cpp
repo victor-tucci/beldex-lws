@@ -91,7 +91,7 @@ TEST(beldex_name_system, value_encrypt_and_decrypt)
   memset(&value.buffer[0], 'a', value.len);
 
   // The type here is not hugely important for decryption except that belnet (as opposed to
-  // session) doesn't fall back to argon2 decryption if decryption fails.
+  // bchat) doesn't fall back to argon2 decryption if decryption fails.
   constexpr auto type = bns::mapping_type::belnet;
 
   // Encryption and Decryption success
@@ -140,8 +140,8 @@ TEST(beldex_name_system, value_encrypt_and_decrypt_heavy)
     ASSERT_TRUE(mval.encrypt(name, nullptr, true));
     ASSERT_TRUE(mval_new.encrypt(name, nullptr, false));
     ASSERT_EQ(mval.len + 24, mval_new.len); // New value appends a 24-byte nonce
-    ASSERT_TRUE(mval.decrypt(name, bns::mapping_type::session));
-    ASSERT_TRUE(mval_new.decrypt(name, bns::mapping_type::session));
+    ASSERT_TRUE(mval.decrypt(name, bns::mapping_type::bchat));
+    ASSERT_TRUE(mval_new.decrypt(name, bns::mapping_type::bchat));
     ASSERT_TRUE(mval == value);
     ASSERT_TRUE(mval_new == value);
   }
