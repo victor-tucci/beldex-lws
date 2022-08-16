@@ -13,31 +13,31 @@ TEST(beldex_name_system, name_tests)
   };
 
   name_test const belnet_names[] = {
-      {"a.beldex", true},
-      {"domain.beldex", true},
-      {"xn--tda.beldex", true}, // ü
-      {"xn--Mnchen-Ost-9db.beldex", true}, // München-Ost
-      {"xn--fwg93vdaef749it128eiajklmnopqrstu7dwaxyz0a1a2a3a643qhok169a.beldex", true}, // ⸘🌻‽💩🤣♠♡♢♣🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂬🂭🂮🂱🂲🂳🂴🂵🂶🂷🂸🂹
-      {"abcdefghijklmnopqrstuvwxyz123456.beldex", true}, // Max length = 32 if no hyphen (so that it can't look like a raw address)
-      {"a-cdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0123456789a.beldex", true}, // Max length = 63 if there is at least one hyphen
+      {"a.bdx", true},
+      {"domain.bdx", true},
+      {"xn--tda.bdx", true}, // ü
+      {"xn--Mnchen-Ost-9db.bdx", true}, // München-Ost
+      {"xn--fwg93vdaef749it128eiajklmnopqrstu7dwaxyz0a1a2a3a643qhok169a.bdx", true}, // ⸘🌻‽💩🤣♠♡♢♣🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂬🂭🂮🂱🂲🂳🂴🂵🂶🂷🂸🂹
+      {"abcdefghijklmnopqrstuvwxyz123456.bdx", true}, // Max length = 32 if no hyphen (so that it can't look like a raw address)
+      {"a-cdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0123456789a.bdx", true}, // Max length = 63 if there is at least one hyphen
 
-      {"abc.domain.beldex", false},
+      {"abc.domain.bdx", false},
       {"a", false},
       {"a.loko", false},
-      {"a domain name.beldex", false},
-      {"-.beldex", false},
-      {"a_b.beldex", false},
-      {" a.beldex", false},
-      {"a.beldex ", false},
-      {" a.beldex ", false},
-      {"localhost.beldex", false},
+      {"a domain name.bdx", false},
+      {"-.bdx", false},
+      {"a_b.bdx", false},
+      {" a.bdx", false},
+      {"a.bdx ", false},
+      {" a.bdx ", false},
+      {"localhost.bdx", false},
       {"localhost", false},
-      {"beldex.beldex", false},
-      {"mnode.beldex", false},
-      {"abcdefghijklmnopqrstuvwxyz1234567.beldex", false}, // Too long (no hyphen)
-      {"a-cdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0123456789ab.beldex", false}, // Too long with hyphen
-      {"xn--fwg93vdaef749it128eiajklmnopqrstu7dwaxyz0a1a2a3a643qhok169ab.beldex", false}, // invalid (punycode and DNS name parts max at 63)
-      {"ab--xyz.beldex", false}, // Double-hyphen at chars 3&4 is reserved by DNS (currently only xn-- is used).
+      {"beldex.bdx", false},
+      {"mnode.bdx", false},
+      {"abcdefghijklmnopqrstuvwxyz1234567.bdx", false}, // Too long (no hyphen)
+      {"a-cdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0123456789ab.bdx", false}, // Too long with hyphen
+      {"xn--fwg93vdaef749it128eiajklmnopqrstu7dwaxyz0a1a2a3a643qhok169ab.bdx", false}, // invalid (punycode and DNS name parts max at 63)
+      {"ab--xyz.bdx", false}, // Double-hyphen at chars 3&4 is reserved by DNS (currently only xn-- is used).
   };
 
   name_test const session_wallet_names[] = {
