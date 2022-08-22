@@ -1740,7 +1740,7 @@ static void append_printable_master_node_list_entry(cryptonote::network_type net
     stream << indent2 << "Downtime Credits: " << entry.earned_downtime_blocks << " blocks"
       << " (about " << to_string_rounded(entry.earned_downtime_blocks / (double) BLOCKS_EXPECTED_IN_HOURS(1,hf_version), 2)  << " hours)";
 
-    int64_t decommission_minimum    = BLOCKS_EXPECTED_IN_HOURS(2,hf_version);
+    int64_t decommission_minimum    = BLOCKS_EXPECTED_IN_HOURS(MINIMUM_CREDIT_HOURS,hf_version);
     if (entry.earned_downtime_blocks < decommission_minimum)
       stream << " (Note: " << decommission_minimum << " blocks required to enable deregistration delay)";
   } else if (is_registered) {
@@ -2043,8 +2043,8 @@ bool rpc_command_executor::prepare_registration(bool force_registration)
   }
 
   const uint64_t staking_requirement =
-    std::max(master_nodes::get_staking_requirement(nettype, block_height),
-             master_nodes::get_staking_requirement(nettype, block_height + 30 * 24)); // allow 1 day
+    std::max(master_nodes::get_staking_requirement(block_height),
+             master_nodes::get_staking_requirement(block_height + 30 * 24)); // allow 1 day
 
   // anything less than DUST will be added to operator stake
   const uint64_t DUST = MAX_NUMBER_OF_CONTRIBUTORS;

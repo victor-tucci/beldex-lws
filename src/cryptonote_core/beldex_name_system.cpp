@@ -93,7 +93,7 @@ std::pair<std::basic_string_view<unsigned char>, std::basic_string_view<unsigned
   std::pair<std::basic_string_view<unsigned char>, std::basic_string_view<unsigned char>> result;
   auto& [head, tail] = result;
   head = {buffer.data(), len};
-  if ((type == mapping_type::session && len != SESSION_PUBLIC_KEY_BINARY_LENGTH + crypto_aead_xchacha20poly1305_ietf_ABYTES + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES)
+  if ((type == mapping_type::bchat && len != BCHAT_PUBLIC_KEY_BINARY_LENGTH + crypto_aead_xchacha20poly1305_ietf_ABYTES + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES)
       || len < crypto_aead_xchacha20poly1305_ietf_NPUBBYTES /* shouldn't occur, but just in case */)
     tail = {OLD_ENCRYPTION_NONCE, sizeof(OLD_ENCRYPTION_NONCE)};
   else
@@ -109,7 +109,7 @@ std::string bns::mapping_value::to_readable_value(cryptonote::network_type netty
   std::string result;
   if (is_belnet_type(type))
   {
-    result = oxenmq::to_base32z(to_view()) + ".beldex";
+    result = oxenmq::to_base32z(to_view()) + ".bdx";
   } else if (type == bns::mapping_type::wallet) {
     std::optional<cryptonote::address_parse_info> addr = get_wallet_address_info();
     if(addr)
@@ -432,7 +432,7 @@ bool sql_run_statement(bns_sql_type type, sql_compiled_statement& statement, voi
       {
         switch (type)
         {
-          default: MERROR("Unhandled ons type enum with value: " << (int)type << ", in: " << __func__); break;
+          default: MERROR("Unhandled bns type enum with value: " << (int)type << ", in: " << __func__); break;
 
           case bns_sql_type::internal_cmd: break;
           case bns_sql_type::get_owner:
@@ -613,7 +613,7 @@ std::vector<mapping_type> all_mapping_types(uint8_t hf_version) {
   std::vector<mapping_type> result;
   result.reserve(2);
   if (hf_version >= cryptonote::network_version_16_bns)
-    result.push_back(mapping_type::session);
+    result.push_back(mapping_type::bchat);
   if (hf_version >= cryptonote::network_version_17_POS)
     result.push_back(mapping_type::belnet);
   if (hf_version >= cryptonote::network_version_18)
@@ -757,7 +757,7 @@ bool validate_bns_name(mapping_type type, std::string name, std::string *reason)
     max_name_len = name.find('-') != std::string::npos
       ? BELNET_DOMAIN_NAME_MAX
       : BELNET_DOMAIN_NAME_MAX_NOHYPHEN;
-  else if (type == mapping_type::session) max_name_len = bns::SESSION_DISPLAY_NAME_MAX;
+  else if (type == mapping_type::bchat) max_name_len = bns::BCHAT_DISPLAY_NAME_MAX;
   else if (type == mapping_type::wallet)  max_name_len = bns::WALLET_NAME_MAX;
   else
   {
@@ -781,34 +781,34 @@ bool validate_bns_name(mapping_type type, std::string name, std::string *reason)
   if (is_belnet)
   {
     // BELNET
-    // Domain has to start with an alphanumeric, and can have (alphanumeric or hyphens) in between, the character before the suffix <char>'.beldex' must be alphanumeric followed by the suffix '.beldex'
+    // Domain has to start with an alphanumeric, and can have (alphanumeric or hyphens) in between, the character before the suffix <char>'.bdx' must be alphanumeric followed by the suffix '.bdx'
     // It's *approximately* this regex, but there are some extra restrictions below
-    // ^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.beldex$
+    // ^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.bdx$
 
     // Reserved names:
-    // - localhost.beldex has special meaning within belnet (it is always a CNAME to the local
+    // - localhost.bdx has special meaning within belnet (it is always a CNAME to the local
     //   address)
-    // - beldex.beldex and mnode.beldex are prohibited in case someone added .beldex or .mnode as search
-    //   domains (in which case the user looking up "foo.beldex" would try end up trying to resolve
-    //   "foo.beldex.beldex").
-    for (auto& reserved : {"localhost.beldex"sv, "beldex.beldex"sv, "mnode.beldex"sv})
+    // - beldex.bdx and mnode.bdx are prohibited in case someone added .bdx or .mnode as search
+    //   domains (in which case the user looking up "foo.bdx" would try end up trying to resolve
+    //   "foo.bdx.bdx").
+    for (auto& reserved : {"localhost.bdx"sv, "beldex.bdx"sv, "mnode.bdx"sv})
       if (check_condition(name == reserved, reason, "BNS type=", type, ", specifies mapping from name->value using protocol reserved name=", name))
         return false;
 
-    auto constexpr SHORTEST_DOMAIN = "a.beldex"sv;
+    auto constexpr SHORTEST_DOMAIN = "a.bdx"sv;
     if (check_condition(name.size() < SHORTEST_DOMAIN.size(), reason, "BNS type=", type, ", specifies mapping from name->value where the name is shorter than the shortest possible name=", SHORTEST_DOMAIN, ", given name=", name))
       return false;
 
-    // Must end with .beldex
-    auto constexpr SUFFIX = ".beldex"sv;
-    if (check_condition(!tools::ends_with(name_view, SUFFIX), reason, "BNS type=", type, ", specifies mapping from name->value where the name does not end with the domain .beldex, name=", name))
+    // Must end with .bdx
+    auto constexpr SUFFIX = ".bdx"sv;
+    if (check_condition(!tools::ends_with(name_view, SUFFIX), reason, "BNS type=", type, ", specifies mapping from name->value where the name does not end with the domain .bdx, name=", name))
       return false;
 
     name_view.remove_suffix(SUFFIX.size());
 
     // All domains containing '--' as 3rd/4th letter are reserved except for xn-- punycode domains
     if (check_condition(name_view.size() >= 4 && name_view.substr(2, 2) == "--"sv && !tools::starts_with(name_view, "xn--"sv),
-          reason, "BNS type=", type, ", specifies reserved name `?\?--*.beldex': ", name))
+          reason, "BNS type=", type, ", specifies reserved name `?\?--*.bdx': ", name))
       return false;
 
     // Must start with alphanumeric
@@ -818,8 +818,8 @@ bool validate_bns_name(mapping_type type, std::string name, std::string *reason)
     name_view.remove_prefix(1);
 
     if (!name_view.empty()) {
-      // Character preceding .beldex must be alphanumeric
-      if (check_condition(!char_is_alphanum(name_view.back()), reason, "BNS type=", type ,", specifies mapping from name->value where the character preceding the .beldex is not alphanumeric, char=", name_view.back(), ", name=", name))
+      // Character preceding .bdx must be alphanumeric
+      if (check_condition(!char_is_alphanum(name_view.back()), reason, "BNS type=", type ,", specifies mapping from name->value where the character preceding the .bdx is not alphanumeric, char=", name_view.back(), ", name=", name))
         return false;
       name_view.remove_suffix(1);
     }
@@ -829,9 +829,9 @@ bool validate_bns_name(mapping_type type, std::string name, std::string *reason)
           reason, "BNS type=", type, ", specifies mapping from name->value where the domain name contains more than the permitted alphanumeric or hyphen characters, name=", name))
       return false;
   }
-  else if (type == mapping_type::session || type == mapping_type::wallet)
+  else if (type == mapping_type::bchat || type == mapping_type::wallet)
   {
-    // SESSION & WALLET
+    // BCHAT & WALLET
     // Name has to start with a (alphanumeric or underscore), and can have (alphanumeric, hyphens or underscores) in between and must end with a (alphanumeric or underscore)
     // ^[a-z0-9_]([a-z0-9-_]*[a-z0-9_])?$
 
@@ -950,7 +950,7 @@ bool mapping_value::validate(cryptonote::network_type nettype, mapping_type type
     // We need a 52 char base32z string that decodes to a 32-byte value, which really means we need
     // 51 base32z chars (=255 bits) followed by a 1-bit value ('y'=0, or 'o'=0b10000); anything else
     // in the last spot isn't a valid belnet address.
-    if (check_condition(value.size() != 57 || !tools::ends_with(value, ".beldex") || !oxenmq::is_base32z(value.substr(0, 52)) || !(value[51] == 'y' || value[51] == 'o'),
+    if (check_condition(value.size() != 56 || !tools::ends_with(value, ".bdx") || !oxenmq::is_base32z(value.substr(0, 52)) || !(value[51] == 'y' || value[51] == 'o'),
                 reason, "'", value, "' is not a valid belnet address"))
       return false;
 
@@ -962,16 +962,16 @@ bool mapping_value::validate(cryptonote::network_type nettype, mapping_type type
   }
   else
   {
-    assert(type == mapping_type::session);
+    assert(type == mapping_type::bchat);
     // NOTE: Check value is hex of the right size
-    if (check_condition(value.size() != 2*SESSION_PUBLIC_KEY_BINARY_LENGTH, reason, "The value=", value, " is not the required ", 2*SESSION_PUBLIC_KEY_BINARY_LENGTH, "-character hex string session public key, length=", value.size()))
+    if (check_condition(value.size() != 2*BCHAT_PUBLIC_KEY_BINARY_LENGTH, reason, "The value=", value, " is not the required ", 2*BCHAT_PUBLIC_KEY_BINARY_LENGTH, "-character hex string bchat public key, length=", value.size()))
       return false;
 
     if (check_condition(!oxenmq::is_hex(value), reason, ", specifies name -> value mapping where the value is not a hex string given value="))
       return false;
 
-    // NOTE: Session public keys are 33 bytes, with the first byte being 0x05 and the remaining 32 being the public key.
-    if (check_condition(!tools::starts_with(value, "05"), reason, "BNS type=session, specifies mapping from name -> ed25519 key where the key is not prefixed with 05, given ed25519=", value))
+    // NOTE: Bchat public keys are 33 bytes, with the first byte being 0xbd and the remaining 32 being the public key.
+    if (check_condition(!tools::starts_with(value, "bd"), reason, "BNS type=bchat, specifies mapping from name -> ed25519 key where the key is not prefixed with bd, given ed25519=", value))
       return false;
 
     if (blob) // NOTE: Given blob, write the binary output
@@ -1001,9 +1001,9 @@ bool mapping_value::validate_encrypted(mapping_type type, std::string_view value
   {
     value_len = crypto_aead_xchacha20poly1305_ietf_ABYTES + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES; //Add the length in check_length
   }
-  else if (type == mapping_type::session)
+  else if (type == mapping_type::bchat)
   {
-    value_len += SESSION_PUBLIC_KEY_BINARY_LENGTH;
+    value_len += BCHAT_PUBLIC_KEY_BINARY_LENGTH;
 
 
     // Allow an HF15 argon2 encrypted value which doesn't contain a nonce:
@@ -1139,21 +1139,21 @@ static bool validate_against_previous_mapping(bns::name_system_db &bns_db, uint6
           "; TX: ", tx, "; ", bns_extra_string(bns_db.network_type(), bns_extra)))
         return false;
 
-    // If buying a new wallet name then the existing session name must not be active and vice versa
+    // If buying a new wallet name then the existing bchat name must not be active and vice versa
     // The owner of an existing name but different type is allowed to register but the owner and backup owners
     // of the new mapping must be from the same owners and backup owners of the previous mapping ie no
     // new addresses are allowed to be added as owner or backup owner.
     if (bns_extra.type == mapping_type::wallet)
     {
-      bns::mapping_record session_mapping = bns_db.get_mapping(mapping_type::session, name_hash);
-      if (check_condition(session_mapping.active(blockchain_height) && (!(session_mapping.owner == bns_extra.owner || session_mapping.backup_owner == bns_extra.owner) || !(!bns_extra.field_is_set(bns::extra_field::backup_owner) || session_mapping.backup_owner == bns_extra.backup_owner || session_mapping.owner == bns_extra.backup_owner)), reason,
-            "Cannot buy an BNS wallet name that has an already registered session name: name_hash=", mapping.name_hash, ", type=", mapping.type,
+      bns::mapping_record bchat_mapping = bns_db.get_mapping(mapping_type::bchat, name_hash);
+      if (check_condition(bchat_mapping.active(blockchain_height) && (!(bchat_mapping.owner == bns_extra.owner || bchat_mapping.backup_owner == bns_extra.owner) || !(!bns_extra.field_is_set(bns::extra_field::backup_owner) || bchat_mapping.backup_owner == bns_extra.backup_owner || bchat_mapping.owner == bns_extra.backup_owner)), reason,
+            "Cannot buy an BNS wallet name that has an already registered bchat name: name_hash=", mapping.name_hash, ", type=", mapping.type,
             "; TX: ", tx, "; ", bns_extra_string(bns_db.network_type(), bns_extra)))
           return false;
-    } else if (bns_extra.type == mapping_type::session) {
+    } else if (bns_extra.type == mapping_type::bchat) {
       bns::mapping_record wallet_mapping = bns_db.get_mapping(mapping_type::wallet, name_hash);
       if (check_condition(wallet_mapping.active(blockchain_height) && (!(wallet_mapping.owner == bns_extra.owner || wallet_mapping.backup_owner == bns_extra.owner) || !(!bns_extra.field_is_set(bns::extra_field::backup_owner) || wallet_mapping.backup_owner == bns_extra.backup_owner || wallet_mapping.owner == bns_extra.backup_owner)), reason,
-            "Cannot buy an BNS session name that has an already registered wallet name: name_hash=", mapping.name_hash, ", type=", mapping.type,
+            "Cannot buy an BNS bchat name that has an already registered wallet name: name_hash=", mapping.name_hash, ", type=", mapping.type,
             "; TX: ", tx, "; ", bns_extra_string(bns_db.network_type(), bns_extra)))
           return false;
     }
@@ -1286,8 +1286,8 @@ bool validate_mapping_type(std::string_view mapping_type_str, uint8_t hf_version
 {
   std::string mapping = tools::lowercase_ascii_string(mapping_type_str);
   std::optional<bns::mapping_type> mapping_type_;
-  if (txtype != bns_tx_type::renew && tools::string_iequal(mapping, "session"))
-    mapping_type_ = bns::mapping_type::session;
+  if (txtype != bns_tx_type::renew && tools::string_iequal(mapping, "bchat"))
+    mapping_type_ = bns::mapping_type::bchat;
   else if (hf_version >= cryptonote::network_version_17_POS)
   {
     if (tools::string_iequal(mapping, "belnet"))
@@ -1313,10 +1313,10 @@ bool validate_mapping_type(std::string_view mapping_type_str, uint8_t hf_version
   if (!mapping_type_)
   {
     if (reason) *reason = "Unsupported BNS type \"" + std::string{mapping_type_str} + "\"; supported " + (
-        txtype == bns_tx_type::update ? "update types are: session, belnet, wallet" :
+        txtype == bns_tx_type::update ? "update types are: bchat, belnet, wallet" :
         txtype == bns_tx_type::renew  ? "renew types are: belnet_1y, belnet_2y, belnet_5y, belnet_10y" :
-        txtype == bns_tx_type::buy    ? "buy types are session, belnet_1y, belnet_2y, belnet_5y, belnet_10y"
-                                      : "lookup types are session, belnet, wallet");
+        txtype == bns_tx_type::buy    ? "buy types are bchat, belnet_1y, belnet_2y, belnet_5y, belnet_10y"
+                                      : "lookup types are bchat, belnet, wallet");
     return false;
   }
 
@@ -1462,16 +1462,16 @@ bool mapping_value::decrypt(std::string_view name, mapping_type type, const cryp
 
   // Check for an old-style, argon2-based encryption, used before HF16.  (After HF16 we use a much
   // faster blake2b-hashed key, and a random nonce appended to the end.)
-  if (type == mapping_type::session && len == SESSION_PUBLIC_KEY_BINARY_LENGTH + crypto_secretbox_MACBYTES)
+  if (type == mapping_type::bchat && len == BCHAT_PUBLIC_KEY_BINARY_LENGTH + crypto_secretbox_MACBYTES)
   {
-    dec_length = SESSION_PUBLIC_KEY_BINARY_LENGTH;
+    dec_length = BCHAT_PUBLIC_KEY_BINARY_LENGTH;
     encrypted = !(name_to_encryption_key_argon2(name, skey) &&
         0 == crypto_secretbox_open_easy(dec_buffer.data(), buffer.data(), len, OLD_ENCRYPTION_NONCE, skey.data));
   }
   else
   {
     switch(type) {
-      case mapping_type::session: dec_length = SESSION_PUBLIC_KEY_BINARY_LENGTH; break;
+      case mapping_type::bchat: dec_length = BCHAT_PUBLIC_KEY_BINARY_LENGTH; break;
       case mapping_type::belnet: dec_length = BELNET_ADDRESS_BINARY_LENGTH; break;
       case mapping_type::wallet: //Wallet type has variable type, check performed in check_length
         if (auto plain_len = len - crypto_aead_xchacha20poly1305_ietf_ABYTES - crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
@@ -1907,8 +1907,8 @@ AND NOT EXISTS   (SELECT * FROM mappings WHERE owner.id = mappings.backup_owner_
     else
     {
       // Otherwise we've got something unrecoverable: a top_hash + top_height that are different
-      // from what we have in the blockchain, which means the ons db and blockchain are out of sync.
-      // This likely means something external changed the lmdb and/or the ons.db, and we can't
+      // from what we have in the blockchain, which means the bns db and blockchain are out of sync.
+      // This likely means something external changed the lmdb and/or the bns.db, and we can't
       // recover from it: so just drop and recreate the tables completely and rescan from scratch.
 
       char constexpr DROP_TABLE_SQL[] = "DROP TABLE IF EXISTS owner; DROP TABLE IF EXISTS settings; DROP TABLE IF EXISTS mappings";
@@ -2425,4 +2425,4 @@ settings_record name_system_db::get_settings()
   return result;
 }
 
-} // namespace ons
+} // namespace bns

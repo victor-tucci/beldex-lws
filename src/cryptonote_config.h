@@ -192,6 +192,9 @@ constexpr uint64_t DIFFICULTY_BLOCKS_COUNT(bool before_hf16)
 
 #define HASH_OF_HASHES_STEP                     256
 
+#define VOTE_LIFETIME_HOURS                     2
+#define MINIMUM_CREDIT_HOURS                    2
+
 #define DEFAULT_TXPOOL_MAX_WEIGHT               648000000ull // 3 days at 300000, in bytes
 
 #define BULLETPROOF_MAX_OUTPUTS                 16
@@ -250,8 +253,8 @@ namespace config
   inline constexpr auto UPTIME_PROOF_STARTUP_DELAY = 30s; // How long to wait after startup before broadcasting a proof
   inline constexpr auto UPTIME_PROOF_CHECK_INTERVAL = 30s; // How frequently to check whether we need to broadcast a proof
   inline constexpr auto UPTIME_PROOF_FREQUENCY = 1h; // How often to send proofs out to the network since the last proof we successfully sent.  (Approximately; this can be up to CHECK_INTERFACE/2 off in either direction).  The minimum accepted time between proofs is half of this.
-  inline constexpr auto UPTIME_PROOF_VALIDITY = 2h + 5min; // The maximum time that we consider an uptime proof to be valid (i.e. after this time since the last proof we consider the SN to be down)
-  inline constexpr auto REACHABLE_MAX_FAILURE_VALIDITY = 5min; // If we don't hear any SS ping/belnet session test failures for more than this long then we start considering the SN as passing for the purpose of obligation testing until we get another test result.  This should be somewhat larger than SS/belnet's max re-test backoff (2min).
+  inline constexpr auto UPTIME_PROOF_VALIDITY = 2h + 5min; // The maximum time that we consider an uptime proof to be valid (i.e. after this time since the last proof we consider the MN to be down)
+  inline constexpr auto REACHABLE_MAX_FAILURE_VALIDITY = 5min; // If we don't hear any SS ping/belnet bchat test failures for more than this long then we start considering the MN as passing for the purpose of obligation testing until we get another test result.  This should be somewhat larger than SS/belnet's max re-test backoff (2min).
   // Hash domain separators
   inline constexpr std::string_view HASH_KEY_BULLETPROOF_EXPONENT = "bulletproof"sv;
   inline constexpr std::string_view HASH_KEY_RINGDB = "ringdsb\0"sv;
@@ -504,3 +507,5 @@ namespace cryptonote
 constexpr uint64_t BLOCKS_EXPECTED_IN_HOURS(int hours, uint8_t hf_version) { return (1h / (hf_version>=cryptonote::network_version_17_POS?TARGET_BLOCK_TIME_V17:TARGET_BLOCK_TIME)) * hours; }
 constexpr uint64_t BLOCKS_EXPECTED_IN_DAYS(int days, uint8_t hf_version)   { return BLOCKS_EXPECTED_IN_HOURS(24,hf_version) * days; }
 constexpr uint64_t BLOCKS_EXPECTED_IN_YEARS(int years, uint8_t hf_version) { return BLOCKS_EXPECTED_IN_DAYS(365,hf_version) * years; }
+
+constexpr uint64_t BLOCKS_PER_CREDIT_EARNED = 30;

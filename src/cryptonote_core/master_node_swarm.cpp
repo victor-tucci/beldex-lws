@@ -67,7 +67,7 @@ namespace master_nodes
                                           swarm_to_mnodes.end(),
                                           size_t(0),
                                           [](size_t result, const swarm_mnode_map_t::value_type &pair) {
-                                            const ssize_t margin = pair.second.size() - EXCESS_BASE;
+                                            const ssize_t margin = pair.second.size() - MIN_SWARM_SIZE;
                                             return result + std::max(margin, ssize_t(0));
                                           });
     LOG_PRINT_L2("Calculated excess: " << excess);
@@ -143,7 +143,7 @@ namespace master_nodes
       while (new_swarm_mnodes.size() < NEW_SWARM_SIZE)
       {
         size_t excess;
-        get_excess_pool(EXCESS_BASE, swarm_to_mnodes, pool_mnodes, excess);
+        get_excess_pool(MIN_SWARM_SIZE, swarm_to_mnodes, pool_mnodes, excess);
         if (pool_mnodes.size() == 0)
         {
           MERROR("Error while getting excess pool for new swarm creation");
@@ -181,7 +181,7 @@ namespace master_nodes
               });
   }
 
-  /// Assign each mnode from mnode_pubkeys into the FILL_SWARM_LOWER_PERCENTILE percentile of swarms
+  /// Assign each mnode from mnode_pubkeys into the FILL_SWARM_LOWER_PERCENTILE or DECOMMISSIONED_REDISTRIBUTION_LOWER_PERCENTILE  percentile of swarms
   /// and run the excess/threshold logic after each assignment to ensure new swarms are generated when required.
   prod_static void assign_mnodes(const std::vector<crypto::public_key> &mnode_pubkeys, swarm_mnode_map_t &swarm_to_mnodes, std::mt19937_64 &mt, size_t percentile)
   {
@@ -276,7 +276,7 @@ namespace master_nodes
           remove_excess_mnode_from_swarm(excess_mnode, swarm_to_mnodes);
           /// Add public key to poor swarm
           poor_swarm_mnodes.push_back(excess_mnode.public_key);
-          LOG_PRINT_L2("Stolen 1 mnode from " << excess_mnode.public_key << " and donated to " << swarm.swarm_id);
+          LOG_PRINT_L2("Stolen 1 mnode " << excess_mnode.public_key << " from " << excess_mnode.swarm_id << " and donated to " << swarm.swarm_id);
         } while (poor_swarm_mnodes.size() < MIN_SWARM_SIZE);
 
         /// If there is not enough excess for the current swarm,
@@ -290,9 +290,9 @@ namespace master_nodes
     create_new_swarm_from_excess(swarm_to_mnodes, mersenne_twister);
 
     /// 4. If there is a swarm with less than MIN_SWARM_SIZE, decommission that swarm.
-    if (swarm_to_mnodes.size() > 1)
-    {
-      while (true)
+    // Ensure there is always 1 swarm.
+
+      while (swarm_to_mnodes.size() > 1)
       {
         auto it = std::find_if(swarm_to_mnodes.begin(),
                               swarm_to_mnodes.end(),
@@ -311,7 +311,6 @@ namespace master_nodes
         /// Assign mnodes to the 0 percentile, i.e. the smallest swarms
         assign_mnodes(decommissioned_mnodes, swarm_to_mnodes, mersenne_twister, DECOMMISSIONED_REDISTRIBUTION_LOWER_PERCENTILE);
       }
-    }
 
     /// print
     LOG_PRINT_L2("Swarm outputs:");

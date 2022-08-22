@@ -2217,13 +2217,13 @@ BELDEX_RPC_DOC_INTROSPECT
     static constexpr auto names() { return NAMES("bns_buy_mapping"); }
 
     static constexpr const char *description =
-R"(Buy a Beldex Name System (BNS) mapping that maps a unique name to a Session ID or Belnet address.
+R"(Buy a Beldex Name System (BNS) mapping that maps a unique name to a Bchat ID or Belnet address.
 
-Currently supports Session, Belnet and Wallet registrations. Belnet registrations can be for 1, 2, 5, or 10 years by specifying a type value of "belnet", "belnet_2y", "belnet_5y", "belnet_10y". Session registrations do not expire.
+Currently supports Bchat, Belnet and Wallet registrations. Belnet registrations can be for 1, 2, 5, or 10 years by specifying a type value of "belnet", "belnet_2y", "belnet_5y", "belnet_10y". Bchat registrations do not expire.
 
-The owner of the BNS entry (by default, the purchasing wallet) will be permitted to submit BNS update transactions to the Beldex blockchain (for example to update a Session pubkey or the target Belnet address). You may change the primary owner or add a backup owner in the registration and can change them later with update transactions. Owner addresses can be either Beldex wallets, or generic ed25519 pubkeys (for advanced uses).
+The owner of the BNS entry (by default, the purchasing wallet) will be permitted to submit BNS update transactions to the Beldex blockchain (for example to update a Bchat pubkey or the target Belnet address). You may change the primary owner or add a backup owner in the registration and can change them later with update transactions. Owner addresses can be either Beldex wallets, or generic ed25519 pubkeys (for advanced uses).
 
-For Session, the recommended owner or backup owner is the ed25519 public key of the user's Session ID.
+For Bchat, the recommended owner or backup owner is the ed25519 public key of the user's Bchat ID.
 
 When specifying owners, either a wallet (sub)address or standard ed25519 public key is supported per mapping. Updating the value that a name maps to requires one of the owners to sign the update transaction. For wallets, this is signed using the (sub)address's spend key.
 
@@ -2231,11 +2231,11 @@ For more information on updating and signing see the BNS_UPDATE_MAPPING document
 
     struct request
     {
-      std::string        type;            // The mapping type: "session", "belnet", "belnet_2y", "belnet_5y", "belnet_10y", "wallet".
+      std::string        type;            // The mapping type: "bchat", "belnet", "belnet_2y", "belnet_5y", "belnet_10y", "wallet".
       std::string        owner;           // (Optional): The ed25519 public key or wallet address that has authority to update the mapping.
       std::string        backup_owner;    // (Optional): The secondary, backup public key that has authority to update the mapping.
       std::string        name;            // The name to purchase via Beldex Name Service
-      std::string        value;           // The value that the name maps to via Beldex Name Service, (i.e. For Session: [display name->session public key],  for wallets: [name->wallet address], for Belnet: [name->domain name]).
+      std::string        value;           // The value that the name maps to via Beldex Name Service, (i.e. For Bchat: [display name->bchat public key],  for wallets: [name->wallet address], for Belnet: [name->domain name]).
 
       uint32_t           account_index;   // (Optional) Transfer from this account index. (Defaults to 0)
       std::set<uint32_t> subaddr_indices; // (Optional) Transfer from this set of subaddresses. (Defaults to 0)
@@ -2310,7 +2310,7 @@ If signing is performed externally then you must first encrypt the `value` (if b
 
     struct request
     {
-      std::string        type;      // The mapping type, "session", "belnet", or "wallet".
+      std::string        type;      // The mapping type, "bchat", "belnet", or "wallet".
       std::string        name;      // The name to update via Beldex Name Service
       std::string        value;     // (Optional): The new value that the name maps to via Beldex Name Service. If not specified or given the empty string "", then the mapping's value remains unchanged. If using a `signature` then this value (if non-empty) must be already encrypted.
       std::string        owner;     // (Optional): The new owner of the mapping. If not specified or given the empty string "", then the mapping's owner remains unchanged.
@@ -2356,7 +2356,7 @@ This command is only required if the open wallet is one of the owners of a BNS r
 
     struct request
     {
-      std::string type;  // The mapping type, currently we support "session", "belnet" and "wallet" mappings.
+      std::string type;  // The mapping type, currently we support "bchat", "belnet" and "wallet" mappings.
       std::string name;  // The desired name to update via Beldex Name Service
       std::string encrypted_value; // (Optional): The new encrypted value that the name maps to via Beldex Name Service. If not specified or given the empty string "", then the mapping's value remains unchanged.
       std::string owner;     // (Optional): The new owner of the mapping. If not specified or given the empty string "", then the mapping's owner remains unchanged.
@@ -2382,7 +2382,7 @@ This command is only required if the open wallet is one of the owners of a BNS r
 
     struct request
     {
-      std::string type; // The mapping type, "session", "belnet" or "wallet".
+      std::string type; // The mapping type, "bchat", "belnet" or "wallet".
       std::string name; // The desired name to hash
 
       KV_MAP_SERIALIZABLE
@@ -2406,7 +2406,7 @@ This command is only required if the open wallet is one of the owners of a BNS r
 
     struct known_record
     {
-      std::string type;                          // The mapping type, "session" or "belnet".
+      std::string type;                          // The mapping type, "bchat" or "belnet".
       std::string hashed;                        // The hashed name (in base64)
       std::string name;                          // The plaintext name
       std::string owner;                         // The public key that purchased the Beldex Name Service entry.
@@ -2444,7 +2444,7 @@ This command is only required if the open wallet is one of the owners of a BNS r
 
     struct record
     {
-      std::string type; // The BNS type (mandatory); currently support values are: "session", "belnet"
+      std::string type; // The BNS type (mandatory); currently support values are: "bchat", "belnet"
       std::string name; // The (unhashed) name of the record
 
       KV_MAP_SERIALIZABLE
@@ -2469,7 +2469,7 @@ This command is only required if the open wallet is one of the owners of a BNS r
     struct request
     {
       std::string name;            // The BNS name with which to encrypt the value.
-      std::string type;            // The mapping type: "session" or "belnet".
+      std::string type;            // The mapping type: "bchat" or "belnet".
       std::string value;           // The value to be encrypted.
 
       KV_MAP_SERIALIZABLE
@@ -2492,7 +2492,7 @@ This command is only required if the open wallet is one of the owners of a BNS r
     struct request
     {
       std::string name;            // The BNS name of the given encrypted value.
-      std::string type;            // The mapping type: "session" or "belnet".
+      std::string type;            // The mapping type: "bchat" or "belnet".
       std::string encrypted_value; // The encrypted value represented in hex.
 
       KV_MAP_SERIALIZABLE

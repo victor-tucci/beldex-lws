@@ -428,7 +428,7 @@ namespace cryptonote { namespace rpc {
 
     auto bns_counts = m_core.get_blockchain_storage().name_system_db().get_mapping_counts(res.height);
     res.bns_counts = {
-      bns_counts[bns::mapping_type::session],
+      bns_counts[bns::mapping_type::bchat],
       bns_counts[bns::mapping_type::wallet],
       bns_counts[bns::mapping_type::belnet]};
 
@@ -808,7 +808,7 @@ namespace cryptonote { namespace rpc {
           case bns::mapping_type::belnet_5years: [[fallthrough]];
           case bns::mapping_type::belnet_10years: bns.type = "belnet"; break;
 
-          case bns::mapping_type::session: bns.type = "session"; break;
+          case bns::mapping_type::bchat: bns.type = "bchat"; break;
           case bns::mapping_type::wallet:  bns.type = "wallet"; break;
 
           case bns::mapping_type::update_record_internal: [[fallthrough]];
@@ -2975,7 +2975,7 @@ namespace cryptonote { namespace rpc {
     std::vector<std::string> args;
 
     uint64_t const curr_height   = m_core.get_current_blockchain_height();
-    uint64_t staking_requirement = master_nodes::get_staking_requirement(nettype(), curr_height);
+    uint64_t staking_requirement = master_nodes::get_staking_requirement( curr_height);
 
     {
       uint64_t portions_cut;
@@ -3304,7 +3304,7 @@ namespace cryptonote { namespace rpc {
     PERF_TIMER(on_get_staking_requirement);
     res.height = req.height > 0 ? req.height : m_core.get_current_blockchain_height();
 
-    res.staking_requirement = master_nodes::get_staking_requirement(nettype(), res.height);
+    res.staking_requirement = master_nodes::get_staking_requirement(res.height);
     res.status = STATUS_OK;
     return res;
   }

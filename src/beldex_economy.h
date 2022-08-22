@@ -8,6 +8,8 @@ constexpr uint64_t EMISSION_SUPPLY_MULTIPLIER = 19;
 constexpr uint64_t EMISSION_SUPPLY_DIVISOR    = 10;
 constexpr uint64_t EMISSION_DIVISOR           = 2000000;
 
+constexpr uint64_t MODIFIED_STAKING_REQUIREMENT_HEIGHT = 56500;
+
 // HF15 money supply parameters:
 constexpr uint64_t BLOCK_REWARD_HF16      = 2 * COIN;
 constexpr uint64_t BLOCK_REWARD_HF17_POS  = 10 *COIN;
@@ -54,7 +56,7 @@ namespace bns
 {
 enum struct mapping_type : uint16_t
 {
-  session = 0,
+  bchat = 0,
   wallet = 1,
   belnet = 2, // the type value stored in the database; counts as 1-year when used in a buy tx.
   belnet_2years,
@@ -74,7 +76,7 @@ constexpr uint64_t burn_needed(uint8_t hf_version, mapping_type type)
 {
   uint64_t result = 0;
 
-  // The base amount for session/wallet/belnet-1year:
+  // The base amount for bchat/wallet/belnet-1year:
   const uint64_t basic_fee = (
       hf_version >= 16 ? 15*COIN :  // cryptonote::network_version_16_POS -- but don't want to add cryptonote_config.h include
       20*COIN                       // cryptonote::network_version_15_bns
@@ -86,7 +88,7 @@ constexpr uint64_t burn_needed(uint8_t hf_version, mapping_type type)
       break;
 
     case mapping_type::belnet: /* FALLTHRU */
-    case mapping_type::session: /* FALLTHRU */
+    case mapping_type::bchat: /* FALLTHRU */
     case mapping_type::wallet: /* FALLTHRU */
     default:
       result = basic_fee;

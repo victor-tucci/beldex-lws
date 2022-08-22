@@ -30,11 +30,11 @@ namespace bns
 constexpr size_t WALLET_NAME_MAX                  = 64;
 constexpr size_t WALLET_ACCOUNT_BINARY_LENGTH_INC_PAYMENT_ID     = 73;  // Wallet will encrypt an identifier (1 byte) a public spend and view key (2x 32 bytes) = 65 bytes plus an additional item for payment id (8 bytes) if necessary. The identifier 0 -> No Subaddress or Payment ID, 1 -> Has Subaddress, 2-> Has Payment ID
 constexpr size_t WALLET_ACCOUNT_BINARY_LENGTH_NO_PAYMENT_ID     = 65;
-constexpr size_t BELNET_DOMAIN_NAME_MAX          = 63 + 5; // DNS components name must be at most 63 (+ 5 for .beldex); this limit applies if there is at least one hyphen (and thus includes punycode)
-constexpr size_t BELNET_DOMAIN_NAME_MAX_NOHYPHEN = 32 + 5; // If the name does not contain a - then we restrict it to 32 characters so that it cannot be (and is obviously not) an encoded .beldex address (52 characters)
+constexpr size_t BELNET_DOMAIN_NAME_MAX          = 63 + 4; // DNS components name must be at most 63 (+ 4 for .bdx); this limit applies if there is at least one hyphen (and thus includes punycode)
+constexpr size_t BELNET_DOMAIN_NAME_MAX_NOHYPHEN = 32 + 4; // If the name does not contain a - then we restrict it to 32 characters so that it cannot be (and is obviously not) an encoded .bdx address (52 characters)
 constexpr size_t BELNET_ADDRESS_BINARY_LENGTH    = sizeof(crypto::ed25519_public_key);
-constexpr size_t SESSION_DISPLAY_NAME_MAX         = 64;
-constexpr size_t SESSION_PUBLIC_KEY_BINARY_LENGTH = 1 + sizeof(crypto::ed25519_public_key); // Session keys at prefixed with 0x05 + ed25519 key
+constexpr size_t BCHAT_DISPLAY_NAME_MAX         = 64;
+constexpr size_t BCHAT_PUBLIC_KEY_BINARY_LENGTH = 1 + sizeof(crypto::ed25519_public_key); // Bchat keys at prefixed with 0xbd + ed25519 key
 
 constexpr size_t NAME_HASH_SIZE = sizeof(crypto::hash);
 constexpr size_t NAME_HASH_SIZE_B64_MIN = (4*NAME_HASH_SIZE + 2) / 3; // No padding
@@ -48,7 +48,7 @@ constexpr char BNS_WALLET_TYPE_INTEGRATED = 0x02;
 
 struct mapping_value
 {
-  static size_t constexpr BUFFER_SIZE = std::max({WALLET_ACCOUNT_BINARY_LENGTH_INC_PAYMENT_ID, BELNET_ADDRESS_BINARY_LENGTH, SESSION_PUBLIC_KEY_BINARY_LENGTH}) + SODIUM_ENCRYPTION_EXTRA_BYTES;
+  static size_t constexpr BUFFER_SIZE = std::max({WALLET_ACCOUNT_BINARY_LENGTH_INC_PAYMENT_ID, BELNET_ADDRESS_BINARY_LENGTH, BCHAT_PUBLIC_KEY_BINARY_LENGTH}) + SODIUM_ENCRYPTION_EXTRA_BYTES;
   std::array<uint8_t, BUFFER_SIZE> buffer;
   bool encrypted;
   size_t len;
@@ -57,8 +57,8 @@ struct mapping_value
   std::string_view to_view()   const { return {reinterpret_cast<const char*>(buffer.data()), len}; }
   std::string      to_readable_value(cryptonote::network_type nettype, mapping_type type) const;
   // View the buffer as a encrypted value & nonce pair (the nonce is the last 24 bytes).  For older
-  // session values the nonce will be all 0 bytes *if* the encrypted value is not the proper length
-  // for an including-the-nonce value.  For newer session and all others the nonce is always
+  // bchat values the nonce will be all 0 bytes *if* the encrypted value is not the proper length
+  // for an including-the-nonce value.  For newer bchat and all others the nonce is always
   // present.
   std::pair<std::basic_string_view<unsigned char>, std::basic_string_view<unsigned char>> value_nonce(mapping_type type) const;
   bool operator==(mapping_value const &other) const { return encrypted == other.encrypted && other.to_view() == to_view(); }
@@ -103,7 +103,7 @@ struct mapping_value
   std::optional<cryptonote::address_parse_info> get_wallet_address_info() const;
 
   // Validate a human readable mapping value representation in 'value' and write the binary form into 'blob'.
-  // value: if type is session, 66 character hex string of an ed25519 public key (with 05 prefix)
+  // value: if type is bchat, 66 character hex string of an ed25519 public key (with 05 prefix)
   //                   BELnet, 52 character base32z string of an ed25519 public key
   //                   wallet,  the wallet public address string
   // blob: (optional) if function returns true, validate will load the binary data into blob (ready for encryption via encrypt())
@@ -125,7 +125,7 @@ inline std::string_view mapping_type_str(mapping_type type)
     case mapping_type::belnet_2years:  return "belnet_2years"sv;  // Only used in a buy tx, not in the DB
     case mapping_type::belnet_5years:  return "belnet_5years"sv;  // "
     case mapping_type::belnet_10years: return "belnet_10years"sv; // "
-    case mapping_type::session:         return "session"sv;
+    case mapping_type::bchat:         return "bchat"sv;
     case mapping_type::wallet:          return "wallet"sv;
     default: assert(false);             return "xx_unhandled_type"sv;
   }
@@ -133,7 +133,7 @@ inline std::string_view mapping_type_str(mapping_type type)
 inline std::ostream &operator<<(std::ostream &os, mapping_type type) { return os << mapping_type_str(type); }
 
 constexpr bool mapping_type_allowed(uint8_t hf_version, mapping_type type) {
-  return (type == mapping_type::session && hf_version >= cryptonote::network_version_16_bns)
+  return (type == mapping_type::bchat && hf_version >= cryptonote::network_version_16_bns)
       || (is_belnet_type(type) && hf_version >= cryptonote::network_version_17_POS);
 }
 
@@ -183,7 +183,7 @@ std::string        tx_extra_signature(std::string_view value, generic_owner cons
 
 enum struct bns_tx_type { lookup, buy, update, renew };
 // Converts a human readable case-insensitive string denoting the mapping type into a value suitable for storing into the BNS DB.
-// Currently accepts "session" or "belnet" for lookups, buys, updates, and renewals; for buys and renewals also accepts "belnet_Ny[ear]" for N=2,5,10
+// Currently accepts "bchat" or "belnet" for lookups, buys, updates, and renewals; for buys and renewals also accepts "belnet_Ny[ear]" for N=2,5,10
 // Lookups are implied by none of buy/update/renew.
 // mapping_type: (optional) if function returns true, the uint16_t value of the 'type' will be set
 bool         validate_mapping_type(std::string_view type, uint8_t hf_version, bns_tx_type txtype, mapping_type *mapping_type, std::string *reason);

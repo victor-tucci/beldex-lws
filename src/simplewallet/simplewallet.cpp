@@ -255,14 +255,14 @@ namespace
   const char* USAGE_REQUEST_STAKE_UNLOCK("request_stake_unlock <master_node_pubkey>");
   const char* USAGE_PRINT_LOCKED_STAKES("print_locked_stakes");
 
-  const char* USAGE_BNS_BUY_MAPPING("bns_buy_mapping [index=<N1>[,<N2>,...]] [<priority>] [type=session|belnet|belnet_2y|belnet_5y|belnet_10y] [owner=<value>] [backup_owner=<value>] <name> <value>");
+  const char* USAGE_BNS_BUY_MAPPING("bns_buy_mapping [index=<N1>[,<N2>,...]] [<priority>] [type=bchat|belnet|belnet_2y|belnet_5y|belnet_10y] [owner=<value>] [backup_owner=<value>] <name> <value>");
   const char* USAGE_BNS_RENEW_MAPPING("bns_renew_mapping [index=<N1>[,<N2>,...]] [<priority>] [type=belnet|belnet_2y|belnet_5y|belnet_10y] <name>");
-  const char* USAGE_BNS_UPDATE_MAPPING("bns_update_mapping [index=<N1>[,<N2>,...]] [<priority>] [type=session|belnet] [owner=<value>] [backup_owner=<value>] [value=<bns_value>] [signature=<hex_signature>] <name>");
+  const char* USAGE_BNS_UPDATE_MAPPING("bns_update_mapping [index=<N1>[,<N2>,...]] [<priority>] [type=bchat|belnet] [owner=<value>] [backup_owner=<value>] [value=<bns_value>] [signature=<hex_signature>] <name>");
 
-  const char* USAGE_BNS_ENCRYPT("bns_encrypt [type=session|belnet] <name> <value>");
-  const char* USAGE_BNS_MAKE_UPDATE_MAPPING_SIGNATURE("bns_make_update_mapping_signature [type=session|belnet] [owner=<value>] [backup_owner=<value>] [value=<encrypted_bns_value>] <name>");
+  const char* USAGE_BNS_ENCRYPT("bns_encrypt [type=bchat|belnet] <name> <value>");
+  const char* USAGE_BNS_MAKE_UPDATE_MAPPING_SIGNATURE("bns_make_update_mapping_signature [type=bchat|belnet] [owner=<value>] [backup_owner=<value>] [value=<encrypted_bns_value>] <name>");
   const char* USAGE_BNS_BY_OWNER("bns_by_owner [<owner> ...]");
-  const char* USAGE_BNS_LOOKUP("bns_lookup [type=session|wallet|belnet] <name> [<name> ...]");
+  const char* USAGE_BNS_LOOKUP("bns_lookup [type=bchat|wallet|belnet] <name> [<name> ...]");
 
 #if defined (BELDEX_ENABLE_INTEGRATION_TEST_HOOKS)
   std::string input_line(const std::string &prompt, bool yesno = false)
@@ -5711,11 +5711,9 @@ bool simple_wallet::confirm_and_send_tx(std::vector<cryptonote::address_parse_in
   if (ptx_vector.empty())
     return false;
 
-  LOG_PRINT_L0("confirm_and_send_tx");
   // if more than one tx necessary, prompt user to confirm
   if (m_wallet->always_confirm_transfers() || ptx_vector.size() > 1)
   {
-      LOG_PRINT_L0("confirm_and_send_tx 2");
       uint64_t total_sent = 0;
       uint64_t total_fee = 0;
       uint64_t dust_not_in_fee = 0;
@@ -5870,7 +5868,6 @@ bool simple_wallet::confirm_and_send_tx(std::vector<cryptonote::address_parse_in
   }
   else
   {
-    LOG_PRINT_L0("confirm_and_send_tx commit_or_save");
     commit_or_save(ptx_vector, m_do_not_relay, flash);
   }
 
@@ -5880,10 +5877,9 @@ bool simple_wallet::confirm_and_send_tx(std::vector<cryptonote::address_parse_in
 //  "transfer [index=<N1>[,<N2>,...]] [<priority>] <address> <amount> [<payment_id>]"
 bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std::string> &args_, bool called_by_mms)
 {
-  LOG_PRINT_L0("transfer_main");
   if (!try_connect_to_daemon())
     return false;
-  LOG_PRINT_L0("connected to daemon");
+
   std::vector<std::string> local_args = args_;
 
   static constexpr auto BURN_PREFIX = "burn="sv;
@@ -5896,13 +5892,12 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
 
   uint32_t priority = 0;
   std::set<uint32_t> subaddr_indices  = {};
-  LOG_PRINT_L0("parse_subaddr_indices_and_priority..");
+
   if (!parse_subaddr_indices_and_priority(*m_wallet, local_args, subaddr_indices, priority, m_current_subaddress_account)) return false;
 
 
   if (priority == 0)
   {
-    LOG_PRINT_L0("priority == 0");
     priority = m_wallet->get_default_priority();
     if (priority == 0)
       priority = transfer_type == Transfer::Locked ? tools::tx_priority_unimportant : tools::tx_priority_flash;
@@ -5940,7 +5935,6 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
     }
     local_args.pop_back();
   }
-  LOG_PRINT_L0("payment_id_seen");
   bool payment_id_seen = false;
   std::vector<cryptonote::address_parse_info> dsts_info;
   std::vector<cryptonote::tx_destination_entry> dsts;
@@ -5996,7 +5990,7 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
     de.is_subaddress = info.is_subaddress;
     de.is_integrated = info.has_payment_id;
     num_subaddresses += info.is_subaddress;
-    LOG_PRINT_L0("check has_payment_id" );
+
     if (info.has_payment_id || !payment_id_uri.empty())
     {
       if (payment_id_seen)
@@ -6031,7 +6025,7 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
 
     dsts.push_back(de);
   }
-  LOG_PRINT_L0("before try step" );
+
   SCOPED_WALLET_UNLOCK_ON_BAD_PASSWORD(return false;);
 
   try
@@ -6042,7 +6036,6 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
     std::string err;
     if (transfer_type == Transfer::Locked)
     {
-        LOG_PRINT_L0("Locked type" );
       bc_height = get_daemon_blockchain_height(err);
       if (!err.empty())
       {
@@ -6058,12 +6051,8 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
       fail_msg_writer() << tools::ERR_MSG_NETWORK_VERSION_QUERY_FAILED;
       return false;
     }
-    LOG_PRINT_L0("get_hard_fork_version" << *hf_version );
 
-    LOG_PRINT_L0("construct_params" );
     beldex_construct_tx_params tx_params = tools::wallet2::construct_params(*hf_version, txtype::standard, priority, burn_amount);
-    LOG_PRINT_L0("construct_params:" );
-      LOG_PRINT_L0("create_transactions_2:" );
     ptx_vector = m_wallet->create_transactions_2(dsts, CRYPTONOTE_DEFAULT_TX_MIXIN, unlock_block, priority, extra, m_current_subaddress_account, subaddr_indices, tx_params);
 
     if (ptx_vector.empty())
@@ -6071,7 +6060,7 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
       fail_msg_writer() << tr("No outputs found, or daemon is not ready");
       return false;
     }
-      LOG_PRINT_L0("confirm_and_send_tx:" );
+
     if (!confirm_and_send_tx(dsts_info, ptx_vector, priority == tools::tx_priority_flash, locked_blocks, unlock_block, called_by_mms))
       return false;
   }
@@ -6475,10 +6464,10 @@ static std::optional<bns::mapping_type> guess_bns_type(tools::wallet2& wallet, s
 {
   if (typestr.empty())
   {
-    if (tools::ends_with(name, ".beldex") && (tools::ends_with(value, ".beldex") || value.empty()))
+    if (tools::ends_with(name, ".bdx") && (tools::ends_with(value, ".bdx") || value.empty()))
       return bns::mapping_type::belnet;
-    if (!tools::ends_with(name, ".beldex") && tools::starts_with(value, "05") && value.length() == 2*bns::SESSION_PUBLIC_KEY_BINARY_LENGTH)
-      return bns::mapping_type::session;
+    if (!tools::ends_with(name, ".bdx") && tools::starts_with(value, "bd") && value.length() == 2*bns::BCHAT_PUBLIC_KEY_BINARY_LENGTH)
+      return bns::mapping_type::bchat;
     if (cryptonote::is_valid_address(std::string{value}, wallet.nettype()))
       return bns::mapping_type::wallet;
 
@@ -6559,8 +6548,8 @@ bool simple_wallet::bns_buy_mapping(std::vector<std::string> args)
     dsts.push_back(info);
 
     std::cout << std::endl << tr("Buying Beldex Name System Record") << std::endl << std::endl;
-    if (*type == bns::mapping_type::session)
-      std::cout << boost::format(tr("Session Name: %s")) % name << std::endl;
+    if (*type == bns::mapping_type::bchat)
+      std::cout << boost::format(tr("Bchat Name: %s")) % name << std::endl;
     else if (*type == bns::mapping_type::wallet)
       std::cout << boost::format(tr("Wallet Name:  %s")) % name << std::endl;
     else if (bns::is_belnet_type(*type))
@@ -6774,8 +6763,8 @@ bool simple_wallet::bns_update_mapping(std::vector<std::string> args)
     dsts.push_back(info);
 
     std::cout << std::endl << tr("Updating Beldex Name System Record") << std::endl << std::endl;
-    if (type == bns::mapping_type::session)
-      std::cout << boost::format(tr("Session Name:     %s")) % name << std::endl;
+    if (type == bns::mapping_type::bchat)
+      std::cout << boost::format(tr("Bchat Name:     %s")) % name << std::endl;
     else if (bns::is_belnet_type(type))
       std::cout << boost::format(tr("Belnet Name:     %s")) % name << std::endl;
     else if (type == bns::mapping_type::wallet)
@@ -6875,7 +6864,7 @@ bool simple_wallet::bns_encrypt(std::vector<std::string> args)
     return false;
   }
 
-  bool old_argon2 = type == bns::mapping_type::session && *hf_version < cryptonote::network_version_17_POS;
+  bool old_argon2 = type == bns::mapping_type::bchat && *hf_version < cryptonote::network_version_17_POS;
   if (!mval.encrypt(name, nullptr, old_argon2))
   {
     tools::fail_msg_writer() << "Value encryption failed";
@@ -6904,7 +6893,7 @@ bool simple_wallet::bns_make_update_mapping_signature(std::vector<std::string> a
   SCOPED_WALLET_UNLOCK();
   bns::generic_signature signature_binary;
   std::string reason;
-  if (m_wallet->bns_make_update_mapping_signature(bns::mapping_type::session,
+  if (m_wallet->bns_make_update_mapping_signature(bns::mapping_type::bchat,
                                                   name,
                                                   value.size() ? &value : nullptr,
                                                   owner.size() ? &owner : nullptr,

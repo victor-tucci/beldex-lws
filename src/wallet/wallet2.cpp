@@ -7771,18 +7771,18 @@ uint64_t wallet2::get_fee_percent(uint32_t priority, txtype type) const
   static constexpr std::array<uint64_t, 4> percents{{100, 500, 2500, 12500}};
 
   const bool flashable = type == txtype::standard;
-  LOG_PRINT_L2("get_fee_percent:" << priority);
+
   if (priority == 0) // 0 means no explicit priority was given, so use the wallet default
   {
     priority = m_default_priority > 0 ? m_default_priority : (uint32_t) tx_priority_flash;
     if (priority == tx_priority_flash && !flashable)
       priority = tx_priority_unimportant; // The flash default is unusable for this tx, so fall back to unimportant
   }
-  LOG_PRINT_L2("get_fee_percent after:" << priority);
+
   // If it's a flashable tx then we flash it for everything priority other than unimportant.
   if (flashable && priority != tx_priority_unimportant)
     priority = tx_priority_flash;
-  LOG_PRINT_L2("get_fee_percent after2:" << priority);
+
   if (priority == tx_priority_flash)
   {
     if (!flashable)
@@ -7806,7 +7806,6 @@ uint64_t wallet2::get_fee_percent(uint32_t priority, txtype type) const
 byte_and_output_fees wallet2::get_dynamic_base_fee_estimate() const
 {
   byte_and_output_fees fees;
-  LOG_PRINT_L2("get_dynamic_base_fee_estimate");
   if (m_node_rpc_proxy.get_dynamic_base_fee_estimate(FEE_ESTIMATE_GRACE_BLOCKS, fees))
     return fees;
 
@@ -8396,7 +8395,7 @@ wallet2::register_master_node_result wallet2::create_register_master_node_tx(con
       }
     }
 
-    staking_requirement = master_nodes::get_staking_requirement(nettype(), bc_height);
+    staking_requirement = master_nodes::get_staking_requirement(bc_height);
     std::vector<std::string> const args(local_args.begin(), local_args.begin() + local_args.size() - 3);
     contributor_args = master_nodes::convert_registration_args(nettype(), args, staking_requirement, *hf_version);
 
@@ -8658,7 +8657,7 @@ wallet2::request_stake_unlock_result wallet2::can_request_stake_unlock(const cry
         result.msg    = ERR_MSG_NETWORK_VERSION_QUERY_FAILED;
         return result;
       }
-      uint64_t unlock_height = master_nodes::get_locked_key_image_unlock_height(nettype(), node_info.registration_height, curr_height,*hf_version);
+      uint64_t unlock_height = master_nodes::get_locked_key_image_unlock_height(nettype(), curr_height,*hf_version);
       result.msg.append("You will continue receiving rewards until the master node expires at the estimated height: ");
       result.msg.append(std::to_string(unlock_height));
       result.msg.append(" (about ");
@@ -10085,7 +10084,7 @@ void wallet2::transfer_selected_rct(std::vector<cryptonote::tx_destination_entry
 
   if (update_splitted_dsts)
   {
-    // NOTE: If ONS, there's already a dummy destination entry in there that
+    // NOTE: If BNS, there's already a dummy destination entry in there that
     // we placed in (for fake calculating the TX fees and parts) that we
     // repurpose for change after the fact.
     if (tx_params.tx_type == txtype::beldex_name_system)
@@ -10864,7 +10863,6 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
 
   if(m_light_wallet) {
     // Populate m_transfers
-      LOG_PRINT_L0("m_light_wallet" );
     light_wallet_get_unspent_outs();
   }
   std::vector<std::pair<uint32_t, std::vector<size_t>>> unused_transfers_indices_per_subaddr;
@@ -10872,7 +10870,6 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
   uint64_t needed_money;
   uint64_t accumulated_fee, accumulated_outputs, accumulated_change;
 
-    LOG_PRINT_L0("creating struct TX" );
   struct TX {
     std::vector<size_t> selected_transfers;
     std::vector<cryptonote::tx_destination_entry> dsts;
@@ -10882,12 +10879,9 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
     uint64_t needed_fee;
     std::vector<std::vector<tools::wallet2::get_outs_entry>> outs;
 
-    TX() : weight(0), needed_fee(0) {
-        LOG_PRINT_L0("TX struct initiated" );
-    }
+    TX() : weight(0), needed_fee(0) {}
 
     void add(const cryptonote::tx_destination_entry &de, uint64_t amount, unsigned int original_output_index, bool merge_destinations) {
-        LOG_PRINT_L0("struct ADD" );
       if (merge_destinations)
       {
         std::vector<cryptonote::tx_destination_entry>::iterator i;
@@ -10914,22 +10908,16 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
       }
     }
   };
-  LOG_PRINT_L0("creating the TX vector" );
   std::vector<TX> txes;
 
   bool adding_fee; // true if new outputs go towards fee, rather than destinations
   uint64_t needed_fee, available_for_fee = 0;
-    LOG_PRINT_L0("get_upper_transaction_weight_limit" );
   uint64_t upper_transaction_weight_limit = get_upper_transaction_weight_limit();
   const bool clsag = use_fork_rules(HF_VERSION_CLSAG, 0);
-  LOG_PRINT_L0("clsag: << clsag");
   const rct::RCTConfig rct_config{rct::RangeProofType::PaddedBulletproof, clsag ? 3 : 2};
-    LOG_PRINT_L0("get_base_fees" );
   const auto base_fee = get_base_fees();
-    LOG_PRINT_L0("get_fee_percent" );
   const uint64_t fee_percent = get_fee_percent(priority, tx_params.tx_type);
   uint64_t fixed_fee = 0;
-    LOG_PRINT_L0("get_fee_quantization_mask" );
   const uint64_t fee_quantization_mask = get_fee_quantization_mask();
 
   uint64_t burn_fixed = 0, burn_percent = 0;
@@ -10960,7 +10948,7 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
   {
     THROW_WALLET_EXCEPTION_IF(0 == dt.amount && !is_bns_tx, error::zero_destination);
     needed_money += dt.amount;
-    LOG_PRINT_L0("transfer: adding " << print_money(dt.amount) << ", for a total of " << print_money (needed_money));
+    LOG_PRINT_L2("transfer: adding " << print_money(dt.amount) << ", for a total of " << print_money (needed_money));
     THROW_WALLET_EXCEPTION_IF(needed_money < dt.amount, error::tx_sum_overflow, dsts, 0, m_nettype);
   }
 
@@ -10980,7 +10968,7 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
   // early out if we know we can't make it anyway
   // we could also check for being within FEE_PER_KB, but if the fee calculation
   // ever changes, this might be missed, so let this go through
-  const uint64_t min_outputs = tx_params.tx_type == cryptonote::txtype::beldex_name_system ? 1 : 2; // if ons, only request the change output
+  const uint64_t min_outputs = tx_params.tx_type == cryptonote::txtype::beldex_name_system ? 1 : 2; // if bns, only request the change output
   {
     uint64_t min_fee = (
         base_fee.first * estimate_rct_tx_size(1, fake_outs_count, min_outputs, extra.size(), clsag) +
@@ -11021,7 +11009,7 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
     {
       if (td.amount() > m_ignore_outputs_above || td.amount() < m_ignore_outputs_below)
       {
-        LOG_PRINT_L0("Ignoring output " << i << " of amount " << print_money(td.amount()) << " which is outside prescribed range [" << print_money(m_ignore_outputs_below) << ", " << print_money(m_ignore_outputs_above) << "]");
+        MDEBUG("Ignoring output " << i << " of amount " << print_money(td.amount()) << " which is outside prescribed range [" << print_money(m_ignore_outputs_below) << ", " << print_money(m_ignore_outputs_above) << "]");
         continue;
       }
       const uint32_t index_minor = td.m_subaddr_index.minor;
@@ -11090,7 +11078,7 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
   // this prevents linking to another by provenance analysis, but two is ok if we
   // try to pick outputs not from the same block. We will get two outputs, one for
   // the destination, and one for change.
-  LOG_PRINT_L0("checking preferred");
+  LOG_PRINT_L2("checking preferred");
   std::vector<size_t> preferred_inputs;
   uint64_t rct_outs_needed = 2 * (fake_outs_count + 1);
   rct_outs_needed += 100; // some fudge factor since we don't know how many are locked
@@ -11872,16 +11860,11 @@ void wallet2::get_hard_fork_info(uint8_t version, uint64_t &earliest_height) con
 bool wallet2::use_fork_rules(uint8_t version, uint64_t early_blocks) const
 {
   // TODO: How to get fork rule info from light wallet node?
-  LOG_PRINT_L2("use_fork_rules");
     if(m_light_wallet)
     return true;
   uint64_t height, earliest_height{0};
-  LOG_PRINT_L2("get_height:" << height);
   if (!m_node_rpc_proxy.get_height(height))
     THROW_WALLET_EXCEPTION(tools::error::no_connection_to_daemon, __func__);
-
-    LOG_PRINT_L2("get_earliest_height requesting for version :" << version);
-    LOG_PRINT_L2("get_earliest_height:" << earliest_height);
 
   if (!m_node_rpc_proxy.get_earliest_height(version, earliest_height))
     THROW_WALLET_EXCEPTION(tools::error::no_connection_to_daemon, __func__);
@@ -11889,7 +11872,7 @@ bool wallet2::use_fork_rules(uint8_t version, uint64_t early_blocks) const
   bool close_enough = height >= earliest_height - early_blocks; // start using the rules that many blocks beforehand
   if (early_blocks > earliest_height) // Start using rules early if early_blocks would underflow earliest_height, in prev calc
     close_enough = true;
-  LOG_PRINT_L2("close_enough:" << close_enough);
+
   if (close_enough)
     LOG_PRINT_L2("Using v" << (unsigned)version << " rules");
   else

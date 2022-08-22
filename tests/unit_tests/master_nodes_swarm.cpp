@@ -101,9 +101,9 @@ TEST(swarm_to_mnodes, calc_excess)
   swarm_mnode_map_t swarm_to_mnodes;
   const size_t expected_excess = 52;
   const size_t num_swarms = 11;
-  // create swarms with EXCESS_BASE mnodes
+  // create swarms with MIN_SWARM_SIZE mnodes
   for (size_t i = 0; i < num_swarms; ++i) {
-    for (size_t j = 0; j < EXCESS_BASE; j++){
+    for (size_t j = 0; j < MIN_SWARM_SIZE; j++){
       swarm_to_mnodes[i].push_back(newPubKey());
     }
   }
@@ -121,8 +121,8 @@ TEST(swarm_to_mnodes, calc_threshold)
 {
   swarm_mnode_map_t swarm_to_mnodes;
   const size_t num_swarms = 11;
-  const size_t num_mnodes = num_swarms * EXCESS_BASE;
-  // create swarms with EXCESS_BASE mnodes
+  const size_t num_mnodes = num_swarms * MIN_SWARM_SIZE;
+  // create swarms with MIN_SWARM_SIZE mnodes
   for (size_t i = 0; i < num_mnodes; i++) {
     const swarm_id_t id = i % num_swarms;
     swarm_to_mnodes[id].push_back(newPubKey());
@@ -134,9 +134,9 @@ TEST(swarm_to_mnodes, create_new_swarm_from_excess)
 {
   swarm_mnode_map_t swarm_to_mnodes;
   const size_t num_swarms = 11;
-  /// create swarms with EXCESS_BASE mnodes
+  /// create swarms with MIN_SWARM_SIZE mnodes
   for (size_t i = 0; i < num_swarms; ++i) {
-    for (size_t j = 0; j < EXCESS_BASE; j++){
+    for (size_t j = 0; j < MIN_SWARM_SIZE; j++){
       swarm_to_mnodes[i].push_back(newPubKey());
     }
   }

@@ -1038,7 +1038,6 @@ namespace cryptonote
             outamounts.push_back(amount_in - amount_out);
 
           if (tx_params.burn_fixed) {
-              LOG_PRINT_L2("burn_fixed");
               if (amount_in < amount_out + tx_params.burn_fixed) {
                   LOG_ERROR("invalid burn amount: tx does not have enough unspent funds available; amount_in: "
                                     << std::to_string(amount_in) << "; amount_out + tx_params.burn_fixed: "
