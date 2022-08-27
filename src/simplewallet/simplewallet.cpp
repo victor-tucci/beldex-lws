@@ -3149,7 +3149,7 @@ Pending or Failed: "failed"|"pending",  "out", Lock, Checkpointed, Time, Amount*
                            tr(USAGE_PRINT_LOCKED_STAKES),
                            tr("Print stakes currently locked on the Master Node network"));
 
-  m_cmd_binder.set_handler("bns_buy_mapping",
+  /*m_cmd_binder.set_handler("bns_buy_mapping",
                            [this](const auto& x) { return bns_buy_mapping(x); },
                            tr(USAGE_BNS_BUY_MAPPING),
                            tr(tools::wallet_rpc::BNS_BUY_MAPPING::description));
@@ -3182,7 +3182,7 @@ Pending or Failed: "failed"|"pending",  "out", Lock, Checkpointed, Time, Amount*
   m_cmd_binder.set_handler("bns_make_update_mapping_signature",
                            [this](const auto& x) { return bns_make_update_mapping_signature(x); },
                            tr(USAGE_BNS_MAKE_UPDATE_MAPPING_SIGNATURE),
-                           tr(tools::wallet_rpc::BNS_MAKE_UPDATE_SIGNATURE::description));
+                           tr(tools::wallet_rpc::BNS_MAKE_UPDATE_SIGNATURE::description));*/
 }
 
 simple_wallet::~simple_wallet()
