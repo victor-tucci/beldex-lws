@@ -2600,8 +2600,8 @@ This command is only required if the open wallet is one of the owners of a BNS r
     VALIDATE_ADDRESS,
     SET_DAEMON,
     SET_LOG_LEVEL,
-    SET_LOG_CATEGORIES,
-    BNS_BUY_MAPPING,
+    SET_LOG_CATEGORIES
+    /*BNS_BUY_MAPPING,
     BNS_UPDATE_MAPPING,
     BNS_RENEW_MAPPING,
     BNS_MAKE_UPDATE_SIGNATURE,
@@ -2609,7 +2609,7 @@ This command is only required if the open wallet is one of the owners of a BNS r
     BNS_KNOWN_NAMES,
     BNS_ADD_KNOWN_NAMES,
     BNS_DECRYPT_VALUE,
-    BNS_ENCRYPT_VALUE
+    BNS_ENCRYPT_VALUE*/
   >;
 
 }
