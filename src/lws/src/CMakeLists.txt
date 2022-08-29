@@ -38,5 +38,6 @@ beldex-lws-common
 beldex-lws-wire-json
 )
 
-install(TARGETS beldex-lws-daemon DESTINATION bin)
-install(TARGETS beldex-lws-admin DESTINATION bin)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin )
+# install(TARGETS beldex-lws-daemon DESTINATION bin)
+# install(TARGETS beldex-lws-admin DESTINATION bin)
