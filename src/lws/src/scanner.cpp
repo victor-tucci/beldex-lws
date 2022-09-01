@@ -301,7 +301,7 @@ namespace lws
           LMQ_ptr m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
           m_LMQ->start();
     
-          auto c = m_LMQ->connect_remote("tcp://127.0.0.1:4567",
+          auto c = m_LMQ->connect_remote("ipc:///home/blockhash/.beldex/beldexd.sock",
           [](ConnectionID conn) { std::cout << "for get_blocks_fast Connected \n";},
           [](ConnectionID conn, std::string_view f) { std::cout << "for get_blocks_fast connect failed: \n";} 
           ); 
@@ -389,7 +389,7 @@ namespace lws
           // final_res["result"].erase("status");
           // final_res["result"].erase("untrusted");
           std::string resp = final_res.dump();
-          // std::cout << resp << std::endl;
+          std::cout << resp << std::endl;
           // std::ifstream people_file("/home/blockhash/Downloads/monero.json", std::ifstream::binary);
           // people_file >> final_res;
           // resp = final_res.dump();
@@ -591,7 +591,7 @@ namespace lws
       attrs.set_stack_size(THREAD_STACK_SIZE);
 
       threads.reserve(thread_count);
-      std::sort(users.begin(), users.end(), by_height{});
+      std::sort(users.begin(), users.end(), by_height{});  //users are sorted by their last height
 
       MINFO("Starting scan loops on " << std::min(thread_count, users.size()) << " thread(s) with " << users.size() << " account(s)");
 
@@ -691,7 +691,7 @@ namespace lws
       m_LMQ->start();
 
       bool daemon_connected = false;
-      auto c = m_LMQ->connect_remote("tcp://127.0.0.1:4567",
+      auto c = m_LMQ->connect_remote("ipc:///home/blockhash/.beldex/beldexd.sock",
       [&daemon_connected](ConnectionID conn) { daemon_connected = true;std::cout << "for get_hashes_fast Connected \n";},
       [](ConnectionID conn, std::string_view f) { std::cout << "connect failed: \n";} 
       );
@@ -715,7 +715,7 @@ namespace lws
       }
 
       // req.known_hashes = std::move(*chain);
-      a = *chain;
+      a = *chain;  // get last height from the db
       
      }
       for(;;)

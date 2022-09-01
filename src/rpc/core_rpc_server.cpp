@@ -577,6 +577,7 @@ namespace cryptonote { namespace rpc {
     cryptonote::block blk;
     cryptonote::transaction tx_hash;
     uint64_t block_count = 0;
+    std::cout <<"blocks.size() : " << blocks.size() << std::endl;
     for(auto& bd: blocks)
     {
       std::cout << " Entered in the block " << std::endl;
@@ -609,7 +610,8 @@ namespace cryptonote { namespace rpc {
       std::swap(t["miner_tx"]["inputs"], miner_tx_vin.value());
       t["miner_tx"].erase("vout");
       t["miner_tx"].erase("vin");
-      t.erase(t.find("POS"));
+      // t.erase(t.find("POS"));
+      // std::cout <<"t"<< t << std::endl;
         for(auto &out :t["miner_tx"]["outputs"])
         {
           json::iterator it = out.find("target");
