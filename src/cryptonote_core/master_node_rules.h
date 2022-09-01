@@ -61,7 +61,7 @@ namespace master_nodes {
     return result;
   }
 
-  constexpr uint64_t POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED = 225; // Disable POS and re-allow PoW
+  constexpr uint64_t POS_MAX_ROUNDS_BEFORE_NETWORK_STALLED = 255; // Disable POS and re-allow PoW
 
   // Master node decommissioning: as master nodes stay up they earn "credits" (measured in blocks)
   // towards a future outage.  A new master node starts out with INITIAL_CREDIT, and then builds up
