@@ -6,6 +6,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
+#include <cpr/cpr.h>
 #include <cassert>
 #include <chrono>
 #include <cstring>
@@ -187,9 +188,6 @@ namespace lws
           const bool received =
             crypto::wallet::derive_subaddress_public_key(out_data->key, derived, index, derived_pub) &&
             derived_pub == user.spend_public();
-            std::cout << "derived_pub : " << derived_pub << std::endl;
-            std::cout << "user.spend_public() : " <<  user.spend_public() << std::endl;
-            std::cout <<"--------------------------"<< std::endl;
 
           if (!received)
             continue; // to next output
@@ -199,7 +197,10 @@ namespace lws
             prefix_hash.emplace();
             cryptonote::get_transaction_prefix_hash(tx, *prefix_hash);
           }
-
+            std::cout << "height : " << (uint64_t)user.scan_height() << std::endl;
+            std::cout << "derived_pub : " << derived_pub << std::endl;
+            std::cout << "user.spend_public() : " <<  user.spend_public() << std::endl;
+            std::cout <<"--------------------------"<< std::endl;
           std::uint64_t amount = out.amount;
           rct::key mask = rct::identity();
           if (!amount && !(ext & db::coinbase_output) && cryptonote::txversion::v1 < tx.version)
@@ -297,14 +298,14 @@ namespace lws
 
       //     auto resp = client.get_message(block_rpc_timeout);
 
-          using LMQ_ptr = std::shared_ptr<oxenmq::OxenMQ>;
-          LMQ_ptr m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
-          m_LMQ->start();
+          // using LMQ_ptr = std::shared_ptr<oxenmq::OxenMQ>;
+          // LMQ_ptr m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
+          // m_LMQ->start();
     
-          auto c = m_LMQ->connect_remote("ipc:///home/blockhash/.beldex/beldexd.sock",
-          [](ConnectionID conn) { std::cout << "for get_blocks_fast Connected \n";},
-          [](ConnectionID conn, std::string_view f) { std::cout << "for get_blocks_fast connect failed: \n";} 
-          ); 
+          // auto c = m_LMQ->connect_remote("ipc:///home/blockhash/.beldex/beldexd.sock",
+          // [](ConnectionID conn) { std::cout << "for get_blocks_fast Connected \n";},
+          // [](ConnectionID conn, std::string_view f) { std::cout << "for get_blocks_fast connect failed: \n";} 
+          // ); 
           
       //     if (!resp)
       //     {
@@ -316,17 +317,31 @@ namespace lws
       //       MONERO_THROW(resp.error(), "Failed to retrieve blocks from daemon");
       //     }
 
-          m_LMQ->request(c, "rpc.get_blocks_fast", [&details,&start_height](bool s, auto data) {
-          if (s == 1 && data[0] == "200"){
-            // std::cout << "get_blocks data : " << data[1] << "\n";
-            json jf= json::parse(data[1]);
-            details =jf;    
-          }
-          else
-            std::cout << "Timeout fetching master nodes list data!";
-          },"{\"start_height\": \"" + std::to_string(start_height) + "\"}");
+          // m_LMQ->request(c, "rpc.get_blocks_fast", [&details,&start_height](bool s, auto data) {
+          // if (s == 1 && data[0] == "200"){
+          //   // std::cout << "get_blocks data : " << data[1] << "\n";
+          //   json jf= json::parse(data[1]);
+          //   details =jf;    
+          // }
+          // else
+          //   std::cout << "Timeout fetching master nodes list data!";
+          // },"{\"start_height\": \"" + std::to_string(start_height) + "\"}");
 
-          std::this_thread::sleep_for(5s);
+          // json block_fast = R"({"jsonrpc":"2.0","id":"0","method":"get_blocks_fast","params":{"start_height":1412893}}
+          // )"_json;
+          json block_fast = {
+            {"jsonrpc","2.0"},
+            {"id","0"},
+            {"method","get_blocks_fast"},
+            {"params",{{"start_height",std::to_string(start_height)}}}
+          };
+           auto response = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},
+                                    cpr::Body{block_fast.dump()},
+                                    cpr::Header{ { "Content-Type", "application/json" }});
+
+          // std::this_thread::sleep_for(2s);
+          json res = json::parse(response.text);
+          details = res["result"];
           // parse the string format in_to json formate
           std::string out_indices = details["output_indices"];
           details["output_indices"] = json::parse(out_indices);
@@ -336,6 +351,17 @@ namespace lws
             // std::cout << " inside for parsing" << std::endl;
             std::string it = t["block"];
             t["block"] = json::parse(it);
+            json tx_hash;
+            int tx_num =0;
+            for(auto data :t["block"]["tx_hashes"])
+            {
+                if(!data.is_null())
+                {
+                  tx_hash[tx_num] = data;
+                }
+                tx_num++;
+            }
+            t["block"]["tx_hashes"] = tx_hash;
             // std::cout << " t.size() : " << t["transactions"].size() << std::endl;
             // std::string it_tx = t["transactions"];    // its in array
             for(auto & data :t["transactions"])
@@ -389,7 +415,7 @@ namespace lws
           // final_res["result"].erase("status");
           // final_res["result"].erase("untrusted");
           std::string resp = final_res.dump();
-          std::cout << resp << std::endl;
+          // std::cout << resp << std::endl;
           // std::ifstream people_file("/home/blockhash/Downloads/monero.json", std::ifstream::binary);
           // people_file >> final_res;
           // resp = final_res.dump();
@@ -456,7 +482,11 @@ namespace lws
             auto const& txes = boost::get<0>(block_data).transactions;
 
             if (block.tx_hashes.size() != txes.size())
+            {
+              std::cout << block.tx_hashes.size() << " " << txes.size() << " " << block.prev_id << std::endl;
               throw std::runtime_error{"Bad daemon response - need same number of txes and tx hashes"};
+            }
+              
 
             auto indices = epee::to_span(boost::get<1>(block_data));
             if (indices.empty())
