@@ -96,7 +96,6 @@ namespace lws
       cryptonote::transaction const& tx,
       std::vector<std::uint64_t> const& out_ids)
     {
-      std::cout <<"inside the scan transaction" << std::endl;
       if (cryptonote::txversion::v2_ringct < tx.version)
         throw std::runtime_error{"Unsupported tx version"};
 
@@ -557,7 +556,8 @@ namespace lws
 
           for (account& user : users)
             user.updated(db::block_id(fetched.result.start_height));
-          break;
+          // break;  // loops are enabled for make a continuous connection
+          std::this_thread::sleep_for(5s);
         }
       }
       catch (std::exception const& e)

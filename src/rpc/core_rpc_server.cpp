@@ -577,10 +577,8 @@ namespace cryptonote { namespace rpc {
     cryptonote::block blk;
     cryptonote::transaction tx_hash;
     uint64_t block_count = 0;
-    std::cout <<"blocks.size() : " << blocks.size() << std::endl;
     for(auto& bd: blocks)
     {
-      std::cout << " Entered in the block " << std::endl;
       res.blocks.resize(res.blocks.size()+1);
       if (!parse_and_validate_block_from_blob(bd.first.first, blk))
       {
@@ -589,8 +587,8 @@ namespace cryptonote { namespace rpc {
         res.status = "Failed";
         return res;
       }
-      std::cout << "block_hash : " << tools::type_to_hex(get_block_hash(blk)) << std::endl;
-      std::cout << "size of transaction extra : " << blk.miner_tx.extra.size() << std::endl;
+      // std::cout << "block_hash : " << tools::type_to_hex(get_block_hash(blk)) << std::endl;
+      // std::cout << "size of transaction extra : " << blk.miner_tx.extra.size() << std::endl;
       char hexstr[10];
       std::string extra_res;
       for(int i=0;i<blk.miner_tx.extra.size();i++)
@@ -598,7 +596,6 @@ namespace cryptonote { namespace rpc {
             sprintf(hexstr, "%02x", blk.miner_tx.extra[i]);
             extra_res+=hexstr;
       }
-      std::cout << "extra string : " << extra_res << std::endl;
       //----------blk data's key changed for lws -----------------------------------
       std::string block_json = obj_to_json_str(blk);
       auto t = json::parse(block_json);
@@ -643,7 +640,6 @@ namespace cryptonote { namespace rpc {
         indices.push_back(std::move(tx_indices));
       }
       auto hash_it = blk.tx_hashes.begin();
-      // res.blocks.back().transactions.reserve(bd.second.size());
       std::vector<std::string> tx;
       uint64_t t_size =0;
       json tx_hash_block = {};
@@ -658,7 +654,6 @@ namespace cryptonote { namespace rpc {
           parse_and_validate_tx_base_from_blob(blob.second, tx_hash) :
           parse_and_validate_tx_from_blob(blob.second, tx_hash);
         
-        std::cout << "blob.first : " << blob.first << std::endl;
         if (!parsed)
         {
           // res.blocks.clear();
@@ -666,7 +661,6 @@ namespace cryptonote { namespace rpc {
           // res.status = "failed";
           // return res;
           t["tx_hashes"].erase(t["tx_hashes"].begin()+t_size);
-          std::cout << "block.transactions 1: " << t["tx_hashes"][t_size] << std::endl;
         }            
         if(parsed){
           std::cout <<"entered into parsed function\n";
@@ -734,16 +728,6 @@ namespace cryptonote { namespace rpc {
           tx.push_back(block_tx.dump());
           //---------------------------------------------------------------------------------------
         }
-        else
-        {
-          std::cout << "transactions size 121233: " << res.blocks.back().transactions.size() << std::endl;
-          std::cout << "invalid hash"<< std::endl;
-          // std::string block_transactions = obj_to_json_str(tx_hash);
-          // std::cout << block_transactions.dump() << std::endl;
-          // res.blocks.back().transactions.push_back(obj_to_json_str(tx_hash));
-          // json block_tx = json::array();
-          // tx[t_size] = block_tx.dump();
-        }
         t_size++;
       }
       t["tx_hashes"] = tx_hash_block;
@@ -752,8 +736,6 @@ namespace cryptonote { namespace rpc {
         //  std::string block_indices = obj_to_json_str(indices);
         //  auto blkindices = json::parse(block_indices);
         //  std::cout << " indiceis in block : " << blkindices << std::endl;
-        std::cout << " bd.second.size() : " << bd.second.size() << std::endl;
-        std::cout << " tx data size() : " << tx.size() << std::endl;
         if(bd.second.size() != 0)
         {
           for(auto it : tx)
@@ -763,14 +745,12 @@ namespace cryptonote { namespace rpc {
         }
         else
         {
-          std::cout <<"transaction is empty" << std::endl;
           json tx = json::array();
           res.blocks[block_count].transactions.push_back(tx.dump());
         }
 
         output_indices_rpc.push_back(indices);
         block_count++;
-        std::cout << "-----------------------------------------------" << std::endl;
     }
 
     std::string block_indices = obj_to_json_str(output_indices_rpc);
