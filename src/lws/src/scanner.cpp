@@ -12,13 +12,17 @@
 #include <cstring>
 #include <type_traits>
 #include <utility>
+#include <fstream>
 
 #include "common/error.h"   
 #include "common/hex.h"                          // monero/src
 #include "crypto/crypto.h"                       // monero/src
-#include "crypto/wallet/crypto.h"                     // 
+#include "crypto/wallet/crypto.h"                     // monero/src
 #include "cryptonote_basic/cryptonote_basic.h"        // monero/src
 #include "cryptonote_basic/cryptonote_format_utils.h" // monero/src
+#include "epee/span.h"                                // monero/src
+#include "epee/misc_log_ex.h"                         // monero/src
+
 #include "error.h"
 #include "scanner.h"
 #include "db/account.h"
@@ -26,19 +30,11 @@
 #include "rpc/daemon_zmq.h"
 #include "rpc/json.h"
 #include "wire/json/read.h"
-#include <nlohmann/json.hpp>
-#include "oxenmq/oxenmq.h"
-#include "oxenmq/connections.h"
-#include "epee/span.h"
-#include "epee/misc_log_ex.h"
 #include "lmdb/util.h"
-#include <fstream>
-using namespace oxenmq;
-using json = nlohmann::json;
+
 namespace lws
 {
     std::atomic<bool> scanner::running{true};
-
 
    namespace
    {
@@ -296,15 +292,6 @@ namespace lws
           blockchain.clear();
 
       //     auto resp = client.get_message(block_rpc_timeout);
-
-          // using LMQ_ptr = std::shared_ptr<oxenmq::OxenMQ>;
-          // LMQ_ptr m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
-          // m_LMQ->start();
-    
-          // auto c = m_LMQ->connect_remote("ipc:///home/blockhash/.beldex/beldexd.sock",
-          // [](ConnectionID conn) { std::cout << "for get_blocks_fast Connected \n";},
-          // [](ConnectionID conn, std::string_view f) { std::cout << "for get_blocks_fast connect failed: \n";} 
-          // ); 
           
       //     if (!resp)
       //     {
@@ -326,8 +313,6 @@ namespace lws
           //   std::cout << "Timeout fetching master nodes list data!";
           // },"{\"start_height\": \"" + std::to_string(start_height) + "\"}");
 
-          // json block_fast = R"({"jsonrpc":"2.0","id":"0","method":"get_blocks_fast","params":{"start_height":1412893}}
-          // )"_json;
           json block_fast = {
             {"jsonrpc","2.0"},
             {"id","0"},
@@ -712,21 +697,15 @@ namespace lws
     }
 
    }//anonymous
-    void scanner::sync(db::storage disk)
+    void scanner::sync(db::storage disk,lws::rpc::Connection connection)
     {
+      if(!connection.daemon_connected)
+      {
+        MERROR("Daemon not connected so stop action called");
+        lws::scanner::stop();
+      }
       MINFO("Starting blockchain sync with daemon");
-      using LMQ_ptr = std::shared_ptr<oxenmq::OxenMQ>;
-    
-      LMQ_ptr m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
-      m_LMQ->start();
 
-      bool daemon_connected = false;
-      auto c = m_LMQ->connect_remote("ipc:///home/blockhash/.beldex/beldexd.sock",
-      [&daemon_connected](ConnectionID conn) { daemon_connected = true;std::cout << "for get_hashes_fast Connected \n";},
-      [](ConnectionID conn, std::string_view f) { std::cout << "connect failed: \n";} 
-      );
-
-      // std::this_thread::sleep_for(5s);
       json details;
       int a =0;
       std::vector<crypto::hash> blk_ids;
@@ -750,7 +729,7 @@ namespace lws
      }
       for(;;)
       {
-          m_LMQ->request(c,"rpc.get_hashes",[&details,a,&blk_ids](bool s , auto data){
+          connection.m_LMQ->request(connection.c,"rpc.get_hashes",[&details,a,&blk_ids](bool s , auto data){
           if(s==1 && data[0]=="200"){
             // std::cout << " start_height : " << a << std::endl;
              json jf = json::parse(data[1]);
@@ -766,11 +745,6 @@ namespace lws
           },"{\"start_height\": \"" + std::to_string(a) + "\"}");
 
             std::this_thread::sleep_for(5s);
-            if(!daemon_connected)
-            {
-              MERROR("Daemon not connected so stop action called");
-              lws::scanner::stop();
-            }
            
            int block_ids_size = details["m_block_ids"].size();
            int start_height = details["start_height"];
@@ -792,7 +766,7 @@ namespace lws
           //  std::this_thread::sleep_for(5s);
     }
 
-   void scanner::run(db::storage disk, std::size_t thread_count)
+   void scanner::run(db::storage disk, std::size_t thread_count,lws::rpc::Connection connection)
    {
     thread_count = std::max(std::size_t(1), thread_count);
 
@@ -853,7 +827,7 @@ namespace lws
       //   client = MONERO_UNWRAP(ctx.connect());
 
       // expect<rpc::client> synced = sync(disk.clone(), std::move(client));
-      sync(disk.clone());
+      sync(disk.clone(), connection);
       // if (!synced)
       // {
       //   if (!synced.matches(std::errc::timed_out))

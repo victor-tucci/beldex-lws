@@ -6,6 +6,8 @@
 #include <string>
 #include "db/storage.h"
 #include "db/data.h"
+#include "rpc/client.h"
+
 namespace lws
 {
     class scanner
@@ -16,10 +18,10 @@ namespace lws
     public:
 
         //! Use `client` to sync blockchain data, and \return client if successful.
-        static void sync(db::storage disk);
+        static void sync(db::storage disk,lws::rpc::Connection connection);
 
         //! Poll daemon until `stop()` is called, using `thread_count` threads.
-        static void run(db::storage disk, std::size_t thread_count);
+        static void run(db::storage disk, std::size_t thread_count,lws::rpc::Connection connection);
 
         //! \return True if `stop()` has never been called.
         static bool is_running() noexcept { return running; }

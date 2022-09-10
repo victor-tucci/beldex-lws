@@ -6,7 +6,17 @@
 #include <string>
 #include <utility>
 #include <zmq.h>
+#include <nlohmann/json.hpp>
 
+#include "oxenmq/oxenmq.h"
+#include "oxenmq/connections.h"
+#include "epee/span.h"
+#include "epee/misc_log_ex.h"
+
+using json = nlohmann::json;
+using namespace oxenmq;
+
+using LMQ_ptr = std::shared_ptr<oxenmq::OxenMQ>;
 
 namespace lws
 {
@@ -64,10 +74,10 @@ namespace lws
     std::string const& daemon_address() const;
 
     //! \return Client connection. Thread-safe.
-    expect<client> connect() const noexcept
-    {
-      return client::make(ctx);
-    }
+    // expect<client> connect() const noexcept
+    // {
+    //   return client::make(ctx);
+    // }
 
     /*!
       All block `client::send`, `client::receive`, and `client::wait` calls
@@ -75,7 +85,7 @@ namespace lws
       invoked, will immediately return with `lws::error::kSignlAbortScan`. This
       is NOT signal-safe NOR signal-safe NOR thread-safe.
     */
-    expect<void> raise_abort_scan() noexcept;
+    // expect<void> raise_abort_scan() noexcept;
 
     /*!
       All blocked `client::send`, `client::receive`, and `client::wait` calls
@@ -83,7 +93,7 @@ namespace lws
       `lws::error::kSignalAbortProcess`. This call is NOT signal-safe NOR
       thread-safe.
     */
-    expect<void> raise_abort_process() noexcept;
+    // expect<void> raise_abort_process() noexcept;
 
     /*!
       Retrieve exchange rates, if enabled and past cache interval. Not
@@ -93,7 +103,18 @@ namespace lws
 
       \return Rates iff they were updated.
     */
-    expect<boost::optional<lws::rates>> retrieve_rates();
+    // expect<boost::optional<lws::rates>> retrieve_rates();
   };
+
+  struct Connection{
+    oxenmq::ConnectionID c;
+    LMQ_ptr m_LMQ;
+    bool daemon_connected = false;
+    
+  };
+
+  Connection connect_daemon();
+
+
  }//rpc
 }//lws

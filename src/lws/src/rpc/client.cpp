@@ -11,38 +11,21 @@ namespace lws
 namespace rpc
 {
 
-  expect<client> client::make(std::shared_ptr<detail::context> ctx) noexcept
+  Connection connect_daemon()
   {
-    MONERO_PRECOND(ctx != nullptr);
-
-    int option = daemon_zmq_linger;
-    client out{std::move(ctx)};
-
-    out.daemon.reset(zmq_socket(out.ctx->comm.get(), ZMQ_REQ));
-    if (out.daemon.get() == nullptr)
-      return net::zmq::get_error_code();
-    MONERO_ZMQ_CHECK(zmq_connect(out.daemon.get(), out.ctx->daemon_addr.c_str()));
-    MONERO_ZMQ_CHECK(zmq_setsockopt(out.daemon.get(), ZMQ_LINGER, &option, sizeof(option)));
-
-    if (!out.ctx->sub_addr.empty())
+    Connection connection;
+    connection.m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
+    connection.m_LMQ->start();
+    connection.c = connection.m_LMQ->connect_remote("ipc:///home/blockhash/.beldex/beldexd.sock",
+    [&connection](ConnectionID conn) { connection.daemon_connected = true;},
+    [](ConnectionID conn, std::string_view f) { MERROR("connect failed:");} 
+    );
+    std::this_thread::sleep_for(5s);
+    if(connection.daemon_connected)
     {
-      out.daemon_sub.reset(zmq_socket(out.ctx->comm.get(), ZMQ_SUB));
-      if (out.daemon_sub.get() == nullptr)
-        return net::zmq::get_error_code();
-
-      option = 1; // keep only last pub message from daemon
-      MONERO_ZMQ_CHECK(zmq_connect(out.daemon_sub.get(), out.ctx->sub_addr.c_str()));
-      MONERO_ZMQ_CHECK(zmq_setsockopt(out.daemon_sub.get(), ZMQ_CONFLATE, &option, sizeof(option)));
-      MONERO_CHECK(do_subscribe(out.daemon_sub.get(), minimal_chain_topic));
+      MINFO("LWS-daemon connected with beldexd");
     }
-
-    out.signal_sub.reset(zmq_socket(out.ctx->comm.get(), ZMQ_SUB));
-    if (out.signal_sub.get() == nullptr)
-      return net::zmq::get_error_code();
-    MONERO_ZMQ_CHECK(zmq_connect(out.signal_sub.get(), signal_endpoint));
-
-    MONERO_CHECK(do_subscribe(out.signal_sub.get(), abort_process_signal));
-    return {std::move(out)};
+    return connection;
   }
 }//rpc
 }//lws
