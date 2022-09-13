@@ -70,7 +70,7 @@ else()
 endif()
 
 
-if(NOT OXENMQ_FOUND)
+if(true)
   message(STATUS "Using in-tree oxenmq")
   add_subdirectory(loki-mq)
 else()

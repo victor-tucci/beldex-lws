@@ -34,7 +34,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
+#include <boost/utility/string_ref.hpp> 
 #include "wipeable_string.h"
 #include "span.h"
 
@@ -72,5 +72,9 @@ namespace epee
   {
       //! \return An std::vector of unsigned integers from the `src`
       static std::vector<uint8_t> vector(std::string_view src);
+      static bool to_string(std::string& out, boost::string_ref src);
+      static bool to_buffer(span<std::uint8_t> out, boost::string_ref src) noexcept;
+    private:
+      static bool to_buffer_unchecked(std::uint8_t* out, boost::string_ref src) noexcept;
   };
 }

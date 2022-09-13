@@ -29,6 +29,8 @@
 add_library(epee
     buffer.cpp
     connection_basic.cpp
+    byte_slice.cpp
+    byte_stream.cpp 
     hex.cpp
     levin_base.cpp
     memwipe.c
