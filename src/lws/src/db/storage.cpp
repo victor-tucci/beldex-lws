@@ -518,7 +518,65 @@ namespace db
     MONERO_CHECK(check_cursor(*txn, db->tables.accounts, cur));
     return accounts.get_value_stream(status, std::move(cur));
   }
-  
+
+  expect<account> storage_reader::get_account(const account_status status, const account_id id) noexcept
+  {
+    MONERO_PRECOND(txn != nullptr);
+    assert(db != nullptr);
+
+    cursor::accounts cur;
+    MONERO_CHECK(check_cursor(*txn, db->tables.accounts, cur));
+    assert(cur != nullptr);
+
+    MDB_val key = lmdb::to_val(status);
+    MDB_val value = lmdb::to_val(id);
+    const int err = mdb_cursor_get(cur.get(), &key, &value, MDB_GET_BOTH);
+    if (err)
+    {
+      if (err == MDB_NOTFOUND)
+        return {lws::error::account_not_found};
+      return {lmdb::error(err)};
+    }
+
+    return accounts.get_value<account>(value);
+  }
+
+  expect<std::pair<account_status, account>>
+  storage_reader::get_account(account_address const& address) noexcept
+  {
+    MONERO_PRECOND(txn != nullptr);
+    assert(db != nullptr);
+
+    MONERO_CHECK(check_cursor(*txn, db->tables.accounts_ba, curs.accounts_ba_cur));
+
+    MDB_val key = lmdb::to_val(by_address_version);
+    MDB_val value = lmdb::to_val(address);
+    const int err = mdb_cursor_get(curs.accounts_ba_cur.get(), &key, &value, MDB_GET_BOTH);
+    if (err)
+    {
+      if (err == MDB_NOTFOUND)
+        return {lws::error::account_not_found};
+      return {lmdb::error(err)};
+    }
+
+    /* Database is only indexing by view public for possible CurveZMQ
+       authentication extensions. Verifying both public keys here - the function
+       takes the entire address as an argument. */
+    static_assert(offsetof(account_by_address, address) == 0, "unexpected field offset");
+    if (value.mv_size < sizeof(account_address) || std::memcmp(value.mv_data, &address, sizeof(account_address)) != 0)
+      return {lws::error::account_not_found};
+
+    const expect<account_lookup> lookup =
+      accounts_by_address.get_value<MONERO_FIELD(account_by_address, lookup)>(value);
+    if (!lookup)
+      return lookup.error();
+
+    const expect<account> user = get_account(lookup->status, lookup->id);
+    if (!user)
+      return user.error();
+    return {{lookup->status, *user}};
+  }
+
   expect<lmdb::value_stream<output, cursor::close_outputs>>
   storage_reader::get_outputs(account_id id, cursor::outputs cur) noexcept
   {
@@ -1150,6 +1208,85 @@ namespace db
       return updated;
     });
   }
+
+  expect<void> storage::creation_request(account_address const& address, crypto::secret_key const& key, account_flags flags) noexcept
+  {
+    MONERO_PRECOND(db != nullptr);
+
+    if (!db->create_queue_max)
+      return {lws::error::create_queue_max};
+
+    return db->try_write([this, &address, &key, flags] (MDB_txn& txn) -> expect<void>
+    {
+      const expect<db::account_time> current_time = get_account_time();
+      if (!current_time)
+        return current_time.error();
+
+      cursor::accounts_by_address accounts_ba_cur;
+      cursor::blocks blocks_cur;
+      cursor::accounts requests_cur;
+
+      MONERO_CHECK(check_cursor(txn, this->db->tables.accounts_ba, accounts_ba_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.blocks, blocks_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.requests, requests_cur));
+
+      MDB_val keyv = lmdb::to_val(by_address_version);
+      MDB_val value = lmdb::to_val(address);
+
+      int err = mdb_cursor_get(accounts_ba_cur.get(), &keyv, &value, MDB_GET_BOTH);
+      if (err != MDB_NOTFOUND)
+      {
+        if (err)
+          return {lmdb::error(err)};
+        return {lws::error::account_exists};
+      }
+
+      const request req = request::create;
+      keyv = lmdb::to_val(req);
+      value = MDB_val{};
+      err = mdb_cursor_get(requests_cur.get(), &keyv, &value, MDB_SET);
+      if (!err)
+      {
+        mdb_size_t count = 0;
+        MONERO_LMDB_CHECK(mdb_cursor_count(requests_cur.get(), &count));
+        if (this->db->create_queue_max <= count)
+          return {lws::error::create_queue_max};
+      }
+      else if (err != MDB_NOTFOUND)
+        return {lmdb::error(err)};
+
+      keyv = lmdb::to_val(blocks_version);
+      value = MDB_val{};
+
+      MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &keyv, &value, MDB_SET));
+      MONERO_LMDB_CHECK(mdb_cursor_get(blocks_cur.get(), &keyv, &value, MDB_LAST_DUP));
+
+      const expect<block_id> height =
+        blocks.get_value<MONERO_FIELD(block_info, id)>(value);
+      if (!height)
+        return height.error();
+
+      request_info info{};
+      info.address = address;
+      static_assert(sizeof(info.key) == sizeof(key), "bad memcpy");
+      std::memcpy(std::addressof(info.key), std::addressof(key), sizeof(key));
+      info.creation = *current_time;
+      info.start_height = *height;
+      info.creation_flags = flags;
+
+      keyv = lmdb::to_val(req);
+      value = lmdb::to_val(info);
+
+      err = mdb_cursor_put(requests_cur.get(), &keyv, &value, MDB_NODUPDATA);
+      if (err == MDB_KEYEXIST)
+        return {lws::error::duplicate_request};
+      if (err)
+        return {lmdb::error(err)};
+
+      return success();
+    });
+  }
+
   namespace
   {
     expect<std::vector<account_address>>

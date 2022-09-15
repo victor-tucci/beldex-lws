@@ -183,7 +183,7 @@ namespace lws
       rescan(block_id height, epee::span<const account_address> addresses);
 
   //   //! Add an account for later approval. For use with the login endpoint.
-  //   expect<void> creation_request(account_address const& address, crypto::secret_key const& key, account_flags flags) noexcept;
+    expect<void> creation_request(account_address const& address, crypto::secret_key const& key, account_flags flags) noexcept;
 
   //   /*!
   //     Request lock height of an existing account. No effect if the `start_height`

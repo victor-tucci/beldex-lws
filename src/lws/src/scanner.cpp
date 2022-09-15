@@ -842,6 +842,6 @@ namespace lws
       // else
       //   client = std::move(*synced);
     } // while scanning
-   }
+  }
 
 }//lws
