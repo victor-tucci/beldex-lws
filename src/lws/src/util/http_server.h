@@ -3,9 +3,9 @@
 #include <boost/optional/optional.hpp>
 
 #include "epee/misc_log_ex.h"
-#include "net/abstract_tcp_server2.h"      // beldex/contrib/epee/include
-#include "net/http_protocol_handler.h"     // beldex/contrib/epee/include
-#include "net/http_server_handlers_map2.h" // beldex/contrib/epee/include
+#include "epee/net/abstract_tcp_server2.h"      // beldex/contrib/epee/include
+#include "epee/net/http_protocol_handler.h"     // beldex/contrib/epee/include
+#include "epee/net/http_server_handlers_map2.h" // beldex/contrib/epee/include
 
 #undef BELDEX_DEFAULT_LOG_CATEGORY
 #define BELDEX_DEFAULT_LOG_CATEGORY "net.http"

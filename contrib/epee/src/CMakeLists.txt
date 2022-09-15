@@ -32,6 +32,8 @@ add_library(epee
     byte_slice.cpp
     byte_stream.cpp 
     hex.cpp
+    http_auth.cpp
+    net_ssl.cpp
     levin_base.cpp
     memwipe.c
     mlocker.cpp

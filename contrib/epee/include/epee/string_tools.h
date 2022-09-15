@@ -48,6 +48,9 @@
 #include "span.h"
 #include "warnings.h"
 
+#ifndef OUT
+	#define OUT
+#endif
 
 #ifdef WINDOWS_PLATFORM
 #pragma comment (lib, "Rpcrt4.lib")
@@ -285,8 +288,30 @@ POP_WARNINGS
   {
     return hex_to_pod(hex_str, unwrap(s));
   }
-    //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   bool validate_hex(uint64_t length, const std::string& str);
+  //----------------------------------------------------------------------------
+  inline std::string get_extension(const std::string& str)
+	{
+		std::string res;
+		std::string::size_type pos = str.rfind('.');
+		if(std::string::npos == pos)
+			return res;
+		
+		res = str.substr(pos+1, str.size()-pos);
+		return res;
+	}
+  //----------------------------------------------------------------------------
+	inline std::string cut_off_extension(const std::string& str)
+	{
+		std::string res;
+		std::string::size_type pos = str.rfind('.');
+		if(std::string::npos == pos)
+			return str;
+
+		res = str.substr(0, pos);
+		return res;
+	}
 }
 }
 #endif //_STRING_TOOLS_H_

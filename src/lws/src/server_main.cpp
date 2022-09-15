@@ -142,7 +142,7 @@ namespace
         command_line::get_arg(args, opts.db_path),
         command_line::get_arg(args, opts.rest_servers),
         lws::rest_server::configuration{
-            // {command_line::get_arg(args, opts.rest_ssl_key), command_line::get_arg(args, opts.rest_ssl_cert)},
+            {command_line::get_arg(args, opts.rest_ssl_key), command_line::get_arg(args, opts.rest_ssl_cert)},
             command_line::get_arg(args, opts.access_controls),
             command_line::get_arg(args, opts.rest_threads),
             command_line::get_arg(args, opts.external_bind)},
@@ -169,6 +169,7 @@ namespace
     lws::rpc::Connection connection = lws::rpc::connect_daemon();
     lws::scanner::sync(disk.clone(),connection);
 
+    lws::rest_server server{epee::to_span(prog.rest_servers), disk.clone(), std::move(prog.rest_config)};
         // blocks until SIGINT
    lws::scanner::run(std::move(disk), prog.scan_threads,connection);
     
