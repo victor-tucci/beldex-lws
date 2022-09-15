@@ -326,6 +326,10 @@ namespace lws
           // std::this_thread::sleep_for(2s);
           json res = json::parse(response.text);
           details = res["result"];
+          if(details["status"]=="Failed")
+          {
+            throw std::runtime_error{"Daemon unexpectedly returned zero blocks and status failed"};
+          }
           // parse the string format in_to json formate
           std::string out_indices = details["output_indices"];
           details["output_indices"] = json::parse(out_indices);
