@@ -275,15 +275,15 @@ namespace lws
 //     );
 //   }
 
-//   void rpc::write_bytes(wire::json_writer& dest, const import_response& self)
-//   {
-//     wire::object(dest,
-//       WIRE_FIELD_COPY(import_fee),
-//       WIRE_FIELD_COPY(status),
-//       WIRE_FIELD_COPY(new_request),
-//       WIRE_FIELD_COPY(request_fulfilled)
-//     );
-//   }
+  void rpc::write_bytes(wire::json_writer& dest, const import_response& self)
+  {
+    wire::object(dest,
+      WIRE_FIELD_COPY(import_fee),
+      WIRE_FIELD_COPY(status),
+      WIRE_FIELD_COPY(new_request),
+      WIRE_FIELD_COPY(request_fulfilled)
+    );
+  }
 
   void rpc::read_bytes(wire::json_reader& source, login_request& self)
   {

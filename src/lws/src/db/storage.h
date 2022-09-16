@@ -189,7 +189,7 @@ namespace lws
   //     Request lock height of an existing account. No effect if the `start_height`
   //     is already older.
   //   */
-  //   expect<void> import_request(account_address const& address, block_id height) noexcept;
+    expect<void> import_request(account_address const& address, block_id height) noexcept;
 
     //! Accept requests by `addresses` of type `req`. \return Accepted addresses.
     expect<std::vector<account_address>>

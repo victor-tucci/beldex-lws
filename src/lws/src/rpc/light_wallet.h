@@ -95,6 +95,16 @@ namespace rpc
     };
     void write_bytes(wire::json_writer&, const get_address_txs_response&);
 
+    struct import_response
+    {
+      import_response() = delete;
+      safe_uint64 import_fee;
+      const char* status;
+      bool new_request;
+      bool request_fulfilled;
+    };
+    void write_bytes(wire::json_writer&, const import_response&);
+
     struct login_request
     {
       login_request() = delete;

@@ -617,6 +617,21 @@ namespace db
     MONERO_CHECK(check_cursor(*txn, db->tables.requests, cur));
     return requests.get_key_stream(std::move(cur));
   }
+
+    expect<request_info>
+    storage_reader::get_request(request type, account_address const& address, cursor::requests cur) noexcept
+    {
+      MONERO_PRECOND(txn != nullptr);
+      assert(db != nullptr);
+
+      MONERO_CHECK(check_cursor(*txn, db->tables.requests, cur));
+
+      MDB_val key = lmdb::to_val(type);
+      MDB_val value = lmdb::to_val(address);
+      MONERO_LMDB_CHECK(mdb_cursor_get(cur.get(), &key, &value, MDB_GET_BOTH));
+      return requests.get_value<request_info>(value);
+    }
+
     namespace
   {
     //! `write_bytes` implementation will forward a third argument for `show_keys`.
@@ -1301,6 +1316,48 @@ namespace db
       value = lmdb::to_val(info);
 
       err = mdb_cursor_put(requests_cur.get(), &keyv, &value, MDB_NODUPDATA);
+      if (err == MDB_KEYEXIST)
+        return {lws::error::duplicate_request};
+      if (err)
+        return {lmdb::error(err)};
+
+      return success();
+    });
+  }
+
+  expect<void> storage::import_request(account_address const& address, block_id height) noexcept
+  {
+    MONERO_PRECOND(db != nullptr);
+    return db->try_write([this, &address, height] (MDB_txn& txn) -> expect<void>
+    {
+      const expect<db::account_time> current_time = get_account_time();
+      if (!current_time)
+        return current_time.error();
+
+      cursor::blocks accounts_ba_cur;
+      cursor::requests requests_cur;
+
+      MONERO_CHECK(check_cursor(txn, this->db->tables.accounts_ba, accounts_ba_cur));
+      MONERO_CHECK(check_cursor(txn, this->db->tables.requests, requests_cur));
+
+      MDB_val key = lmdb::to_val(by_address_version);
+      MDB_val value = lmdb::to_val(address);
+
+      int err = mdb_cursor_get(accounts_ba_cur.get(), &key, &value, MDB_GET_BOTH);
+      if (err == MDB_NOTFOUND)
+        return {lws::error::account_not_found};
+      if (err)
+        return {lmdb::error(err)};
+
+      request_info info{};
+      info.address = address;
+      info.start_height = height;
+
+      const request req = request::import_scan;
+      key = lmdb::to_val(req);
+      value = lmdb::to_val(info);
+
+      err = mdb_cursor_put(requests_cur.get(), &key, &value, MDB_NODUPDATA);
       if (err == MDB_KEYEXIST)
         return {lws::error::duplicate_request};
       if (err)

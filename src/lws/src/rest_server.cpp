@@ -299,6 +299,46 @@ namespace lws
       }
     };
 
+    struct import_request
+    {
+      using request = rpc::account_credentials;
+      using response = rpc::import_response;
+
+      static expect<response> handle(request req, db::storage disk)
+      {
+        bool new_request = false;
+        bool fulfilled = false;
+        {
+          auto user = open_account(req, disk.clone());
+          if (!user)
+            return user.error();
+
+          if (user->first.start_height == db::block_id(0))
+            fulfilled = true;
+          else
+          {
+            const expect<db::request_info> info =
+              user->second.get_request(db::request::import_scan, req.address);
+
+            if (!info)
+            {
+              if (info != lmdb::error(MDB_NOTFOUND))
+                return info.error();
+
+              new_request = true;
+            }
+          }
+        } // close reader
+
+        if (new_request)
+          MONERO_CHECK(disk.import_request(req.address, db::block_id(0)));
+
+        const char* status = new_request ?
+          "Accepted, waiting for approval" : (fulfilled ? "Approved" : "Waiting for Approval");
+        return response{rpc::safe_uint64(0), status, new_request, fulfilled};
+      }
+    };
+
     struct login
     {
       using request = rpc::login_request;
@@ -367,7 +407,7 @@ namespace lws
       // {"/get_random_outs",       call<get_random_outs>,  2 * 1024},
       // {"/get_txt_records",       nullptr,                0       },
       // {"/get_unspent_outs",      call<get_unspent_outs>, 2 * 1024},
-      // {"/import_wallet_request", call<import_request>,   2 * 1024},
+      {"/import_request",        call<import_request>,   2 * 1024},
       {"/login",                 call<login>,            2 * 1024}
       // {"/submit_raw_tx",         call<submit_raw_tx>,   50 * 1024}
     };
