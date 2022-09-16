@@ -175,6 +175,130 @@ namespace lws
       }
     };//get_address_info
 
+
+    struct get_address_txs
+    {
+      using request = rpc::account_credentials;
+      using response = rpc::get_address_txs_response;
+
+      static expect<response> handle(const request& req, db::storage disk)
+      {
+        auto user = open_account(req, std::move(disk));
+        if (!user)
+          return user.error();
+
+        auto outputs = user->second.get_outputs(user->first.id);
+        if (!outputs)
+          return outputs.error();
+
+        auto spends = user->second.get_spends(user->first.id);
+        if (!spends)
+          return spends.error();
+
+        const expect<db::block_info> last = user->second.get_last_block();
+        if (!last)
+          return last.error();
+
+        response resp{};
+        resp.scanned_height = std::uint64_t(user->first.scan_height);
+        resp.scanned_block_height = resp.scanned_height;
+        resp.start_height = std::uint64_t(user->first.start_height);
+        resp.blockchain_height = std::uint64_t(last->id);
+        resp.transaction_height = resp.blockchain_height;
+
+        // merge input and output info into a single set of txes.
+
+        auto output = outputs->make_iterator();
+        auto spend = spends->make_iterator();
+
+        std::vector<db::output::spend_meta_> metas{};
+
+        resp.transactions.reserve(outputs->count());
+        metas.reserve(resp.transactions.capacity());
+
+        db::transaction_link next_output{};
+        db::transaction_link next_spend{};
+
+        if (!output.is_end())
+          next_output = output.get_value<MONERO_FIELD(db::output, link)>();
+        if (!spend.is_end())
+          next_spend = spend.get_value<MONERO_FIELD(db::spend, link)>();
+
+        while (!output.is_end() || !spend.is_end())
+        {
+          if (!resp.transactions.empty())
+          {
+            db::transaction_link const& last = resp.transactions.back().info.link;
+
+            if ((!output.is_end() && next_output < last) || (!spend.is_end() && next_spend < last))
+            {
+              throw std::logic_error{"DB has unexpected sort order"};
+            }
+          }
+
+          if (spend.is_end() || (!output.is_end() && next_output <= next_spend))
+          {
+            std::uint64_t amount = 0;
+            if (resp.transactions.empty() || resp.transactions.back().info.link.tx_hash != next_output.tx_hash)
+            {
+              resp.transactions.push_back({*output});
+              amount = resp.transactions.back().info.spend_meta.amount;
+            }
+            else
+            {
+              amount = output.get_value<MONERO_FIELD(db::output, spend_meta.amount)>();
+              resp.transactions.back().info.spend_meta.amount += amount;
+            }
+
+            const db::output::spend_meta_ meta = output.get_value<MONERO_FIELD(db::output, spend_meta)>();
+            if (metas.empty() || metas.back().id < meta.id)
+              metas.push_back(meta);
+            else
+              metas.insert(find_metadata(metas, meta.id), meta);
+
+            resp.total_received = rpc::safe_uint64(std::uint64_t(resp.total_received) + amount);
+
+            ++output;
+            if (!output.is_end())
+              next_output = output.get_value<MONERO_FIELD(db::output, link)>();
+          }
+          else if (output.is_end() || (next_spend < next_output))
+          {
+            const db::output_id source_id = spend.get_value<MONERO_FIELD(db::spend, source)>();
+            const auto meta = find_metadata(metas, source_id);
+            if (meta == metas.end() || meta->id != source_id)
+            {
+              throw std::logic_error{
+                "Serious database error, no receive for spend"
+              };
+            }
+
+            if (resp.transactions.empty() || resp.transactions.back().info.link.tx_hash != next_spend.tx_hash)
+            {
+              resp.transactions.push_back({});
+              resp.transactions.back().spends.push_back({*meta, *spend});
+              resp.transactions.back().info.link.height = resp.transactions.back().spends.back().possible_spend.link.height;
+              resp.transactions.back().info.link.tx_hash = resp.transactions.back().spends.back().possible_spend.link.tx_hash;
+              resp.transactions.back().info.spend_meta.mixin_count =
+                resp.transactions.back().spends.back().possible_spend.mixin_count;
+              resp.transactions.back().info.timestamp = resp.transactions.back().spends.back().possible_spend.timestamp;
+              resp.transactions.back().info.unlock_time = resp.transactions.back().spends.back().possible_spend.unlock_time;
+            }
+            else
+              resp.transactions.back().spends.push_back({*meta, *spend});
+
+            resp.transactions.back().spent += meta->amount;
+
+            ++spend;
+            if (!spend.is_end())
+              next_spend = spend.get_value<MONERO_FIELD(db::spend, link)>();
+          }
+        }
+
+        return resp;
+      }
+    };
+
     struct login
     {
       using request = rpc::login_request;
@@ -239,7 +363,7 @@ namespace lws
     constexpr const endpoint endpoints[] =
     {
       {"/get_address_info",      call<get_address_info>, 2 * 1024},
-      // {"/get_address_txs",       call<get_address_txs>,  2 * 1024},
+      {"/get_address_txs",       call<get_address_txs>,  2 * 1024},
       // {"/get_random_outs",       call<get_random_outs>,  2 * 1024},
       // {"/get_txt_records",       nullptr,                0       },
       // {"/get_unspent_outs",      call<get_unspent_outs>, 2 * 1024},

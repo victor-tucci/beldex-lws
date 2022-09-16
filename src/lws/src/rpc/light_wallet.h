@@ -74,6 +74,27 @@ namespace rpc
     };
     void write_bytes(wire::json_writer&, const get_address_info_response&);
 
+    struct get_address_txs_response
+    {
+      get_address_txs_response() = delete;
+      struct transaction
+      {
+        transaction() = delete;
+        db::output info;
+        std::vector<transaction_spend> spends;
+        std::uint64_t spent;
+      };
+
+      safe_uint64 total_received;
+      std::uint64_t scanned_height;
+      std::uint64_t scanned_block_height;
+      std::uint64_t start_height;
+      std::uint64_t transaction_height;
+      std::uint64_t blockchain_height;
+      std::vector<transaction> transactions;
+    };
+    void write_bytes(wire::json_writer&, const get_address_txs_response&);
+
     struct login_request
     {
       login_request() = delete;

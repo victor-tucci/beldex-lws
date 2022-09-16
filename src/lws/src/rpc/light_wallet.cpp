@@ -190,54 +190,54 @@ namespace lws
     );
   }
 
-//   namespace rpc
-//   {
-//     static void write_bytes(wire::json_writer& dest, boost::range::index_value<const get_address_txs_response::transaction&> self)
-//     {
-//       epee::span<const std::uint8_t> const* payment_id = nullptr;
-//       epee::span<const std::uint8_t> payment_id_bytes;
+  namespace rpc
+  {
+    static void write_bytes(wire::json_writer& dest, boost::range::index_value<const get_address_txs_response::transaction&> self)
+    {
+      epee::span<const std::uint8_t> const* payment_id = nullptr;
+      epee::span<const std::uint8_t> payment_id_bytes;
 
-//       const auto extra = db::unpack(self.value().info.extra);
-//       if (extra.second)
-//       {
-//         payment_id = std::addressof(payment_id_bytes);
+      const auto extra = db::unpack(self.value().info.extra);
+      if (extra.second)
+      {
+        payment_id = std::addressof(payment_id_bytes);
 
-//         if (extra.second == sizeof(self.value().info.payment_id.short_))
-//           payment_id_bytes = epee::as_byte_span(self.value().info.payment_id.short_);
-//         else
-//           payment_id_bytes = epee::as_byte_span(self.value().info.payment_id.long_);
-//       }
+        if (extra.second == sizeof(self.value().info.payment_id.short_))
+          payment_id_bytes = epee::as_byte_span(self.value().info.payment_id.short_);
+        else
+          payment_id_bytes = epee::as_byte_span(self.value().info.payment_id.long_);
+      }
 
-//       const bool is_coinbase = (extra.first & db::coinbase_output);
+      const bool is_coinbase = (extra.first & db::coinbase_output);
 
-//       wire::object(dest,
-//         wire::field("id", std::uint64_t(self.index())),
-//         wire::field("hash", std::cref(self.value().info.link.tx_hash)),
-//         wire::field("timestamp", iso_timestamp(self.value().info.timestamp)),
-//         wire::field("total_received", safe_uint64(self.value().info.spend_meta.amount)),
-//         wire::field("total_sent", safe_uint64(self.value().spent)),
-//         wire::field("unlock_time", self.value().info.unlock_time),
-//         wire::field("height", self.value().info.link.height),
-//         wire::optional_field("payment_id", payment_id),
-//         wire::field("coinbase", is_coinbase),
-//         wire::field("mempool", false),
-//         wire::field("mixin", self.value().info.spend_meta.mixin_count),
-//         wire::field("spent_outputs", std::cref(self.value().spends))
-//       );
-//     }
-//   } // rpc
-//   void rpc::write_bytes(wire::json_writer& dest, const get_address_txs_response& self)
-//   {
-//     wire::object(dest,
-//       wire::field("total_received", safe_uint64(self.total_received)),
-//       WIRE_FIELD_COPY(scanned_height),
-//       WIRE_FIELD_COPY(scanned_block_height),
-//       WIRE_FIELD_COPY(start_height),
-//       WIRE_FIELD_COPY(transaction_height),
-//       WIRE_FIELD_COPY(blockchain_height),
-//       wire::field("transactions", wire::as_array(boost::adaptors::index(self.transactions)))
-//     );
-//   }
+      wire::object(dest,
+        wire::field("id", std::uint64_t(self.index())),
+        wire::field("hash", std::cref(self.value().info.link.tx_hash)),
+        wire::field("timestamp", iso_timestamp(self.value().info.timestamp)),
+        wire::field("total_received", safe_uint64(self.value().info.spend_meta.amount)),
+        wire::field("total_sent", safe_uint64(self.value().spent)),
+        wire::field("unlock_time", self.value().info.unlock_time),
+        wire::field("height", self.value().info.link.height),
+        wire::optional_field("payment_id", payment_id),
+        wire::field("coinbase", is_coinbase),
+        wire::field("mempool", false),
+        wire::field("mixin", self.value().info.spend_meta.mixin_count),
+        wire::field("spent_outputs", std::cref(self.value().spends))
+      );
+    }
+  } // rpc
+  void rpc::write_bytes(wire::json_writer& dest, const get_address_txs_response& self)
+  {
+    wire::object(dest,
+      wire::field("total_received", safe_uint64(self.total_received)),
+      WIRE_FIELD_COPY(scanned_height),
+      WIRE_FIELD_COPY(scanned_block_height),
+      WIRE_FIELD_COPY(start_height),
+      WIRE_FIELD_COPY(transaction_height),
+      WIRE_FIELD_COPY(blockchain_height),
+      wire::field("transactions", wire::as_array(boost::adaptors::index(self.transactions)))
+    );
+  }
 
 //   void rpc::read_bytes(wire::json_reader& source, get_random_outs_request& self)
 //   {
