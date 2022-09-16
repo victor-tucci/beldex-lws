@@ -163,32 +163,32 @@ namespace lws
     convert_address(address, self.address);
   }
 
-//   void rpc::write_bytes(wire::json_writer& dest, const transaction_spend& self)
-//   {
-//     wire::object(dest,
-//       wire::field("amount", safe_uint64(self.meta.amount)),
-//       wire::field("key_image", std::cref(self.possible_spend.image)),
-//       wire::field("tx_pub_key", std::cref(self.meta.tx_public)),
-//       wire::field("out_index", self.meta.index),
-//       wire::field("mixin", self.possible_spend.mixin_count)
-//     );
-//   }
+  void rpc::write_bytes(wire::json_writer& dest, const transaction_spend& self)
+  {
+    wire::object(dest,
+      wire::field("amount", safe_uint64(self.meta.amount)),
+      wire::field("key_image", std::cref(self.possible_spend.image)),
+      wire::field("tx_pub_key", std::cref(self.meta.tx_public)),
+      wire::field("out_index", self.meta.index),
+      wire::field("mixin", self.possible_spend.mixin_count)
+    );
+  }
 
-//   void rpc::write_bytes(wire::json_writer& dest, const get_address_info_response& self)
-//   {
-//     wire::object(dest,
-//       WIRE_FIELD_COPY(locked_funds),
-//       WIRE_FIELD_COPY(total_received),
-//       WIRE_FIELD_COPY(total_sent),
-//       WIRE_FIELD_COPY(scanned_height),
-//       WIRE_FIELD_COPY(scanned_block_height),
-//       WIRE_FIELD_COPY(start_height),
-//       WIRE_FIELD_COPY(transaction_height),
-//       WIRE_FIELD_COPY(blockchain_height),
-//       WIRE_FIELD(spent_outputs),
-//       WIRE_OPTIONAL_FIELD(rates)
-//     );
-//   }
+  void rpc::write_bytes(wire::json_writer& dest, const get_address_info_response& self)
+  {
+    wire::object(dest,
+      WIRE_FIELD_COPY(locked_funds),
+      WIRE_FIELD_COPY(total_received),
+      WIRE_FIELD_COPY(total_sent),
+      WIRE_FIELD_COPY(scanned_height),
+      WIRE_FIELD_COPY(scanned_block_height),
+      WIRE_FIELD_COPY(start_height),
+      WIRE_FIELD_COPY(transaction_height),
+      WIRE_FIELD_COPY(blockchain_height),
+      WIRE_FIELD(spent_outputs)
+      // WIRE_OPTIONAL_FIELD(rates)
+    );
+  }
 
 //   namespace rpc
 //   {

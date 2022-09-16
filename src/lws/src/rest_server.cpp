@@ -49,6 +49,13 @@ namespace lws
       return true;
     }
 
+    bool is_locked(std::uint64_t unlock_time, db::block_id last) noexcept
+    {
+      if (unlock_time > CRYPTONOTE_MAX_BLOCK_NUMBER)
+        return std::chrono::seconds{unlock_time} > std::chrono::system_clock::now().time_since_epoch();
+      return db::block_id(unlock_time) > last;
+    }
+
     bool key_check(const rpc::account_credentials& creds)
     {
       crypto::public_key verify{};
@@ -58,6 +65,115 @@ namespace lws
         return false;
       return true;
     }
+    
+    std::vector<db::output::spend_meta_>::const_iterator
+    find_metadata(std::vector<db::output::spend_meta_> const& metas, db::output_id id)
+    {
+      struct by_output_id
+      {
+        bool operator()(db::output::spend_meta_ const& left, db::output_id right) const noexcept
+        {
+          return left.id < right;
+        }
+        bool operator()(db::output_id left, db::output::spend_meta_ const& right) const noexcept
+        {
+          return left < right.id;
+        }
+      };
+      return std::lower_bound(metas.begin(), metas.end(), id, by_output_id{});
+    }
+
+
+    //! \return Account info from the DB, iff key matches address AND address is NOT hidden.
+    expect<std::pair<db::account, db::storage_reader>> open_account(const rpc::account_credentials& creds, db::storage disk)
+    {
+      if (!key_check(creds))
+        return {lws::error::bad_view_key};
+
+      auto reader = disk.start_read();
+      if (!reader)
+        return reader.error();
+
+      const auto user = reader->get_account(creds.address);
+      if (!user)
+        return user.error();
+      if (is_hidden(user->first))
+        return {lws::error::account_not_found};
+      return {std::make_pair(user->second, std::move(*reader))};
+    }
+
+    struct get_address_info
+    {
+      using request = rpc::account_credentials;
+      using response = rpc::get_address_info_response;
+
+      static expect<response> handle(const request& req, db::storage disk)
+      {
+        auto user = open_account(req, std::move(disk));
+        if (!user)
+          return user.error();
+
+        response resp{};
+
+        auto outputs = user->second.get_outputs(user->first.id);
+        if (!outputs)
+          return outputs.error();
+
+        auto spends = user->second.get_spends(user->first.id);
+        if (!spends)
+          return spends.error();
+
+        const expect<db::block_info> last = user->second.get_last_block();
+        if (!last)
+          return last.error();
+
+        resp.blockchain_height = std::uint64_t(last->id);
+        resp.transaction_height = resp.blockchain_height;
+        resp.scanned_height = std::uint64_t(user->first.scan_height);
+        resp.scanned_block_height = resp.scanned_height;
+        resp.start_height = std::uint64_t(user->first.start_height);
+
+        std::vector<db::output::spend_meta_> metas{};
+        metas.reserve(outputs->count());
+
+        for (auto output = outputs->make_iterator(); !output.is_end(); ++output)
+        {
+          const db::output::spend_meta_ meta =
+            output.get_value<MONERO_FIELD(db::output, spend_meta)>();
+
+          // these outputs will usually be in correct order post ringct
+          if (metas.empty() || metas.back().id < meta.id)
+            metas.push_back(meta);
+          else
+            metas.insert(find_metadata(metas, meta.id), meta);
+
+          resp.total_received = rpc::safe_uint64(std::uint64_t(resp.total_received) + meta.amount);
+          if (is_locked(output.get_value<MONERO_FIELD(db::output, unlock_time)>(), last->id))
+            resp.locked_funds = rpc::safe_uint64(std::uint64_t(resp.locked_funds) + meta.amount);
+        }
+
+        resp.spent_outputs.reserve(spends->count());
+        for (auto const& spend : spends->make_range())
+        {
+          const auto meta = find_metadata(metas, spend.source);
+          if (meta == metas.end() || meta->id != spend.source)
+          {
+            throw std::logic_error{
+              "Serious database error, no receive for spend"
+            };
+          }
+
+          resp.spent_outputs.push_back({*meta, spend});
+          resp.total_sent = rpc::safe_uint64(std::uint64_t(resp.total_sent) + meta->amount);
+        }
+
+        // resp.rates = client.get_rates();
+        // if (!resp.rates && !rates_error_once.test_and_set(std::memory_order_relaxed))
+        //   MWARNING("Unable to retrieve exchange rates: " << resp.rates.error().message());
+
+        return resp;
+      }
+    };//get_address_info
 
     struct login
     {
@@ -95,7 +211,7 @@ namespace lws
         std::cout <<"creation_request called\n";
         return response{true, req.generated_locally};
       }
-    };
+    };//login
 
     template<typename E>
     expect<epee::byte_slice> call(std::string&& root, db::storage disk)
@@ -122,7 +238,7 @@ namespace lws
 
     constexpr const endpoint endpoints[] =
     {
-      // {"/get_address_info",      call<get_address_info>, 2 * 1024},
+      {"/get_address_info",      call<get_address_info>, 2 * 1024},
       // {"/get_address_txs",       call<get_address_txs>,  2 * 1024},
       // {"/get_random_outs",       call<get_random_outs>,  2 * 1024},
       // {"/get_txt_records",       nullptr,                0       },

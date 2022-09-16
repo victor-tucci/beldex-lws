@@ -31,12 +31,48 @@ namespace rpc
     };
     void read_bytes(wire::json_reader&, safe_uint64_array&);
 
+    struct transaction_spend
+    {
+      transaction_spend() = delete;
+      lws::db::output::spend_meta_ meta;
+      lws::db::spend possible_spend;
+    };
+    void write_bytes(wire::json_writer&, const transaction_spend&);
+
     struct account_credentials
     {
       lws::db::account_address address;
       crypto::secret_key key;
     };
     void read_bytes(wire::json_reader&, account_credentials&);
+
+    struct get_address_info_response
+    {
+      get_address_info_response() noexcept
+        : locked_funds(safe_uint64(0)),
+          total_received(safe_uint64(0)),
+          total_sent(safe_uint64(0)),
+          scanned_height(0),
+          scanned_block_height(0),
+          start_height(0),
+          transaction_height(0),
+          blockchain_height(0),
+          spent_outputs()
+          // rates(common_error::kInvalidArgument)
+      {}
+
+      safe_uint64 locked_funds;
+      safe_uint64 total_received;
+      safe_uint64 total_sent;
+      std::uint64_t scanned_height;
+      std::uint64_t scanned_block_height;
+      std::uint64_t start_height;
+      std::uint64_t transaction_height;
+      std::uint64_t blockchain_height;
+      std::vector<transaction_spend> spent_outputs;
+      // expect<lws::rates> rates;
+    };
+    void write_bytes(wire::json_writer&, const get_address_info_response&);
 
     struct login_request
     {
