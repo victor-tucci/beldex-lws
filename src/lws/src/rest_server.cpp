@@ -255,12 +255,12 @@ namespace lws
           return {lws::error::bad_daemon_response};
         }
         
-        const std::uint16_t fee_per_byte = resp["result"]["fee_per_byte"];  
-        const std::uint16_t fee_per_output = resp["result"]["fee_per_output"];
-        const std::uint16_t flash_fee_per_byte = resp["result"]["flash_fee_per_byte"]; 
-        const std::uint16_t flash_fee_per_output = resp["result"]["flash_fee_per_output"];
-        const std::uint16_t flash_fee_fixed = resp["result"]["flash_fee_fixed"]; 
-        const std::uint16_t quantization_mask = resp["result"]["quantization_mask"]; 
+        const std::uint64_t fee_per_byte = resp["result"]["fee_per_byte"];  
+        const std::uint64_t fee_per_output = resp["result"]["fee_per_output"];
+        const std::uint64_t flash_fee_per_byte = resp["result"]["flash_fee_per_byte"]; 
+        const std::uint64_t flash_fee_per_output = resp["result"]["flash_fee_per_output"];
+        const std::uint64_t flash_fee_fixed = resp["result"]["flash_fee_fixed"]; 
+        const std::uint64_t quantization_mask = resp["result"]["quantization_mask"]; 
 
         return response{fee_per_byte, fee_per_output,flash_fee_per_byte,flash_fee_per_output,flash_fee_fixed,quantization_mask, rpc::safe_uint64(received), std::move(unspent), std::move(req.creds.key)};
       }
