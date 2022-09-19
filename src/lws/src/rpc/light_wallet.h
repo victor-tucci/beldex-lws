@@ -150,5 +150,19 @@ namespace rpc
     };
     void write_bytes(wire::json_writer&, login_response);
 
-}
-}
+      struct submit_raw_tx_request
+    {
+      submit_raw_tx_request() = delete;
+      std::string tx;
+    };
+    void read_bytes(wire::json_reader&, submit_raw_tx_request&);
+
+    struct submit_raw_tx_response
+    {
+      submit_raw_tx_response() = delete;
+      const char* status;
+    };
+    void write_bytes(wire::json_writer&, submit_raw_tx_response);
+
+} 
+} //lws

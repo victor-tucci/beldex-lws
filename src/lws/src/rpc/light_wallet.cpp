@@ -307,12 +307,12 @@ namespace lws
     wire::object(dest, WIRE_FIELD_COPY(new_address), WIRE_FIELD_COPY(generated_locally));
   }
 
-//   void rpc::read_bytes(wire::json_reader& source, submit_raw_tx_request& self)
-//   {
-//     wire::object(source, WIRE_FIELD(tx));
-//   }
-//   void rpc::write_bytes(wire::json_writer& dest, const submit_raw_tx_response self)
-//   {
-//     wire::object(dest, WIRE_FIELD_COPY(status));
-//   }
+  void rpc::read_bytes(wire::json_reader& source, submit_raw_tx_request& self)
+  {
+    wire::object(source, WIRE_FIELD(tx));
+  }
+  void rpc::write_bytes(wire::json_writer& dest, const submit_raw_tx_response self)
+  {
+    wire::object(dest, WIRE_FIELD_COPY(status));
+  }
 } // lws

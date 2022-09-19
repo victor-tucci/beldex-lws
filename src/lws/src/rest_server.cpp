@@ -467,6 +467,36 @@ namespace lws
       }
     };//login
 
+    struct submit_raw_tx
+    {
+      using request = rpc::submit_raw_tx_request;
+      using response = rpc::submit_raw_tx_response;
+
+      static expect<response> handle(request req, const db::storage &disk)
+      {
+        using transaction_rpc = cryptonote::rpc::SEND_RAW_TX;
+
+        // expect<rpc::client> client = gclient.clone();
+        // if (!client)
+        //   return client.error();
+
+        transaction_rpc::request daemon_req{};
+        daemon_req.do_not_relay = true;
+        daemon_req.tx_as_hex = std::move(req.tx);    // Flash Transcation need to be enabled in future 
+        
+        // epee::byte_slice message = rpc::client::make_message("send_raw_tx_hex", daemon_req);
+        // MONERO_CHECK(client->send(std::move(message), std::chrono::seconds{10}));
+
+        // const auto daemon_resp = client->receive<transaction_rpc::Response>(std::chrono::seconds{20}, MLWS_CURRENT_LOCATION);
+        // if (!daemon_resp)
+        //   return daemon_resp.error();
+        // if (!daemon_resp->relayed)
+        //   return {lws::error::tx_relay_failed};
+
+        return response{"OK"};
+      }
+    }; //submit_raw_tx
+
     template<typename E>
     expect<epee::byte_slice> call(std::string&& root, db::storage disk)
     {
@@ -498,8 +528,8 @@ namespace lws
       // {"/get_txt_records",       nullptr,                0       },
       {"/get_unspent_outs",      call<get_unspent_outs>, 2 * 1024},
       {"/import_request",        call<import_request>,   2 * 1024},
-      {"/login",                 call<login>,            2 * 1024}
-      // {"/submit_raw_tx",         call<submit_raw_tx>,   50 * 1024}
+      {"/login",                 call<login>,            2 * 1024},
+      {"/submit_raw_tx",         call<submit_raw_tx>,   50 * 1024}
     };
 
     struct by_name_
