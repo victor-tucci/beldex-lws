@@ -6,16 +6,19 @@
 #include <limits>
 #include <string>
 #include <utility>
+#include <cpr/cpr.h>
 
-#include "common/error.h"         // monero/src
+#include "common/error.h"                       // beldex/src
 #include "common/expect.h"
-#include "crypto/crypto.h"        // monero/src
-#include "cryptonote_config.h"    // monero/src
-#include "lmdb/util.h"                 // monero/src
+#include "crypto/crypto.h"                      // beldex/src
+#include "cryptonote_config.h"                  // beldex/src
+#include "lmdb/util.h"                          // beldex/src
+#include "rpc/core_rpc_server_commands_defs.h"  // beldex/src
 
 #include "error.h"
 #include "db/data.h"
 #include "db/storage.h"
+#include "rpc/client.h"
 #include "util/http_server.h"
 #include "util/gamma_picker.h"
 #include "util/random_outputs.h"
@@ -182,18 +185,28 @@ namespace lws
 
       static expect<response> handle(request req, db::storage disk)
       {
-        // using rpc_command = cryptonote::rpc::GetFeeEstimate;
+        // using rpc_command = cryptonote::rpc::GET_BASE_FEE_ESTIMATE;
 
         auto user = open_account(req.creds, std::move(disk));
         if (!user)
           return user.error();
 
-        // {
-        //   rpc_command::Request req{};
-        //   req.num_grace_blocks = 10;
+          // rpc_command::request req{};
+        uint64_t grace_blocks = 10;
         //   epee::byte_slice msg = rpc::client::make_message("get_dynamic_fee_estimate", req);
         //   MONERO_CHECK(client->send(std::move(msg), std::chrono::seconds{10}));
-        // }
+          json dynamic_fee = {
+            {"jsonrpc","2.0"},
+            {"id","0"},
+            {"method","get_fee_estimate"},
+            {"params",{{"grace_blocks",grace_blocks}}}
+          };
+
+          auto fee_data = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},
+                         cpr::Body{dynamic_fee.dump()},
+                         cpr::Header{ { "Content-Type", "application/json" }});
+
+          json resp = json::parse(fee_data.text);
 
         if ((req.use_dust && req.use_dust) || !req.dust_threshold)
           req.dust_threshold = rpc::safe_uint64(0);
@@ -237,17 +250,17 @@ namespace lws
         // if (resp->size_scale == 0 || 1024 < resp->size_scale || resp->fee_mask == 0)
           // return {lws::error::bad_daemon_response};
 
-        // const std::uint64_t per_byte_fee = 0 ;
-          // resp->estimated_base_fee / resp->size_scale;
+        if(resp["status"]=="Failed")
+        {
+          return {lws::error::bad_daemon_response};
+        }
         
-        // const std::uint64_t fee_mask = 0 ; //tmp need to remove after daemon connection
-
-        const std::uint16_t fee_per_byte = 0 ;  //tmp need to remove after daemon connection
-        const std::uint16_t fee_per_output = 0 ; //tmp need to remove after daemon connection
-        const std::uint16_t flash_fee_per_byte = 0;  //tmp need to remove after daemon connection
-        const std::uint16_t flash_fee_per_output = 0 ;  //tmp need to remove after daemon connection
-        const std::uint16_t flash_fee_fixed = 0 ;  //tmp need to remove after daemon connection
-        const std::uint16_t quantization_mask =0 ;  //tmp need to remove after daemon connection
+        const std::uint16_t fee_per_byte = resp["result"]["fee_per_byte"];  
+        const std::uint16_t fee_per_output = resp["result"]["fee_per_output"];
+        const std::uint16_t flash_fee_per_byte = resp["result"]["flash_fee_per_byte"]; 
+        const std::uint16_t flash_fee_per_output = resp["result"]["flash_fee_per_output"];
+        const std::uint16_t flash_fee_fixed = resp["result"]["flash_fee_fixed"]; 
+        const std::uint16_t quantization_mask = resp["result"]["quantization_mask"]; 
 
         return response{fee_per_byte, fee_per_output,flash_fee_per_byte,flash_fee_per_output,flash_fee_fixed,quantization_mask, rpc::safe_uint64(received), std::move(unspent), std::move(req.creds.key)};
       }
