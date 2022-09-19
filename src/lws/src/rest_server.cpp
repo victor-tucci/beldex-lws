@@ -175,6 +175,83 @@ namespace lws
       }
     };//get_address_info
 
+    struct get_unspent_outs
+    {
+      using request = rpc::get_unspent_outs_request;
+      using response = rpc::get_unspent_outs_response;
+
+      static expect<response> handle(request req, db::storage disk)
+      {
+        // using rpc_command = cryptonote::rpc::GetFeeEstimate;
+
+        auto user = open_account(req.creds, std::move(disk));
+        if (!user)
+          return user.error();
+
+        // {
+        //   rpc_command::Request req{};
+        //   req.num_grace_blocks = 10;
+        //   epee::byte_slice msg = rpc::client::make_message("get_dynamic_fee_estimate", req);
+        //   MONERO_CHECK(client->send(std::move(msg), std::chrono::seconds{10}));
+        // }
+
+        if ((req.use_dust && req.use_dust) || !req.dust_threshold)
+          req.dust_threshold = rpc::safe_uint64(0);
+
+        if (!req.mixin)
+          req.mixin = 0;
+
+        auto outputs = user->second.get_outputs(user->first.id);
+        if (!outputs)
+          return outputs.error();
+        
+        std::uint64_t received = 0;
+        std::vector<std::pair<db::output, std::vector<crypto::key_image>>> unspent;
+
+        unspent.reserve(outputs->count());
+        for (db::output const& out : outputs->make_range())
+        {
+          if (out.spend_meta.amount < std::uint64_t(*req.dust_threshold) || out.spend_meta.mixin_count < *req.mixin)
+            continue;
+
+          received += out.spend_meta.amount;
+          unspent.push_back({out, {}});
+
+          auto images = user->second.get_images(out.spend_meta.id);
+          if (!images)
+            return images.error();
+
+          unspent.back().second.reserve(images->count());
+          auto range = images->make_range<MONERO_FIELD(db::key_image, value)>();
+          std::copy(range.begin(), range.end(), std::back_inserter(unspent.back().second));
+        }
+        // const auto resp = client->receive<rpc_command::Response>(std::chrono::seconds{20}, MLWS_CURRENT_LOCATION);
+
+        if (received < std::uint64_t(req.amount))
+          return {lws::error::account_not_found};
+
+        
+        // if (!resp)
+          // return resp.error();
+
+        // if (resp->size_scale == 0 || 1024 < resp->size_scale || resp->fee_mask == 0)
+          // return {lws::error::bad_daemon_response};
+
+        // const std::uint64_t per_byte_fee = 0 ;
+          // resp->estimated_base_fee / resp->size_scale;
+        
+        // const std::uint64_t fee_mask = 0 ; //tmp need to remove after daemon connection
+
+        const std::uint16_t fee_per_byte = 0 ;  //tmp need to remove after daemon connection
+        const std::uint16_t fee_per_output = 0 ; //tmp need to remove after daemon connection
+        const std::uint16_t flash_fee_per_byte = 0;  //tmp need to remove after daemon connection
+        const std::uint16_t flash_fee_per_output = 0 ;  //tmp need to remove after daemon connection
+        const std::uint16_t flash_fee_fixed = 0 ;  //tmp need to remove after daemon connection
+        const std::uint16_t quantization_mask =0 ;  //tmp need to remove after daemon connection
+
+        return response{fee_per_byte, fee_per_output,flash_fee_per_byte,flash_fee_per_output,flash_fee_fixed,quantization_mask, rpc::safe_uint64(received), std::move(unspent), std::move(req.creds.key)};
+      }
+    };//get_unspent_outs
 
     struct get_address_txs
     {
@@ -406,7 +483,7 @@ namespace lws
       {"/get_address_txs",       call<get_address_txs>,  2 * 1024},
       // {"/get_random_outs",       call<get_random_outs>,  2 * 1024},
       // {"/get_txt_records",       nullptr,                0       },
-      // {"/get_unspent_outs",      call<get_unspent_outs>, 2 * 1024},
+      {"/get_unspent_outs",      call<get_unspent_outs>, 2 * 1024},
       {"/import_request",        call<import_request>,   2 * 1024},
       {"/login",                 call<login>,            2 * 1024}
       // {"/submit_raw_tx",         call<submit_raw_tx>,   50 * 1024}

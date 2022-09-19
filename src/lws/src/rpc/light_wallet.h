@@ -95,6 +95,34 @@ namespace rpc
     };
     void write_bytes(wire::json_writer&, const get_address_txs_response&);
 
+      struct get_unspent_outs_request
+    {
+      get_unspent_outs_request() = delete;
+      safe_uint64 amount;
+      boost::optional<safe_uint64> dust_threshold;
+      boost::optional<std::uint32_t> mixin;
+      boost::optional<bool> use_dust;
+      account_credentials creds;
+    };
+    void read_bytes(wire::json_reader&, get_unspent_outs_request&);
+
+    struct get_unspent_outs_response
+    {
+      get_unspent_outs_response() = delete;
+      // std::uint64_t per_byte_fee;
+      std::uint64_t fee_per_byte;
+      std::uint64_t fee_per_output;
+      std::uint64_t flash_fee_per_byte;
+      std::uint64_t flash_fee_per_output;
+      std::uint64_t flash_fee_fixed; 
+      std::uint64_t quantization_mask;
+      // std::uint64_t fee_mask;
+      safe_uint64 amount;
+      std::vector<std::pair<db::output, std::vector<crypto::key_image>>> outputs;
+      crypto::secret_key user_key;
+    };
+    void write_bytes(wire::json_writer&, const get_unspent_outs_response&);
+
     struct import_response
     {
       import_response() = delete;

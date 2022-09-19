@@ -248,32 +248,38 @@ namespace lws
 //     wire::object(dest, WIRE_FIELD(amount_outs));
 //   }
 
-//   void rpc::read_bytes(wire::json_reader& source, get_unspent_outs_request& self)
-//   {
-//     std::string address;
-//     wire::object(source,
-//       wire::field("address", std::ref(address)),
-//       wire::field("view_key", std::ref(unwrap(unwrap(self.creds.key)))),
-//       WIRE_FIELD(amount),
-//       WIRE_OPTIONAL_FIELD(mixin),
-//       WIRE_OPTIONAL_FIELD(use_dust),
-//       WIRE_OPTIONAL_FIELD(dust_threshold)
-//     );
-//     convert_address(address, self.creds.address);
-//   }
-//   void rpc::write_bytes(wire::json_writer& dest, const get_unspent_outs_response& self)
-//   {
-//     const auto expand = [&self] (const std::pair<db::output, std::vector<crypto::key_image>>& src)
-//     {
-//       return expand_outputs{src, self.user_key};
-//     };
-//     wire::object(dest,
-//       WIRE_FIELD_COPY(per_kb_fee),
-//       WIRE_FIELD_COPY(fee_mask),
-//       WIRE_FIELD_COPY(amount),
-//       wire::field("outputs", wire::as_array(std::cref(self.outputs), expand))
-//     );
-//   }
+  void rpc::read_bytes(wire::json_reader& source, get_unspent_outs_request& self)
+  {
+    std::string address;
+    wire::object(source,
+      wire::field("address", std::ref(address)),
+      wire::field("view_key", std::ref(unwrap(unwrap(self.creds.key)))),
+      WIRE_FIELD(amount),
+      WIRE_OPTIONAL_FIELD(mixin),
+      WIRE_OPTIONAL_FIELD(use_dust),
+      WIRE_OPTIONAL_FIELD(dust_threshold)
+    );
+    convert_address(address, self.creds.address);
+  }
+  void rpc::write_bytes(wire::json_writer& dest, const get_unspent_outs_response& self)
+  {
+    const auto expand = [&self] (const std::pair<db::output, std::vector<crypto::key_image>>& src)
+    {
+      return expand_outputs{src, self.user_key};
+    };
+    wire::object(dest,
+      // WIRE_FIELD_COPY(per_byte_fee),
+      WIRE_FIELD_COPY(fee_per_byte),
+      WIRE_FIELD_COPY(fee_per_output),
+      WIRE_FIELD_COPY(flash_fee_per_byte),
+      WIRE_FIELD_COPY(flash_fee_per_output),
+      WIRE_FIELD_COPY(flash_fee_fixed),
+      WIRE_FIELD_COPY(quantization_mask),
+      // WIRE_FIELD_COPY(fee_mask),
+      WIRE_FIELD_COPY(amount),
+      wire::field("outputs", wire::as_array(std::cref(self.outputs), expand))
+    );
+  }
 
   void rpc::write_bytes(wire::json_writer& dest, const import_response& self)
   {

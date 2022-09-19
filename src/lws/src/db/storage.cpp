@@ -608,6 +608,15 @@ namespace db
       MONERO_CHECK(check_cursor(*txn, db->tables.spends, cur));
       return spends.get_value_stream(id, std::move(cur));
     }
+    
+    expect<lmdb::value_stream<db::key_image, cursor::close_images>>
+    storage_reader::get_images(output_id id, cursor::images cur) noexcept
+    {
+      MONERO_PRECOND(txn != nullptr);
+      assert(db != nullptr);
+      MONERO_CHECK(check_cursor(*txn, db->tables.images, cur));
+      return images.get_value_stream(id, std::move(cur));
+    }
 
   expect<lmdb::key_stream<request, request_info, cursor::close_requests>>
   storage_reader::get_requests(cursor::requests cur) noexcept
