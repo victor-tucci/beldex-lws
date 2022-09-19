@@ -239,14 +239,14 @@ namespace lws
     );
   }
 
-//   void rpc::read_bytes(wire::json_reader& source, get_random_outs_request& self)
-//   {
-//     wire::object(source, WIRE_FIELD(count), WIRE_FIELD(amounts));
-//   }
-//   void rpc::write_bytes(wire::json_writer& dest, const get_random_outs_response& self)
-//   {
-//     wire::object(dest, WIRE_FIELD(amount_outs));
-//   }
+  // void rpc::read_bytes(wire::json_reader& source, get_random_outs_request& self)
+  // {
+  //   wire::object(source, WIRE_FIELD(count), WIRE_FIELD(amounts));
+  // }
+  // void rpc::write_bytes(wire::json_writer& dest, const get_random_outs_response& self)
+  // {
+  //   wire::object(dest, WIRE_FIELD(amount_outs));
+  // }
 
   void rpc::read_bytes(wire::json_reader& source, get_unspent_outs_request& self)
   {

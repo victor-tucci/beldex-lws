@@ -389,6 +389,147 @@ namespace lws
       }
     };
 
+    // struct get_random_outs
+    // {
+    //   using request = rpc::get_random_outs_request;
+    //   using response = rpc::get_random_outs_response;
+
+    //   static expect<response> handle(request req, const db::storage&)
+    //   {
+    //     // using distribution_rpc = cryptonote::rpc::GetOutputDistribution;
+    //     // using histogram_rpc = cryptonote::rpc::GetOutputHistogram;
+
+    //     std::vector<std::uint64_t> amounts = std::move(req.amounts.values);
+
+    //     if (50 < req.count || 20 < amounts.size())
+    //       return {lws::error::exceeded_rest_request_limit};
+
+    //     // expect<rpc::client> client = gclient.clone();
+    //     // if (!client)
+    //     //   return client.error();
+
+    //     const std::greater<std::uint64_t> rsort{};
+    //     std::sort(amounts.begin(), amounts.end(), rsort);
+    //     const std::size_t ringct_count =
+    //       amounts.end() - std::lower_bound(amounts.begin(), amounts.end(), 0, rsort);
+
+    //     std::vector<lws::histogram> histograms{};
+    //     if (ringct_count < amounts.size())
+    //     {
+    //       // reuse allocated vector memory
+    //       amounts.resize(amounts.size() - ringct_count);
+
+    //       // histogram_rpc::Request histogram_req{};
+    //       // histogram_req.amounts = std::move(amounts);
+    //       // histogram_req.min_count = 0;
+    //       // histogram_req.max_count = 0;
+    //       // histogram_req.unlocked = true;
+    //       // histogram_req.recent_cutoff = 0;
+
+    //       // epee::byte_slice msg = rpc::client::make_message("get_output_histogram", histogram_req);
+    //       // MONERO_CHECK(client->send(std::move(msg), std::chrono::seconds{10}));
+
+    //       // auto histogram_resp = client->receive<histogram_rpc::Response>(std::chrono::minutes{3}, MLWS_CURRENT_LOCATION);
+    //       // if (!histogram_resp)
+    //       //   return histogram_resp.error();
+    //       // if (histogram_resp->histogram.size() != histogram_req.amounts.size())
+    //       //   return {lws::error::bad_daemon_response};
+
+    //       // histograms = std::move(histogram_resp->histogram);
+
+    //       // amounts = std::move(histogram_req.amounts);
+    //       amounts.insert(amounts.end(), ringct_count, 0);
+    //     }
+
+    //     std::vector<std::uint64_t> distributions{};
+    //     if (ringct_count)
+    //     {
+    //       // distribution_rpc::Request distribution_req{};
+    //       // if (ringct_count == amounts.size())
+    //       //   distribution_req.amounts = std::move(amounts);
+
+    //       // distribution_req.amounts.resize(1);
+    //       // distribution_req.from_height = 0;
+    //       // distribution_req.to_height = 0;
+    //       // distribution_req.cumulative = true;
+
+    //       // epee::byte_slice msg =
+    //       //   rpc::client::make_message("get_output_distribution", distribution_req);
+    //       // MONERO_CHECK(client->send(std::move(msg), std::chrono::seconds{10}));
+
+    //       // auto distribution_resp =
+    //       //   client->receive<distribution_rpc::Response>(std::chrono::minutes{3}, MLWS_CURRENT_LOCATION);
+    //       // if (!distribution_resp)
+    //       //   return distribution_resp.error();
+
+    //       // if (distribution_resp->distributions.size() != 1)
+    //       //   return {lws::error::bad_daemon_response};
+    //       // if (distribution_resp->distributions[0].amount != 0)
+    //       //   return {lws::error::bad_daemon_response};
+
+    //       // distributions = std::move(distribution_resp->distributions[0].data.distribution);
+
+    //       if (amounts.empty())
+    //       {
+    //         // amounts = std::move(distribution_req.amounts);
+    //         amounts.insert(amounts.end(), ringct_count - 1, 0);
+    //       }
+    //     }
+
+    //     // class zmq_fetch_keys
+    //     // {
+    //     //   /* `std::function` needs a copyable functor. The functor was made
+    //     //      const and copied in the function instead of using a reference to
+    //     //      make the callback in `std::function` thread-safe. This shouldn't
+    //     //      be a problem now, but this is just-in-case of a future refactor. */
+    //     //   rpc::client gclient;
+    //     // public:
+    //     //   zmq_fetch_keys(rpc::client src) noexcept
+    //     //     : gclient(std::move(src))
+    //     //   {}
+
+    //     //   zmq_fetch_keys(zmq_fetch_keys&&) = default;
+    //     //   zmq_fetch_keys(zmq_fetch_keys const& rhs)
+    //     //     : gclient(MONERO_UNWRAP(rhs.gclient.clone()))
+    //     //   {}
+
+    //     //   expect<std::vector<output_keys>> operator()(std::vector<lws::output_ref> ids) const
+    //     //   {
+    //     //     using get_keys_rpc = cryptonote::rpc::GetOutputKeys;
+
+    //     //     get_keys_rpc::Request keys_req{};
+    //     //     keys_req.outputs = std::move(ids);
+
+    //     //     expect<rpc::client> client = gclient.clone();
+    //     //     if (!client)
+    //     //       return client.error();
+
+    //     //     epee::byte_slice msg = rpc::client::make_message("get_output_keys", keys_req);
+    //     //     MONERO_CHECK(client->send(std::move(msg), std::chrono::seconds{10}));
+
+    //     //     auto keys_resp = client->receive<get_keys_rpc::Response>(std::chrono::seconds{10}, MLWS_CURRENT_LOCATION);
+    //     //     if (!keys_resp)
+    //     //       return keys_resp.error();
+
+    //     //     return {std::move(keys_resp->keys)};
+    //     //   }
+    //     // };
+
+    //     lws::gamma_picker pick_rct{std::move(distributions)};
+    //     auto rings = pick_random_outputs(
+    //       req.count,
+    //       epee::to_span(amounts),
+    //       pick_rct,
+    //       epee::to_mut_span(histograms),
+    //       // zmq_fetch_keys{std::move(*client)}
+    //     );
+    //     if (!rings)
+    //       return rings.error();
+
+    //     return response{std::move(*rings)};
+    //   }
+    // };
+
     struct import_request
     {
       using request = rpc::account_credentials;
@@ -486,12 +627,24 @@ namespace lws
         
         // epee::byte_slice message = rpc::client::make_message("send_raw_tx_hex", daemon_req);
         // MONERO_CHECK(client->send(std::move(message), std::chrono::seconds{10}));
+          json message = {
+            {"jsonrpc","2.0"},
+            {"id","0"},
+            {"method","send_raw_transaction"},
+            {"params",{{"tx_as_hex",daemon_req.tx_as_hex},{"do_not_relay",daemon_req.tx_as_hex}}}
+          };
+          // std::cout <<"message : " << message.dump() << std::endl;
+          auto resp = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},
+                         cpr::Body{message.dump()},
+                         cpr::Header{ { "Content-Type", "application/json" }});
 
+          json daemon_resp = json::parse(resp.text);
+        // std::cout <<"daemon_resp : " << daemon_resp << std::endl;
         // const auto daemon_resp = client->receive<transaction_rpc::Response>(std::chrono::seconds{20}, MLWS_CURRENT_LOCATION);
         // if (!daemon_resp)
         //   return daemon_resp.error();
-        // if (!daemon_resp->relayed)
-        //   return {lws::error::tx_relay_failed};
+        if (!daemon_resp["result"]["not_relayed"] == true)
+          return {lws::error::tx_relay_failed};
 
         return response{"OK"};
       }

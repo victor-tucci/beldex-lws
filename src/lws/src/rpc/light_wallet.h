@@ -95,7 +95,22 @@ namespace rpc
     };
     void write_bytes(wire::json_writer&, const get_address_txs_response&);
 
-      struct get_unspent_outs_request
+    struct get_random_outs_request
+    {
+      get_random_outs_request() = delete;
+      std::uint64_t count;
+      safe_uint64_array amounts;
+    };
+    void read_bytes(wire::json_reader&, get_random_outs_request&);
+
+    struct get_random_outs_response
+    {
+      get_random_outs_response() = delete;
+      std::vector<random_ring> amount_outs;
+    };
+    void write_bytes(wire::json_writer&, const get_random_outs_response&);
+
+    struct get_unspent_outs_request
     {
       get_unspent_outs_request() = delete;
       safe_uint64 amount;
