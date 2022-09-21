@@ -120,22 +120,22 @@ namespace
 
 namespace lws
 {
-//   static void write_bytes(wire::json_writer& dest, random_output const& self)
-//   {
-//     const rct_bytes rct{self.keys.mask, rct::zero(), rct::zero()};
-//     wire::object(dest,
-//       wire::field("global_index", rpc::safe_uint64(self.index)),
-//       wire::field("public_key", std::cref(self.keys.key)),
-//       wire::field("rct", std::cref(rct))
-//     );
-//   }
-//   static void write_bytes(wire::json_writer& dest, random_ring const& self)
-//   {
-//     wire::object(dest,
-//       wire::field("amount", rpc::safe_uint64(self.amount)),
-//       wire::field("outputs", std::cref(self.ring))
-//     );
-//   };
+  static void write_bytes(wire::json_writer& dest, random_output const& self)
+  {
+    const rct_bytes rct{self.keys.mask, rct::zero(), rct::zero()};
+    wire::object(dest,
+      wire::field("global_index", rpc::safe_uint64(self.index)),
+      wire::field("public_key", std::cref(self.keys.key)),
+      wire::field("rct", std::cref(rct))
+    );
+  }
+  static void write_bytes(wire::json_writer& dest, random_ring const& self)
+  {
+    wire::object(dest,
+      wire::field("amount", rpc::safe_uint64(self.amount)),
+      wire::field("outputs", std::cref(self.ring))
+    );
+  };
 
   void rpc::read_bytes(wire::json_reader& source, safe_uint64& self)
   {
@@ -239,14 +239,14 @@ namespace lws
     );
   }
 
-  // void rpc::read_bytes(wire::json_reader& source, get_random_outs_request& self)
-  // {
-  //   wire::object(source, WIRE_FIELD(count), WIRE_FIELD(amounts));
-  // }
-  // void rpc::write_bytes(wire::json_writer& dest, const get_random_outs_response& self)
-  // {
-  //   wire::object(dest, WIRE_FIELD(amount_outs));
-  // }
+  void rpc::read_bytes(wire::json_reader& source, get_random_outs_request& self)
+  {
+    wire::object(source, WIRE_FIELD(count), WIRE_FIELD(amounts));
+  }
+  void rpc::write_bytes(wire::json_writer& dest, const get_random_outs_response& self)
+  {
+    wire::object(dest, WIRE_FIELD(amount_outs));
+  }
 
   void rpc::read_bytes(wire::json_reader& source, get_unspent_outs_request& self)
   {

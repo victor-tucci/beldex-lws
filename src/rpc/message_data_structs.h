@@ -204,7 +204,7 @@ namespace rpc
 
   struct output_distribution
   {
-    output_distribution_data data;
+    output_distribution_data_rpc data;
     uint64_t amount;
     bool cumulative;
   };
