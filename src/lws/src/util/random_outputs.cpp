@@ -1,3 +1,30 @@
+// Copyright (c) 2018-2020, The Monero Project
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without modification, are
+// permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of
+//    conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list
+//    of conditions and the following disclaimer in the documentation and/or other
+//    materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be
+//    used to endorse or promote products derived from this software without specific
+//    prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+// THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 #include "random_outputs.h"
 
 #include <algorithm>
@@ -72,13 +99,14 @@ namespace lws
         expect<void> triangular_pick(epee::span<lws::output_ref> out, lws::histogram const& hist)
         {
             MONERO_PRECOND(hist.unlocked_count <= hist.total_count);
-
+            std::cout << "out.size() : " << out.size() << std::endl;
             if (hist.unlocked_count < out.size())
                 return {lws::error::not_enough_mixin};
 
             if (hist.unlocked_count == out.size())
                 return pick_all(out, hist.amount);
 
+            std::cout <<"function crossed\n";
             /* This does not match the wallet2 selection code - recents are not
             considered. There should be no new recents for this selection
             algorithm because it is only used for non-ringct outputs. */
@@ -132,7 +160,6 @@ namespace lws
         epee::span<histogram> histograms,
         const std::function<key_fetcher> fetch
     ) {
-
         if (mixin == 0 || amounts.empty())
             return std::vector<random_ring>{amounts.size()};
 
@@ -143,7 +170,8 @@ namespace lws
         std::vector<output_ref> proposed{};
         std::vector<random_ring> rings{};
         rings.resize(amounts.size());
-
+        std::cout <<"rings.size() : "<< rings.size() << std::endl;
+        std::cout << "amounts.size() : " << amounts.size() << std::endl;
         for (auto ring : boost::combine(amounts, rings))
             boost::get<1>(ring).amount = boost::get<0>(ring);
 
@@ -156,6 +184,7 @@ namespace lws
             // select indexes foreach ring below mixin count
             for (auto ring = rings.begin(); ring != rings.end(); /* handled below */)
             {
+                std::cout << "for loop times\n";
                 const std::size_t count = proposed.size();
                 if (ring->ring.size() < mixin)
                 {
@@ -163,6 +192,7 @@ namespace lws
                     proposed.resize(proposed.size() + diff);
                     {
                         const epee::span<output_ref> latest{proposed.data() + count, diff};
+
                         expect<void> picked{};
                         const std::uint64_t amount = ring->amount;
                         if (amount == 0)
@@ -174,6 +204,7 @@ namespace lws
                             MONERO_PRECOND(match != histograms.end() && match->amount == amount);
                             picked = triangular_pick(latest, *match);
                         }
+
                         if (!picked)
                         {
                             if (picked == lws::error::not_enough_mixin)
@@ -184,14 +215,17 @@ namespace lws
                             }
                             return picked.error();
                         }
+
                         // drop dupes in latest selection
                         std::sort(latest.begin(), latest.end(), by_index{});
                         const auto last = std::unique(latest.begin(), latest.end(), same_index{});
                         proposed.resize(last - proposed.data());
                     }
+
                     ring->ring.reserve(mixin);
                     epee::span<random_output> current = epee::to_mut_span(ring->ring);
                     std::sort(current.begin(), current.end(), by_index{});
+
                     // See if new list has duplicates with existing ring
                     for (auto ref = proposed.begin() + count; ref < proposed.end(); /* see branches */ )
                     {
@@ -213,19 +247,16 @@ namespace lws
 
                 ++ring;
             }
+            std::cout <<"rings.size() 2: "<< rings.size() << std::endl;
             // all amounts lack enough mixin
             if (rings.empty())
-            {
                 return rings;
-            }
-                
 
             /* \TODO For maximum privacy, the real outputs need to be fetched
             below. This requires an update of the REST API. */
 
             // fetch all new keys in one shot
             const std::size_t expected = proposed.size();
-            std::cout <<"checking the flow\n";
             auto result = fetch(std::move(proposed));
             if (!result)
                 return result.error();

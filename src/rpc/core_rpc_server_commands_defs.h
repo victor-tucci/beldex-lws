@@ -1855,6 +1855,37 @@ BELDEX_RPC_DOC_INTROSPECT
     };
   };
 
+  // BELDEX_RPC_DOC_INTROSPECT
+  // struct GET_OUTPUT_KEYS : PUBLIC
+  // {
+  //   static constexpr auto names() { return NAMES("get_output_keys"); }
+
+  //   struct output_amount_and_index
+  //   {
+  //     uint64_t amount;
+  //     uint64_t index;
+  //   };
+  //   struct request
+  //   {
+  //     std::vector<output_amount_and_index> outputs;
+
+  //     KV_MAP_SERIALIZABLE
+  //   };
+
+  //   struct output_key_mask_unlocked
+  //   {
+  //     crypto::public_key key;
+  //     rct::key mask;
+  //     bool unlocked;
+  //   };
+
+  //   struct response
+  //   {
+  //     std::vector<output_key_mask_unlocked> keys;
+  //     KV_MAP_SERIALIZABLE
+  //   };
+  // };
+
   BELDEX_RPC_DOC_INTROSPECT
   // Exactly like GET_OUTPUT_DISTRIBUTION, but does a binary RPC transfer instead of JSON
   struct GET_OUTPUT_DISTRIBUTION_BIN : PUBLIC, BINARY
@@ -2705,6 +2736,7 @@ BELDEX_RPC_DOC_INTROSPECT
     RELAY_TX,
     SYNC_INFO,
     GET_OUTPUT_DISTRIBUTION,
+    // GET_OUTPUT_KEYS,
     GET_OUTPUT_DISTRIBUTION_BIN,
     POP_BLOCKS,
     PRUNE_BLOCKCHAIN,

@@ -9,6 +9,7 @@
 #include <cpr/cpr.h>
 
 #include "common/error.h"                       // beldex/src
+#include "common/hex.h"
 #include "common/expect.h"
 #include "crypto/crypto.h"                      // beldex/src
 #include "cryptonote_config.h"                  // beldex/src
@@ -445,7 +446,7 @@ namespace lws
           json resp = json::parse(histogram_data.text);
           // if (!histogram_resp)
           //   return histogram_resp.error();
-          
+          std::cout << "resp : " << resp << std::endl;
           for(auto it :resp["result"]["histogram"])
           {
             lws::histogram histogram_resp{};
@@ -537,26 +538,69 @@ namespace lws
           {
                     std::cout <<"operator overload" << std::endl;
 
-            // using get_keys_rpc = cryptonote::rpc::GetOutputKeys;
+            // using get_keys_rpc = cryptonote::rpc::GET_OUTPUTS;
 
-            // get_keys_rpc::Request keys_req{};
+            // get_keys_rpc::request keys_req{};
             // keys_req.outputs = std::move(ids);
+            json amount_index;
+            int i =0;
+            for(auto it :ids)
+            {
+              amount_index[i]["amounts"] = it.amount;
+              amount_index[i]["index"] = it.index;
+              i++;
+            }
+            json out_keys = {
+            {"jsonrpc","2.0"},
+            {"id","0"},
+            {"method","get_outs"},
+            {"params",{{"outputs",amount_index},{"get_txid",false}}}
+           };
 
+            std::cout << "ids.size() :" << ids.size() << std::endl;
             // expect<rpc::client> client = gclient.clone();
             // if (!client)
             //   return client.error();
 
             // epee::byte_slice msg = rpc::client::make_message("get_output_keys", keys_req);
             // MONERO_CHECK(client->send(std::move(msg), std::chrono::seconds{10}));
+            auto out_keys_data = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},
+                 cpr::Body{out_keys.dump()},
+                 cpr::Header{ { "Content-Type", "application/json" }});
 
+            json resp = json::parse(out_keys_data.text);
+            using get_keys_rpc = cryptonote::rpc::output_key_mask_unlocked;
+            std::vector <get_keys_rpc> keys{};
             // auto keys_resp = client->receive<get_keys_rpc::Response>(std::chrono::seconds{10}, MLWS_CURRENT_LOCATION);
             // if (!keys_resp)
             //   return keys_resp.error();
-
-            // return {std::move(keys_resp->keys)};
+            for(auto it : resp["result"]["outs"])
+            {
+              get_keys_rpc key;
+              std::string key_p = it["key"];
+              tools::hex_to_type(key_p,key.key);
+              tools::hex_to_type((std::string)it["mask"],key.key);
+              key.unlocked = it["unlocked"];
+              keys.push_back(key);
+            }
+            return {std::move(keys)};
           }
         };
-
+        std::cout << "before the random_outputs\n";
+        std::cout << "req.count : " << req.count << std::endl;
+        for(auto it : amounts)
+        {
+          std::cout <<"amounts "<< it << std::endl;
+        }
+        std::cout << "distributions.size() : " << distributions.size() << std::endl;
+        std::cout << "histograms.size() : " << histograms.size() << std::endl;
+        for(auto it :histograms)
+        {
+              std::cout <<"amount         " << it.amount        << std::endl;
+              std::cout <<"total_count    " << it.total_count   << std::endl;
+              std::cout <<"unlocked_count " << it.unlocked_count<< std::endl;
+              std::cout <<"recent_count   " << it.recent_count  << std::endl;
+        }
         lws::gamma_picker pick_rct{std::move(distributions)};
         auto rings = pick_random_outputs(
           req.count,
