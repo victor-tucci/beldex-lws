@@ -26,7 +26,7 @@ namespace lws
 
     options()
        : db_path{"db-path", "Folder for LMDB files", default_db_dir + default_db_subdir}
-      , network{"network", "<\"main\"|\"dev\"|\"test\"> - Blockchain net type", "main"}
+      , network{"network", "<\"main\"|\"dev\"|\"test\"> -Blockchain net type", "main"}
     {}
 
     void prepare(boost::program_options::options_description& description) const

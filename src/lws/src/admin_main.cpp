@@ -255,15 +255,15 @@ namespace
 
   static constexpr const command commands[] =
   {
-    {"accept_requests",       &accept_requests, "<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
-    {"add_account",           &add_account,     "<base58 address> <view key hex>"},
+    {"accept_requests",       &accept_requests, "\t<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
+    {"add_account",           &add_account,     "\t\t<base58 address> <view key hex>"},
     {"debug_database",        &debug_database,  ""},
     {"list_accounts",         &list_accounts,   ""},
     {"list_requests",         &list_requests,   ""},
-    {"modify_account_status", &modify_account,  "<\"active\"|\"inactive\"|\"hidden\"> <base58 address> [base 58 address]..."},
-    {"reject_requests",       &reject_requests, "<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
-    {"rescan",                &rescan,          "<height> <base58 address> [base 58 address]..."},
-    {"rollback",              &rollback,        "<height>"}
+    {"modify_account_status", &modify_account,  "\t<\"active\"|\"inactive\"|\"hidden\"> <base58 address> [base 58 address]..."},
+    {"reject_requests",       &reject_requests, "\t<\"create\"|\"import\"> <base58 address> [base 58 address]..."},
+    {"rescan",                &rescan,          "\t\t<height> <base58 address> [base 58 address]..."},
+    {"rollback",              &rollback,        "\t\t<height>"}
   };
 
   void print_help(std::ostream& out)
@@ -364,8 +364,8 @@ namespace
 
 int main (int argc, char** argv)
 {
-  std::cout <<"check " << std::endl;
-  std::cout << " argc " << argc << std::endl;
+  // std::cout <<"check " << std::endl;
+  // std::cout << " argc " << argc << std::endl;
   try
   {
     mlog_configure("", false, 0, 0); // disable logging

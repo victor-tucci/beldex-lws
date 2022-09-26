@@ -60,8 +60,8 @@ namespace
 
     options()
       : lws::options()
-      , daemon_rpc{"daemon", "<protocol>://<address>:<port> of a monerod ZMQ RPC", get_default_zmq()}
-      , daemon_sub{"sub", "tcp://address:port or ipc://path of a monerod ZMQ Pub", ""}
+      , daemon_rpc{"daemon", "<protocol>://<address>:<port> of a beldexd OMQ RPC", get_default_zmq()}
+      , daemon_sub{"sub", "tcp://address:port or ipc://path of a beldexd OMQ Pub", ""}
       , rest_servers{"rest-server", "[(https|http)://<address>:]<port> for incoming connections, multiple declarations allowed"}
       , rest_ssl_key{"rest-ssl-key", "<path> to PEM formatted SSL key for https REST server", ""}
       , rest_ssl_cert{"rest-ssl-certificate", "<path> to PEM formatted SSL certificate (chains supported) for https REST server", ""}
