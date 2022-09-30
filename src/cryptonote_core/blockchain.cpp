@@ -2764,7 +2764,7 @@ bool Blockchain::find_blockchain_supplement(const std::list<crypto::hash>& qbloc
 bool Blockchain::find_blockchain_supplement_rpc(const std::list<crypto::hash>& qblock_ids, std::vector<crypto::hash>& hashes, uint64_t& start_height, uint64_t& current_height, bool clip_pruned) const
 {
   LOG_PRINT_L3("Blockchain::" << __func__);
-  std::cout << " find_blockchain_supplement function called " << std::endl;
+  // std::cout << " find_blockchain_supplement function called " << std::endl;
   std::unique_lock lock{*this};
 
   // // if we can't find the split point, return false
@@ -2775,7 +2775,7 @@ bool Blockchain::find_blockchain_supplement_rpc(const std::list<crypto::hash>& q
 
   db_rtxn_guard rtxn_guard(m_db);
   current_height = get_current_blockchain_height();
-  std::cout << " current_height : " << current_height << std::endl;
+  // std::cout << " current_height : " << current_height << std::endl;
   uint64_t stop_height = current_height;
   if (clip_pruned)
   {
@@ -2789,7 +2789,7 @@ bool Blockchain::find_blockchain_supplement_rpc(const std::list<crypto::hash>& q
   {
     hashes.push_back(m_db->get_block_hash_from_height(i));
   }
-  std::cout <<" hashes.size() : " << hashes.size() << std::endl;
+  // std::cout <<" hashes.size() : " << hashes.size() << std::endl;
   return true;
 }
 

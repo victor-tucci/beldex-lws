@@ -16,7 +16,7 @@ namespace rpc
     Connection connection;
     connection.m_LMQ = std::make_shared<oxenmq::OxenMQ>(); 
     connection.m_LMQ->start();
-    connection.c = connection.m_LMQ->connect_remote("ipc:///home/blockhash/.beldex/beldexd.sock",
+    connection.c = connection.m_LMQ->connect_remote("ipc:///home/dhivakar/.beldex/beldexd.sock",
     [&connection](ConnectionID conn) { connection.daemon_connected = true;},
     [](ConnectionID conn, std::string_view f) { MERROR("connect failed:");} 
     );

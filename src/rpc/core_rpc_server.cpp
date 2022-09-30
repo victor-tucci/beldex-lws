@@ -607,8 +607,11 @@ namespace cryptonote { namespace rpc {
       std::swap(t["miner_tx"]["inputs"], miner_tx_vin.value());
       t["miner_tx"].erase("vout");
       t["miner_tx"].erase("vin");
+      if(t.contains("POS"))
+      {
       t.erase(t.find("POS"));
       // std::cout <<"t"<< t << std::endl;
+      }
         for(auto &out :t["miner_tx"]["outputs"])
         {
           json::iterator it = out.find("target");
@@ -663,7 +666,7 @@ namespace cryptonote { namespace rpc {
           t["tx_hashes"].erase(t["tx_hashes"].begin()+t_size);
         }            
         if(parsed){
-          std::cout <<"entered into parsed function\n";
+          // std::cout <<"entered into parsed function\n";
             tx_output_indices_rpc tx_indices;
             if (!m_core.get_tx_outputs_gindexs(*hash_it, tx_indices))
             {
@@ -692,7 +695,7 @@ namespace cryptonote { namespace rpc {
           else {
              block_tx["ringct"] = {};
              t["tx_hashes"].erase(t["tx_hashes"].begin()+t_size);
-             std::cout << "block.transactions 2: " << t["tx_hashes"][t_size] << std::endl;
+            //  std::cout << "block.transactions 2: " << t["tx_hashes"][t_size] << std::endl;
              continue;
           }   
 
