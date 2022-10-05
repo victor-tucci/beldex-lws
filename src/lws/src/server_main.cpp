@@ -164,7 +164,7 @@ namespace
   void run(program prog)
   {
     std::signal(SIGINT, [] (int) { lws::scanner::stop(); });
-    std::filesystem::create_directories(prog.db_path);
+    fs::create_directories(prog.db_path);
     auto disk = lws::db::storage::open(prog.db_path.c_str(), prog.create_queue_max);
     lws::rpc::Connection connection = lws::rpc::connect_daemon();
     lws::scanner::sync(disk.clone(),connection);
