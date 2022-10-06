@@ -50,13 +50,19 @@ set(serialization_private_headers
 json_archive.h
 json_utils.h)
 
-add_library(serialization INTERFACE
+if(APPLE)
+  add_library(serialization INTERFACE
   ${serialization_sources}
   ${serialization_private_headers})
+else()
+  add_library(serialization
+  ${serialization_sources}
+  ${serialization_private_headers})
+endif()
   
 SET_TARGET_PROPERTIES(serialization PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(serialization
-          INTERFACE
+if(APPLE)
+  target_link_libraries(serialization INTERFACE
     cryptonote_basic
     cryptonote_core
     cryptonote_protocol
@@ -66,5 +72,18 @@ target_link_libraries(serialization
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_THREAD_LIBRARY}
     ${EXTRA_LIBRARIES})
+else()
+  target_link_libraries(serialization LINK_PRIVATE
+    cryptonote_basic
+    cryptonote_core
+    cryptonote_protocol
+    epee
+    ${Boost_CHRONO_LIBRARY}
+    ${Boost_REGEX_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
+    ${EXTRA_LIBRARIES})
+endif()
+
 add_dependencies(serialization
   version)

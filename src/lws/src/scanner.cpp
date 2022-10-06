@@ -733,22 +733,23 @@ namespace lws
      }
       for(;;)
       {
-          connection.m_LMQ->request(connection.c,"rpc.get_hashes",[&details,a,&blk_ids](bool s , auto data){
-          if(s==1 && data[0]=="200"){
-            // std::cout << " start_height : " << a << std::endl;
-             json jf = json::parse(data[1]);
-             details = jf;
-             for (auto block_data : details["m_block_ids"])
-             {
-               std::string id = block_data;
-               tools::hex_to_type(id, blk_ids.emplace_back());
-             }
-           }
-          else
-            std::cout << "timeout fetching get_hashes !";
-          },"{\"start_height\": \"" + std::to_string(a) + "\"}");
+          json block_hashes = {
+            {"jsonrpc","2.0"},
+            {"id","0"},
+            {"method","get_hashes"},
+            {"params",{{"start_height",std::to_string(a)}}}
+          };
+           auto response = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},
+                                    cpr::Body{block_hashes.dump()},
+                                    cpr::Header{ { "Content-Type", "application/json" }});
 
-            std::this_thread::sleep_for(5s);
+          json res = json::parse(response.text);
+          details = res["result"];
+          for (auto block_data : details["m_block_ids"])
+          {
+            std::string id = block_data;
+            tools::hex_to_type(id, blk_ids.emplace_back());
+          }
            
            int block_ids_size = details["m_block_ids"].size();
            int start_height = details["start_height"];
