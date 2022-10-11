@@ -24,9 +24,10 @@ namespace crypto
 {
   struct hash;
 }
-namespace lws 
+
+namespace lws
 {
- namespace db
+namespace db
  {
   namespace cursor
   {
@@ -40,7 +41,7 @@ namespace lws
     MONERO_CURSOR(accounts_by_address);
     MONERO_CURSOR(accounts_by_height);
   }
-  
+
   struct storage_internal;
   
   struct reader_internal
@@ -50,6 +51,7 @@ namespace lws
     cursor::accounts_by_height accounts_bh_cur;
   };
 
+  //! Wrapper for LMDB read access to on-disk storage of light-weight server data.
   class storage_reader
   {
     std::shared_ptr<storage_internal> db;
@@ -120,8 +122,10 @@ namespace lws
     //! \return Read txn that can be re-used via `storage::start_read`.
     lmdb::suspended_txn finish_read() noexcept;
   };
-   class storage
-    {
+
+  //! Wrapper for LMDB on-disk storage of light-weight server data.
+  class storage
+  {
     std::shared_ptr<storage_internal> db;
 
     storage(std::shared_ptr<storage_internal> db) noexcept
@@ -165,10 +169,10 @@ namespace lws
 
       \return True if the local blockchain is correctly synced.
     */
-   expect<void> sync_chain(block_id height,epee::span<const crypto::hash> hashes);
+    expect<void> sync_chain(block_id height, epee::span<const crypto::hash> hashes);
 
-  //   //! Bump the last access time of `address` to the current time.
-  //  // expect<void> update_access_time(account_address const& address) noexcept;
+    //! Bump the last access time of `address` to the current time.
+  //  expect<void> update_access_time(account_address const& address) noexcept;
 
     //! Change state of `address` to `status`. \return Updated `addresses`.
     expect<std::vector<account_address>>
@@ -182,20 +186,20 @@ namespace lws
     expect<std::vector<account_address>>
       rescan(block_id height, epee::span<const account_address> addresses);
 
-  //   //! Add an account for later approval. For use with the login endpoint.
+    //! Add an account for later approval. For use with the login endpoint.
     expect<void> creation_request(account_address const& address, crypto::secret_key const& key, account_flags flags) noexcept;
 
-  //   /*!
-  //     Request lock height of an existing account. No effect if the `start_height`
-  //     is already older.
-  //   */
+    /*!
+      Request lock height of an existing account. No effect if the `start_height`
+      is already older.
+    */
     expect<void> import_request(account_address const& address, block_id height) noexcept;
 
     //! Accept requests by `addresses` of type `req`. \return Accepted addresses.
     expect<std::vector<account_address>>
       accept_requests(request req, epee::span<const account_address> addresses);
 
-    // ! Reject requests by `addresses` of type `req`. \return Rejected addresses.
+    //! Reject requests by `addresses` of type `req`. \return Rejected addresses.
     expect<std::vector<account_address>>
       reject_requests(request req, epee::span<const account_address> addresses);
 
@@ -213,8 +217,8 @@ namespace lws
     */
     expect<std::size_t> update(block_id height, epee::span<const crypto::hash> chain, epee::span<const lws::account> accts);
 
-  //   //! `txn` must have come from a previous call on the same thread.
+    //! `txn` must have come from a previous call on the same thread.
     expect<storage_reader> start_read(lmdb::suspended_txn txn = nullptr) const;
-  };// storage
- }//db
-}//lws
+  };
+} // db
+} // lws

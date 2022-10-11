@@ -103,5 +103,4 @@ namespace lws
     static const category instance{};
     return instance;
   }
-
-}//lws
+} // lws

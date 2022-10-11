@@ -26,8 +26,8 @@
   expect<type> type ## _from_string(const boost::string_ref) noexcept; \
   void read_bytes(::wire::reader&, type&);                              \
   void write_bytes(::wire::writer&, type)
-  
-  //! Declare a class/struct serialization for all available formats
+
+//! Declare a class/struct serialization for all available formats
 #define WIRE_DECLARE_OBJECT(type)                     \
   void read_bytes(::wire::reader&, type&);            \
   void write_bytes(::wire::writer&, const type&)

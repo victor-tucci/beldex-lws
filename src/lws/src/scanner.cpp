@@ -197,19 +197,25 @@ namespace lws
             std::cout << "user.spend_public() : " <<  user.spend_public() << std::endl;
             std::cout <<"--------------------------"<< std::endl;
           std::uint64_t amount = out.amount;
+          std::cout << "amount : " << amount << std::endl;
+          std::cout << "tx.version : " << tx.version << std::endl;
+          std::cout <<"cryptonote::txversion::v1 < tx.version : "<< (cryptonote::txversion::v1 < tx.version) << std::endl;
           rct::key mask = rct::identity();
           if (!amount && !(ext & db::coinbase_output) && cryptonote::txversion::v1 < tx.version)
           {
             const bool bulletproof2 = (rct::RCTType::Bulletproof2 <= tx.rct_signatures.type);
+            std::cout << "before the decode_amount function\n";
             const auto decrypted = lws::decode_amount(
               tx.rct_signatures.outPk.at(index).mask, tx.rct_signatures.ecdhInfo.at(index), derived, index, bulletproof2
             );
+            std::cout << "after the decode amount function\n";
             if (!decrypted)
             {
               MWARNING(user.address() << " failed to decrypt amount for tx " << tx_hash << ", skipping output");
               continue; // to next output
             }
             amount = decrypted->first;
+            std::cout << "amount after decrypt : " << amount << std::endl;
             mask = decrypted->second;
             ext = db::extra(ext | db::ringct_output);
           }

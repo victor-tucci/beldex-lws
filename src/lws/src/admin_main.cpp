@@ -52,7 +52,7 @@ namespace
     );
   }
 
- template<typename V>
+  template<typename V>
   void write_bytes(wire::json_writer& dest, const truncated<boost::iterator_range<lmdb::value_iterator<V>>> self)
   {
     const auto truncate = [] (V src) { return truncated<V>{std::move(src)}; };
@@ -117,7 +117,7 @@ namespace
       MONERO_THROW(lws::error::bad_view_key, "View key has invalid hex");
     return out;
   }
-  
+
   std::vector<lws::db::account_address> get_addresses(epee::span<const std::string> arguments)
   {
     // first entry is currently always some other option
@@ -129,8 +129,8 @@ namespace
       addresses.push_back(lws::db::address_string(address).value());
     return addresses;
   }
-  
-   void accept_requests(program prog, std::ostream& out)
+
+  void accept_requests(program prog, std::ostream& out)
   {
     if (prog.arguments.size() < 2)
       throw std::runtime_error{"accept_requests requires 2 or more arguments"};
@@ -179,7 +179,7 @@ namespace
     stream_json_object(out, stream.make_range());
   }
 
-    void list_requests(program prog, std::ostream& out)
+  void list_requests(program prog, std::ostream& out)
   {
     if (!prog.arguments.empty())
       throw std::runtime_error{"list_requests takes zero arguments"};
@@ -205,7 +205,7 @@ namespace
     write_json_addresses(out, epee::to_span(updated));
   }
 
-   void reject_requests(program prog, std::ostream& out)
+  void reject_requests(program prog, std::ostream& out)
   {
     if (prog.arguments.size() < 2)
       MONERO_THROW(common_error::kInvalidArgument, "reject_requests requires 2 or more arguments");
@@ -218,7 +218,7 @@ namespace
     MONERO_UNWRAP(prog.disk.reject_requests(req, epee::to_span(addresses)));
   }
 
-    void rescan(program prog, std::ostream& out)
+  void rescan(program prog, std::ostream& out)
   {
     if (prog.arguments.size() < 2)
       throw std::runtime_error{"rescan requires 2 or more arguments"};
@@ -251,7 +251,7 @@ namespace
     char const* const name;
     void (*const handler)(program, std::ostream&);
     char const* const parameters;
-  };
+    };
 
   static constexpr const command commands[] =
   {
@@ -359,13 +359,10 @@ namespace
 
     out << std::endl;
   }
-
 } // anonymous
 
 int main (int argc, char** argv)
 {
-  // std::cout <<"check " << std::endl;
-  // std::cout << " argc " << argc << std::endl;
   try
   {
     mlog_configure("", false, 0, 0); // disable logging

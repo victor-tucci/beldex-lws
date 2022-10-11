@@ -7,24 +7,38 @@
 
 #include "crypto/crypto.h"
 #include "lmdb/util.h"
+#include "ringct/rctTypes.h" //! \TODO brings in lots of includes, try to remove
 #include "storage.h"
 #include "wire/fwd.h"
-#include "ringct/rctTypes.h" //! \TODO brings in lots of includes, try to remove
 #include "wire/traits.h"
+
 namespace lws
 {
 namespace db
 {
+  /*
+    Enum classes are used because they generate identical code to native integer
+    types, but are not implicitly convertible to each other or any integer types.
+    They also have comparison but not arithmetic operators defined.
+  */
+
+  //! References an account stored in the database, faster than by address
   enum class account_id : std::uint32_t
   {
     invalid = std::uint32_t(-1) //!< Always represents _not an_ account id.
   };
   WIRE_AS_INTEGER(account_id);
- enum class account_time : std::uint32_t {};
- WIRE_AS_INTEGER(account_time);
- enum class block_id : std::uint64_t {};
- WIRE_AS_INTEGER(block_id);
- struct output_id
+
+  //! Number of seconds since UNIX epoch.
+  enum class account_time : std::uint32_t {};
+  WIRE_AS_INTEGER(account_time);
+
+  //! References a block height
+  enum class block_id : std::uint64_t {};
+  WIRE_AS_INTEGER(block_id);
+
+  //! References a global output number, as determined by the public chain
+  struct output_id
   {
     std::uint64_t high; //!< Amount on public chain; rct outputs are `0`
     std::uint64_t low;  //!< Offset within `amount` on the public chain
@@ -39,7 +53,7 @@ namespace db
   };
   WIRE_DECLARE_ENUM(account_status);
 
- enum account_flags : std::uint8_t
+  enum account_flags : std::uint8_t
   {
     default_account = 0,
     admin_account   = 1,          //!< Not currently used, for future extensions
@@ -53,7 +67,16 @@ namespace db
   };
   WIRE_DECLARE_ENUM(request);
 
- struct view_key : crypto::ec_scalar {};
+  /*!
+    DB does not use `crypto::secret_key` because it is not POD (UB to copy over
+    entire struct). LMDB is keeping a copy in process memory anyway (row
+    encryption not currently used). The roadmap recommends process isolation
+    per-connection by default as a defense against viewkey leaks due to bug. */
+
+  struct view_key : crypto::ec_scalar {};
+  // wire::is_blob trait below
+
+  //! The public keys of a monero address
   struct account_address
   {
     crypto::public_key view_public; //!< Must be first for LMDB optimizations.
@@ -61,7 +84,8 @@ namespace db
   };
   static_assert(sizeof(account_address) == 64, "padding in account_address");
   WIRE_DECLARE_OBJECT(account_address);
- struct account
+
+  struct account
   {
     account_id id;          //!< Must be first for LMDB optimizations
     account_time access;    //!< Last time `get_address_info` was called.
@@ -73,16 +97,18 @@ namespace db
     account_flags flags;    //!< Additional account info bitmask.
     char reserved[3];
   };
-
   static_assert(sizeof(account) == (4 * 2) + 64 + 32 + (8 * 2) + (4 * 2), "padding in account");
   void write_bytes(wire::writer&, const account&, bool show_key = false);
-   struct block_info
+
+  struct block_info
   {
     block_id id;      //!< Must be first for LMDB optimizations
     crypto::hash hash;
   };
-
+  //static_assert(sizeof(block_info) == 8 + 32, "padding in block_info");
   WIRE_DECLARE_OBJECT(block_info);
+
+  //! `output`s and `spend`s are sorted by these fields to make merging easier.
   struct transaction_link
   {
     block_id height;      //!< Block height containing transaction
@@ -113,7 +139,7 @@ namespace db
     return {extra(real_val >> 6), std::uint8_t(real_val & 0x3f)};
   }
 
-   //! Information for an output that has been received by an `account`.
+  //! Information for an output that has been received by an `account`.
   struct output
   {
     transaction_link link;        //! Orders and links `output` to `spend`s.
@@ -145,7 +171,8 @@ namespace db
   static_assert(sizeof(output) == 8 + 32 + (8 * 3) + (4 * 2) + 32 + (8 * 2) + (32 * 3) + 7 + 1 + 32, "padding in output");
   void write_bytes(wire::writer&, const output&);
 
-    struct spend
+  //! Information about a possible spend of a received `output`.
+  struct spend
   {
     transaction_link link;    //!< Orders and links `spend` to `output`.
     crypto::key_image image;  //!< Unique ID for the spend
@@ -158,8 +185,10 @@ namespace db
     std::uint8_t length;      //!< Length of `payment_id` field (0..32).
     crypto::hash payment_id;  //!< Unencrypted only, can't decrypt spend
   };
+  static_assert(sizeof(spend) == 8 + 32 * 2 + 8 * 4 + 4 + 3 + 1 + 32, "padding in spend");
   WIRE_DECLARE_OBJECT(spend);
 
+  //! Key image and info needed to retrieve primary `spend` data.
   struct key_image
   {
     crypto::key_image value; //!< Actual key image value
@@ -167,6 +196,7 @@ namespace db
     transaction_link link;   //!< Link to `spend` and `output`.
   };
   WIRE_DECLARE_OBJECT(key_image);
+
   struct request_info
   {
     account_address address;//!< Must be first for LMDB optimizations
@@ -206,8 +236,8 @@ namespace db
     determine tag. */
   std::ostream& operator<<(std::ostream& out, account_address const& address);
 
-} //db
-} //lws
+} // db
+} // lws
 
 namespace wire
 {

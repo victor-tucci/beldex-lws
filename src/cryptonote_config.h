@@ -84,6 +84,7 @@ static_assert(STAKING_PORTIONS % 12 == 0, "Use a multiple of twelve, so that it 
 
 #define DIFFICULTY_TARGET_V2                            120  // seconds
 #define DIFFICULTY_TARGET_V1                            60  // seconds - before first fork
+#define DIFFICULTY_TARGET_V17                           30  //SEC
 constexpr auto TARGET_BLOCK_TIME           = 2min;
 constexpr auto TARGET_BLOCK_TIME_V17       = 30s;
 constexpr uint64_t DIFFICULTY_WINDOW       = 59;

@@ -13,6 +13,8 @@
 #include "epee/span.h"
 #include "epee/misc_log_ex.h"
 
+#include "rpc/daemon_pub.h"
+
 using json = nlohmann::json;
 using namespace oxenmq;
 
