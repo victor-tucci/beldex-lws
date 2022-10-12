@@ -179,7 +179,6 @@ namespace lws
           if (!out_data)
             continue; // to next output
 
-          std::cout << "tx.version (before) : " << tx.version << std::endl;
           crypto::public_key derived_pub;
           const bool received =
             crypto::wallet::derive_subaddress_public_key(out_data->key, derived, index, derived_pub) &&
@@ -193,23 +192,20 @@ namespace lws
             prefix_hash.emplace();
             cryptonote::get_transaction_prefix_hash(tx, *prefix_hash);
           }
+            std::cout <<"--------------------------"<< std::endl;
             std::cout << "height : " << (uint64_t)user.scan_height() << std::endl;
             std::cout << "derived_pub : " << derived_pub << std::endl;
             std::cout << "user.spend_public() : " <<  user.spend_public() << std::endl;
-            std::cout <<"--------------------------"<< std::endl;
           std::uint64_t amount = out.amount;
-          std::cout << "amount : " << amount << std::endl;
           std::cout << "tx.version : " << tx.version << std::endl;
-          std::cout <<"cryptonote::txversion::v1 < tx.version : "<< (cryptonote::txversion::v1 < tx.version) << std::endl;
           rct::key mask = rct::identity();
           if (!amount && !(ext & db::coinbase_output) && cryptonote::txversion::v1 < tx.version)
           {
-            const bool bulletproof2 = (rct::RCTType::Bulletproof2 <= tx.rct_signatures.type);
-            std::cout << "before the decode_amount function\n";
+            // const bool bulletproof2 = (rct::RCTType::Bulletproof2 <= tx.rct_signatures.type);
+            const bool bulletproof2 = true;
             const auto decrypted = lws::decode_amount(
               tx.rct_signatures.outPk.at(index).mask, tx.rct_signatures.ecdhInfo.at(index), derived, index, bulletproof2
             );
-            std::cout << "after the decode amount function\n";
             if (!decrypted)
             {
               MWARNING(user.address() << " failed to decrypt amount for tx " << tx_hash << ", skipping output");
@@ -429,7 +425,7 @@ namespace lws
           // std::ifstream people_file("/home/blockhash/Downloads/monero.json", std::ifstream::binary);
           // people_file >> final_res;
           // resp = final_res.dump();
-          std::cout << "resp : " <<  final_res << std::endl;
+          // std::cout << "resp : " <<  final_res << std::endl;
 
           auto fetched = MONERO_UNWRAP(wire::json::from_bytes<rpc::json<rpc::get_blocks_fast>::response>(std::move(resp)));
 
@@ -498,7 +494,6 @@ namespace lws
 
             cryptonote::block const& block = boost::get<0>(block_data).block;
             auto const& txes = boost::get<0>(block_data).transactions;
-            std::cout << "----------------check----------------\n";
             for(auto it :txes)
             {
               std::cout << "tx.version : " << it.version << "\n";

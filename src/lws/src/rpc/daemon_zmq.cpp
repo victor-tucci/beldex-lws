@@ -29,7 +29,7 @@ namespace rct
 
   static void read_bytes(wire::json_reader& source, ecdhTuple& self)
   {
-    wire::object(source, WIRE_FIELD(amount));
+    wire::object(source, WIRE_FIELD(mask), WIRE_FIELD(amount));
   }
 
   static void read_bytes(wire::json_reader& source, rctSig& self)
@@ -97,7 +97,6 @@ namespace cryptonote
   }
   static void read_bytes(wire::json_reader& source, tx_out& self)
   {
-    std::cout <<" txout \n";
     wire::object(source,
       WIRE_FIELD(amount),
       wire::variant_field("transaction output variant", std::ref(self.target),
@@ -153,7 +152,6 @@ namespace cryptonote
 
   static void read_bytes(wire::json_reader& source, block& self)
   {
-    std::cout << "block parsing major version was " << self.major_version << "\n";
     self.tx_hashes.reserve(default_transaction_count);
     wire::object(source,
       WIRE_FIELD(major_version),
