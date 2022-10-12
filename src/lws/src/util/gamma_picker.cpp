@@ -33,22 +33,22 @@ namespace lws
         rct_offsets[rct_offsets.size() - blocks_to_consider - 1] : 0;
       const std::size_t outputs_to_consider = rct_offsets.back() - initial;
 
-      static_assert(0 < DIFFICULTY_TARGET_V2, "block target time cannot be zero");
+      static_assert(0 < DIFFICULTY_TARGET_V17, "block target time cannot be zero");
       // this assumes constant target over the whole rct range
-      outputs_per_second = outputs_to_consider / double(DIFFICULTY_TARGET_V2 * blocks_to_consider);
+      outputs_per_second = outputs_to_consider / double(DIFFICULTY_TARGET_V17 * blocks_to_consider);
     }
   }
 
   bool gamma_picker::is_valid() const noexcept
   {
-    return CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE < rct_offsets.size();
+    return CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V17 < rct_offsets.size();
   }
 
   std::uint64_t gamma_picker::spendable_upper_bound() const noexcept
   {
     if (!is_valid())
       return 0;
-    return *(rct_offsets.end() - CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE - 1);
+    return *(rct_offsets.end() - CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V17 - 1);
   }
 
   std::uint64_t gamma_picker::operator()()
@@ -58,7 +58,7 @@ namespace lws
 
     static_assert(std::is_empty<crypto::random_device>(), "random_device is no longer cheap to construct");
     static constexpr const crypto::random_device engine{};
-    const auto end = offsets().end() - CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE;
+    const auto end = offsets().end() - CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V17;
     const uint64_t num_rct_outputs = spendable_upper_bound();
 
     for (unsigned tries = 0; tries < 100; ++tries)
