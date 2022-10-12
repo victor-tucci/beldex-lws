@@ -92,7 +92,7 @@ namespace lws
       cryptonote::transaction const& tx,
       std::vector<std::uint64_t> const& out_ids)
     {
-      if (cryptonote::txversion::v2_ringct < tx.version)
+      if (cryptonote::txversion::v4_tx_types < tx.version)
         throw std::runtime_error{"Unsupported tx version"};
 
       cryptonote::tx_extra_pub_key key;
@@ -179,6 +179,7 @@ namespace lws
           if (!out_data)
             continue; // to next output
 
+          std::cout << "tx.version (before) : " << tx.version << std::endl;
           crypto::public_key derived_pub;
           const bool received =
             crypto::wallet::derive_subaddress_public_key(out_data->key, derived, index, derived_pub) &&
@@ -360,19 +361,34 @@ namespace lws
             // std::string it_tx = t["transactions"];    // its in array
             for(auto & data :t["transactions"])
             {
-              // std::cout <<"transaction parsing" << std::endl;
-             std::string it = data;
-             data = json::parse(it);  
-            //  std::string ringct_ch = data["ringct"] ;
-             if(!data.empty())
-             {
-              
-              if(data["ringct"].is_null())
-              {
-               data["ringct"] = json::value_t::object;
-              }
-             }
-
+                // std::cout <<"transaction parsing" << std::endl;
+                std::string it = data;
+                data = json::parse(it);  
+                //  std::string ringct_ch = data["ringct"] ;
+                if(!data.empty())
+                {
+                  for(auto &it : data["ringct"]["ecdhInfo"])
+                  {
+                      it["mask"] = "0000000000000000000000000000000000000000000000000000000000000000";
+                      std::string s1=it["amount"];
+                      s1 = s1+"000000000000000000000000000000000000000000000000";
+                      it["amount"]= s1;
+                  }
+                  if( data["ringct"].contains("ecdhInfo")){
+                    json::iterator ecdinfo =  data["ringct"].find("ecdhInfo");
+                    std::swap( data["ringct"]["encrypted"], ecdinfo.value());
+                    data["ringct"].erase("ecdhInfo");
+                  }
+                  if( data["ringct"].contains("outPk")){
+                    json::iterator outpk =  data["ringct"].find("outPk");
+                    std::swap( data["ringct"]["commitments"], outpk.value());
+                    data["ringct"].erase("outPk");
+                  }
+                  if(data["ringct"].is_null())
+                  {
+                    data["ringct"] = json::value_t::object;
+                  }
+                }
             }
             // std::cout << "block_transaction_size() : " << t["block"]["tx_hashes"].size() << std::endl;
             // std::cout << "t[transactions].size() : " << t["transactions"].size() << std::endl;
@@ -413,9 +429,10 @@ namespace lws
           // std::ifstream people_file("/home/blockhash/Downloads/monero.json", std::ifstream::binary);
           // people_file >> final_res;
           // resp = final_res.dump();
-          // std::cout << "resp : " <<  final_res << std::endl;
+          std::cout << "resp : " <<  final_res << std::endl;
 
           auto fetched = MONERO_UNWRAP(wire::json::from_bytes<rpc::json<rpc::get_blocks_fast>::response>(std::move(resp)));
+
           if (fetched.result.blocks.empty())
             throw std::runtime_error{"Daemon unexpectedly returned zero blocks"};
 
@@ -458,7 +475,14 @@ namespace lws
 
           auto blocks = epee::to_span(fetched.result.blocks);
           auto indices = epee::to_span(fetched.result.output_indices);
-
+          for(auto &bl : blocks)
+          {
+          for(auto &it : bl.transactions)
+          {
+            // it.version = cryptonote::txversion::v4_tx_types;
+            std::cout << "transaction version : " << it.version << "\n";
+          }
+          }
           if (fetched.result.start_height != 1)
           {
             // skip overlap block
@@ -474,6 +498,11 @@ namespace lws
 
             cryptonote::block const& block = boost::get<0>(block_data).block;
             auto const& txes = boost::get<0>(block_data).transactions;
+            std::cout << "----------------check----------------\n";
+            for(auto it :txes)
+            {
+              std::cout << "tx.version : " << it.version << "\n";
+            }
 
             if (block.tx_hashes.size() != txes.size())
             {

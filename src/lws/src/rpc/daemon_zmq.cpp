@@ -29,7 +29,7 @@ namespace rct
 
   static void read_bytes(wire::json_reader& source, ecdhTuple& self)
   {
-    wire::object(source, WIRE_FIELD(mask), WIRE_FIELD(amount));
+    wire::object(source, WIRE_FIELD(amount));
   }
 
   static void read_bytes(wire::json_reader& source, rctSig& self)
@@ -43,22 +43,31 @@ namespace rct
       WIRE_FIELD(type),
       wire::optional_field("encrypted", std::ref(ecdhInfo)),
       wire::optional_field("commitments", std::ref(outPk)),
-      wire::optional_field("fee", std::ref(txnFee))
+      wire::optional_field("txnFee", std::ref(txnFee))
     );
 
-    if (self.type != RCTType::Null)
-    {
-      if (!ecdhInfo || !outPk || !txnFee)
-        WIRE_DLOG_THROW(wire::error::schema::missing_key, "Expected fields `encrypted`, `commitments`, and `fee`");
+    // std::cout << "txnFee :" << txnFee << std::endl;
+    std::cout << "self.type != RCTType::Null : " << (self.type != RCTType::Null) << "\n";
+    if (ecdhInfo || outPk || txnFee){  //|| txnFee
       self.ecdhInfo = std::move(*ecdhInfo);
       self.outPk = std::move(*outPk);
       self.txnFee = std::move(*txnFee);
     }
-    else if (ecdhInfo || outPk || txnFee)
-      WIRE_DLOG_THROW(wire::error::schema::invalid_key, "Did not expected `encrypted`, `commitments`, or `fee`");
+
+    // if (self.type != RCTType::Null)
+    // {
+    //   std::cout << "enterd into the next in RCT condition\n";
+    //   if (!ecdhInfo || !outPk || !txnFee)
+    //     WIRE_DLOG_THROW(wire::error::schema::missing_key, "Expected fields `encrypted`, `commitments`, and `fee`");
+    //   self.ecdhInfo = std::move(*ecdhInfo);
+    //   self.outPk = std::move(*outPk);
+    //   self.txnFee = std::move(*txnFee);
+    // }
+    // else if (ecdhInfo || outPk || txnFee)
+    //   WIRE_DLOG_THROW(wire::error::schema::invalid_key, "Did not expected `encrypted`, `commitments`, or `fee`");
   }
   
-  static void read_bytes(wire::json_reader& source,wire::field_<std::reference_wrapper<RCTType>, true>::value_type& self)
+  static void read_bytes(wire::json_reader& source, RCTType& self)
   {
     unsigned char dest = (unsigned char)self;
     wire::read_bytes(source, dest);
@@ -68,9 +77,10 @@ namespace rct
 
 namespace cryptonote
 {
-  static void read_bytes(wire::json_reader& source,wire::field_<std::reference_wrapper<cryptonote::txversion>, true>::value_type& self)
+  static void read_bytes(wire::json_reader& source,cryptonote::txversion& self)
   {
-    unsigned long dest = (unsigned long)self;
+    self = cryptonote::txversion::v4_tx_types;
+    unsigned long dest;
     wire::read_bytes(source, dest);
   }
   static void read_bytes(wire::json_reader& source, txout_to_script& self)
@@ -87,6 +97,7 @@ namespace cryptonote
   }
   static void read_bytes(wire::json_reader& source, tx_out& self)
   {
+    std::cout <<" txout \n";
     wire::object(source,
       WIRE_FIELD(amount),
       wire::variant_field("transaction output variant", std::ref(self.target),
@@ -142,6 +153,7 @@ namespace cryptonote
 
   static void read_bytes(wire::json_reader& source, block& self)
   {
+    std::cout << "block parsing major version was " << self.major_version << "\n";
     self.tx_hashes.reserve(default_transaction_count);
     wire::object(source,
       WIRE_FIELD(major_version),
