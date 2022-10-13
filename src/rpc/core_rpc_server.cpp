@@ -551,7 +551,7 @@ namespace cryptonote { namespace rpc {
   }
   
   //------------------------------------------------------------------------------------------------------------------------------
-  GET_BLOCKS_FAST_RPC::response core_rpc_server::invoke(GET_BLOCKS_FAST_RPC::request&& req, rpc_context context)
+    GET_BLOCKS_FAST_RPC::response core_rpc_server::invoke(GET_BLOCKS_FAST_RPC::request&& req, rpc_context context)
   {
     GET_BLOCKS_FAST_RPC::response res{};
     
@@ -597,21 +597,21 @@ namespace cryptonote { namespace rpc {
       }
       //----------blk data's key changed for lws -----------------------------------
       std::string block_json = obj_to_json_str(blk);
-      auto t = json::parse(block_json);
+      auto block = json::parse(block_json);
     
-      if(t.contains("POS"))
+      if(block.contains("POS"))
       {
-        t.erase(t.find("POS"));
+        block.erase(block.find("POS"));
       }
 
-      t["miner_tx"]["extra"] = extra_res;
+      block["miner_tx"]["extra"] = extra_res;
       //-----------------------------------------------------------------------
       if (bd.second.size() != blk.tx_hashes.size())
       {
-          res.blocks.clear();
-          res.output_indices.clear();
-          res.status = "Failed";
-          return res;
+        res.blocks.clear();
+        res.output_indices.clear();
+        res.status = "Failed";
+        return res;
       }
       
       block_output_indices_rpc indices;
@@ -625,59 +625,44 @@ namespace cryptonote { namespace rpc {
         }
         indices.push_back(std::move(tx_indices));
       }
+
       auto hash_it = blk.tx_hashes.begin();
       std::vector<std::string> tx;
-      uint64_t t_size =0;
       json tx_hash_block = {};
       for (const auto& blob : bd.second)
       {
-        // res.blocks.transactions.emplace_back();
-        // std::cout << "transactions size : " << res.blocks.back().transactions.size() << std::endl;
         tx_hash.pruned = req.prune;
 
-        // std::cout << "tx_hash : " << blob.first << std::endl;
         const bool parsed = req.prune ?
           parse_and_validate_tx_base_from_blob(blob.second, tx_hash) :
           parse_and_validate_tx_from_blob(blob.second, tx_hash);
         
-        if (!parsed)
+        if (parsed)
         {
-          // res.blocks.clear();
-          // res.output_indices.clear();
-          // res.status = "failed";
-          // return res;
-          t["tx_hashes"].erase(t["tx_hashes"].begin()+t_size);
-          ++hash_it;
-        }            
-        if(parsed){
-            // std::cout << "size of transaction extra : " << tx_hash.extra.size() << std::endl;
-            char hexstr_tx[10];
-            std::string extra_res_tx;
-            for(int i=0;i<tx_hash.extra.size();i++)
-            {
-                  sprintf(hexstr_tx, "%02x", tx_hash.extra[i]);
-                  extra_res_tx+=hexstr_tx;
-            }
+          char hexstr_tx[10];
+          std::string extra_res_tx;
+          for(int i=0;i<tx_hash.extra.size();i++)
+          {
+            sprintf(hexstr_tx, "%02x", tx_hash.extra[i]);
+            extra_res_tx+=hexstr_tx;
+          }
           //----------tx_hash data's key changed -----------------------
           std::string block_transactions = obj_to_json_str(tx_hash);
           auto block_tx = json::parse(block_transactions);
 
           if(!(block_tx.contains("rct_signatures"))){
-             block_tx["rct_signatures"] = {};
-             t["tx_hashes"].erase(t["tx_hashes"].begin()+t_size);
-             ++hash_it;
-             continue;
+            ++hash_it;
+            continue;
           }
-          else
-          {
-             tx_output_indices_rpc tx_indices;
-             if (!m_core.get_tx_outputs_gindexs(*hash_it, tx_indices))
-             {
-               res.status ="failed";
-               return res;
-             }
-             indices.push_back(std::move(tx_indices));
-             ++hash_it;
+          else{
+            tx_output_indices_rpc tx_indices;
+            if (!m_core.get_tx_outputs_gindexs(*hash_it, tx_indices))
+            {
+              res.status ="failed";
+              return res;
+            }
+            indices.push_back(std::move(tx_indices));
+            ++hash_it;
           }
 
           block_tx["extra"] = extra_res_tx;
@@ -685,11 +670,13 @@ namespace cryptonote { namespace rpc {
           tx_hash_block.push_back(tools::type_to_hex(blob.first));
           tx.push_back(block_tx.dump());
           //---------------------------------------------------------------------------------------
-        }
-        t_size++;
+        }            
+        else
+          ++hash_it;
       }
-      t["tx_hashes"] = tx_hash_block;
-      res.blocks.back().block = t.dump();
+
+      block["tx_hashes"] = tx_hash_block;
+      res.blocks.back().block = block.dump();
       if(bd.second.size() != 0)
       {
         for(auto it : tx)
@@ -699,8 +686,8 @@ namespace cryptonote { namespace rpc {
       }
       else
       {
-          json tx = json::array();
-          res.blocks[block_count].transactions.push_back(tx.dump());
+        json tx = json::array();
+        res.blocks[block_count].transactions.push_back(tx.dump());
       }
 
       output_indices_rpc.push_back(indices);
