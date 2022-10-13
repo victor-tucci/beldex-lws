@@ -208,6 +208,7 @@ namespace cryptonote
       FIELD(vin)
       FIELD(vout)
       if (version >= txversion::v3_per_output_unlock_times && vout.size() != output_unlock_times.size())
+      {}
         // throw std::invalid_argument{"v3 tx without correct unlock times"};
       FIELD(extra)
       if (version >= txversion::v4_tx_types)

@@ -587,40 +587,25 @@ namespace cryptonote { namespace rpc {
         res.status = "Failed";
         return res;
       }
-      // std::cout << "block_hash : " << tools::type_to_hex(get_block_hash(blk)) << std::endl;
-      // std::cout << "size of transaction extra : " << blk.miner_tx.extra.size() << std::endl;
+
       char hexstr[10];
       std::string extra_res;
       for(int i=0;i<blk.miner_tx.extra.size();i++)
       {
-            sprintf(hexstr, "%02x", blk.miner_tx.extra[i]);
-            extra_res+=hexstr;
+        sprintf(hexstr, "%02x", blk.miner_tx.extra[i]);
+        extra_res+=hexstr;
       }
       //----------blk data's key changed for lws -----------------------------------
       std::string block_json = obj_to_json_str(blk);
       auto t = json::parse(block_json);
     
       json::iterator it = t.find("miner_tx");
-      json::iterator miner_tx_vout = it.value().find("vout");
-      json::iterator miner_tx_vin = it.value().find("vin");
-      std::swap(t["miner_tx"]["outputs"], miner_tx_vout.value());
-      std::swap(t["miner_tx"]["inputs"], miner_tx_vin.value());
-      t["miner_tx"].erase("vout");
-      t["miner_tx"].erase("vin");
+
       if(t.contains("POS"))
       {
-      t.erase(t.find("POS"));
-      // std::cout <<"t"<< t << std::endl;
+        t.erase(t.find("POS"));
       }
-        for(auto &out :t["miner_tx"]["outputs"])
-        {
-          json::iterator it = out.find("target");
-          std::swap(out["to_key"], it.value());
-          out.erase("target");
-        }
-      json::iterator miner_tx_ringct = it.value().find("rct_signatures");
-      std::swap(t["miner_tx"]["ringct"], miner_tx_ringct.value());
-      t["miner_tx"].erase("rct_signatures");
+
       t["miner_tx"]["extra"] = extra_res;
       //-----------------------------------------------------------------------
       if (bd.second.size() != blk.tx_hashes.size())
@@ -666,7 +651,6 @@ namespace cryptonote { namespace rpc {
           t["tx_hashes"].erase(t["tx_hashes"].begin()+t_size);
         }            
         if(parsed){
-          // std::cout <<"entered into parsed function\n";
             tx_output_indices_rpc tx_indices;
             if (!m_core.get_tx_outputs_gindexs(*hash_it, tx_indices))
             {
@@ -687,46 +671,14 @@ namespace cryptonote { namespace rpc {
           std::string block_transactions = obj_to_json_str(tx_hash);
           auto block_tx = json::parse(block_transactions);
 
-          if(block_tx.contains("rct_signatures")){
-             json::iterator tx_ringct = block_tx.find("rct_signatures");
-             std::swap(block_tx["ringct"], tx_ringct.value());
-             block_tx.erase("rct_signatures");
-          }
-          else {
-             block_tx["ringct"] = {};
+          if(!(block_tx.contains("rct_signatures"))){
+             block_tx["rct_signatures"] = {};
              t["tx_hashes"].erase(t["tx_hashes"].begin()+t_size);
-            //  std::cout << "block.transactions 2: " << t["tx_hashes"][t_size] << std::endl;
              continue;
-          }   
+          }
 
-          json::iterator tx_vin = block_tx.find("vin");
-          json::iterator tx_vout = block_tx.find("vout");
-          std::swap(block_tx["inputs"], tx_vin.value());
-          std::swap(block_tx["outputs"], tx_vout.value());
-           for(auto &in :block_tx["inputs"])
-           {
-            json::iterator it = in.find("key");
-            std::swap(in["to_key"], it.value());
-            in.erase("key");
-             json::iterator it_to_key = in.find("to_key");
-             json::iterator inputs_k_image = it_to_key.value().find("k_image");
-             std::swap(in["to_key"]["key_image"], inputs_k_image.value());
-             in["to_key"].erase("k_image");
-           }
-           for(auto &out :block_tx["outputs"])
-           {
-            json::iterator it = out.find("target");
-            std::swap(out["to_key"], it.value());
-            out.erase("target");
-           }
-
-          block_tx.erase("vin");
-          block_tx.erase("vout");
           block_tx["extra"] = extra_res_tx;
-          // if (!tools::hex_to_type(blob.first, blob_first)) {
-          //    MERROR("Could not parse transaction key: " << blob.first);
-          // }
-          // std::cout << "parsing done : "  <<blob_first<< std::endl;
+
           tx_hash_block.push_back(tools::type_to_hex(blob.first));
           tx.push_back(block_tx.dump());
           //---------------------------------------------------------------------------------------
@@ -735,30 +687,25 @@ namespace cryptonote { namespace rpc {
       }
       t["tx_hashes"] = tx_hash_block;
       res.blocks.back().block = t.dump();
-        //  std::cout << "indices.size() : " << indices.size() << std::endl;
-        //  std::string block_indices = obj_to_json_str(indices);
-        //  auto blkindices = json::parse(block_indices);
-        //  std::cout << " indiceis in block : " << blkindices << std::endl;
-        if(bd.second.size() != 0)
+      if(bd.second.size() != 0)
+      {
+        for(auto it : tx)
         {
-          for(auto it : tx)
-          {
-            res.blocks[block_count].transactions.push_back(it);
-          }
+          res.blocks[block_count].transactions.push_back(it);
         }
-        else
-        {
+      }
+      else
+      {
           json tx = json::array();
           res.blocks[block_count].transactions.push_back(tx.dump());
-        }
+      }
 
-        output_indices_rpc.push_back(indices);
-        block_count++;
+      output_indices_rpc.push_back(indices);
+      block_count++;
     }
 
     std::string block_indices = obj_to_json_str(output_indices_rpc);
     auto blkindices = json::parse(block_indices);
-    // std::cout << " indiceis in json : " << blkindices << std::endl;
     res.output_indices = blkindices.dump();
 
     MGINFO("on_get_blocks: " << blocks.size() << " blocks, " << ntxes << " txes, size " << size);

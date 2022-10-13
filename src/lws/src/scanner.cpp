@@ -363,26 +363,16 @@ namespace lws
                 //  std::string ringct_ch = data["ringct"] ;
                 if(!data.empty())
                 {
-                  for(auto &it : data["ringct"]["ecdhInfo"])
+                  for(auto &it : data["rct_signatures"]["ecdhInfo"])
                   {
                       it["mask"] = "0000000000000000000000000000000000000000000000000000000000000000";
                       std::string s1=it["amount"];
                       s1 = s1+"000000000000000000000000000000000000000000000000";
                       it["amount"]= s1;
                   }
-                  if( data["ringct"].contains("ecdhInfo")){
-                    json::iterator ecdinfo =  data["ringct"].find("ecdhInfo");
-                    std::swap( data["ringct"]["encrypted"], ecdinfo.value());
-                    data["ringct"].erase("ecdhInfo");
-                  }
-                  if( data["ringct"].contains("outPk")){
-                    json::iterator outpk =  data["ringct"].find("outPk");
-                    std::swap( data["ringct"]["commitments"], outpk.value());
-                    data["ringct"].erase("outPk");
-                  }
-                  if(data["ringct"].is_null())
+                  if(data["rct_signatures"].is_null())
                   {
-                    data["ringct"] = json::value_t::object;
+                    data["rct_signatures"] = json::value_t::object;
                   }
                 }
             }
