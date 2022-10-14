@@ -551,7 +551,7 @@ namespace cryptonote { namespace rpc {
   }
   
   //------------------------------------------------------------------------------------------------------------------------------
-    GET_BLOCKS_FAST_RPC::response core_rpc_server::invoke(GET_BLOCKS_FAST_RPC::request&& req, rpc_context context)
+  GET_BLOCKS_FAST_RPC::response core_rpc_server::invoke(GET_BLOCKS_FAST_RPC::request&& req, rpc_context context)
   {
     GET_BLOCKS_FAST_RPC::response res{};
     

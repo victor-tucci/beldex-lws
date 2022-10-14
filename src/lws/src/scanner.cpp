@@ -295,16 +295,6 @@ namespace lws
           blockchain.clear();
 
       //     auto resp = client.get_message(block_rpc_timeout);
-          
-      //     if (!resp)
-      //     {
-      //       const bool timeout = resp.matches(std::errc::timed_out);
-      //       if (timeout)
-      //         MWARNING("Block retrieval timeout, resetting scanner");
-      //       if (timeout || resp.matches(std::errc::interrupted))
-      //         return;
-      //       MONERO_THROW(resp.error(), "Failed to retrieve blocks from daemon");
-      //     }
 
           // m_LMQ->request(c, "rpc.get_blocks_fast", [&details,&start_height](bool s, auto data) {
           // if (s == 1 && data[0] == "200"){
@@ -326,7 +316,11 @@ namespace lws
                                     cpr::Body{block_fast.dump()},
                                     cpr::Header{ { "Content-Type", "application/json" }});
 
-          // std::this_thread::sleep_for(2s);
+          if(!response.text.size())
+          {
+            throw std::runtime_error{"Block retrieval timeout, and daemon connection failed"};
+          }
+
           json res = json::parse(response.text);
           details = res["result"];
           if(details["status"]=="Failed")
@@ -723,72 +717,91 @@ namespace lws
    }//anonymous
     void scanner::sync(db::storage disk,lws::rpc::Connection connection)
     {
-      if(!connection.daemon_connected)
+      try
       {
-        MERROR("Daemon not connected so stop action called");
-        lws::scanner::stop();
-      }
-      MINFO("Starting blockchain sync with daemon");
+        if(!connection.daemon_connected)
+        {
+          MERROR("Daemon not connected so stop action called");
+          lws::scanner::stop();
+        }
+        MINFO("Starting blockchain sync with daemon");
 
-      json details;
-      int a =0;
-      std::vector<crypto::hash> blk_ids;
+        json details;
+        int a =0;
+        std::vector<crypto::hash> blk_ids;
 
-     {
-      auto reader = disk.start_read();
-      if (!reader)
-      {
-        // return reader.error(); 
-      }
-
-      auto chain = reader->get_chain_sync();
-      if (!chain)
-      {
-        // return chain.error();
-      }
-
-      // req.known_hashes = std::move(*chain);
-      a = *chain;  // get last height from the db
-      
-     }
-      for(;;)
-      {
-          json block_hashes = {
-            {"jsonrpc","2.0"},
-            {"id","0"},
-            {"method","get_hashes"},
-            {"params",{{"start_height",std::to_string(a)}}}
-          };
-           auto response = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},
-                                    cpr::Body{block_hashes.dump()},
-                                    cpr::Header{ { "Content-Type", "application/json" }});
-
-          json res = json::parse(response.text);
-          details = res["result"];
-          for (auto block_data : details["m_block_ids"])
+        {
+          auto reader = disk.start_read();
+          if (!reader)
           {
-            std::string id = block_data;
-            tools::hex_to_type(id, blk_ids.emplace_back());
-          }
-           
-           int block_ids_size = details["m_block_ids"].size();
-           int start_height = details["start_height"];
-           int current_height = details["current_height"];
-
-        //  std::cout <<"last hash from response : " << blk_ids.back() << std::endl;
-
-          if (blk_ids.size() <= 1 || (current_height - start_height) <=1)
-          {
-            MINFO("synced daemon upto the top chain");
-            break;
+            // return reader.error(); 
           }
 
-         disk.sync_chain(db::block_id(details["start_height"]), epee::to_span(blk_ids));
-         blk_ids.clear();
+          auto chain = reader->get_chain_sync();
+          if (!chain)
+          {
+            // return chain.error();
+          }
 
-           a = block_ids_size + start_height -1;
+          // req.known_hashes = std::move(*chain);
+          a = *chain;  // get last height from the db
+        }
+        for(;;)
+        {
+            json block_hashes = {
+              {"jsonrpc","2.0"},
+              {"id","0"},
+              {"method","get_hashes"},
+              {"params",{{"start_height",std::to_string(a)}}}
+            };
+            auto response = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},
+                                      cpr::Body{block_hashes.dump()},
+                                      cpr::Header{ { "Content-Type", "application/json" }});
+
+            if(!response.text.size())
+            {
+              throw std::runtime_error{"daemon connection failed"};
+            }
+            json res = json::parse(response.text);
+            details = res["result"];
+            if(details["status"]=="Failed")
+            {
+              throw std::runtime_error{"Daemon unexpectedly returned zero hashes and status failed"};
+            }
+            for (auto block_data : details["m_block_ids"])
+            {
+              std::string id = block_data;
+              tools::hex_to_type(id, blk_ids.emplace_back());
+            }
+            
+            int block_ids_size = details["m_block_ids"].size();
+            int start_height = details["start_height"];
+            int current_height = details["current_height"];
+
+          //  std::cout <<"last hash from response : " << blk_ids.back() << std::endl;
+
+            if (blk_ids.size() <= 1 || (current_height - start_height) <=1)
+            {
+              MINFO("synced daemon upto the top chain");
+              break;
+            }
+
+          disk.sync_chain(db::block_id(details["start_height"]), epee::to_span(blk_ids));
+          blk_ids.clear();
+
+            a = block_ids_size + start_height -1;
+        }
       }
-          //  std::this_thread::sleep_for(5s);
+      catch (std::exception const& e)
+      {
+        scanner::stop();
+        MERROR(e.what());
+      }
+      catch (...)
+      {
+        scanner::stop();
+        MERROR("Unknown exception");
+      }
     }
 
    void scanner::run(db::storage disk, std::size_t thread_count,lws::rpc::Connection connection)
