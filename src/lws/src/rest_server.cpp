@@ -469,7 +469,7 @@ namespace lws
         std::vector<std::uint64_t> distributions{};
         if (ringct_count)
         {
-          std::cout << "print the function\n";
+          std::cout << "print the function " << ringct_count << "\n";
           distribution_rpc::request distribution_req{};
           if (ringct_count == amounts.size())
             distribution_req.amounts = std::move(amounts);
@@ -496,6 +496,7 @@ namespace lws
                cpr::Header{ { "Content-Type", "application/json" }});
 
           json resp = json::parse(distribution_data.text);
+          // std::cout << "get_output_distribution : " << resp << std::endl;
           // if (!distribution_resp)
           //   return distribution_resp.error();
           for(auto it :resp["result"]["distributions"][0]["distribution"])
@@ -550,6 +551,7 @@ namespace lws
               amount_index[i]["index"] = it.index;
               i++;
             }
+            // std::cout << "amount index in get_outs : " << amount_index << std::endl;
             json out_keys = {
             {"jsonrpc","2.0"},
             {"id","0"},
@@ -569,6 +571,7 @@ namespace lws
                  cpr::Header{ { "Content-Type", "application/json" }});
 
             json resp = json::parse(out_keys_data.text);
+            // std::cout << "get_outs response : " << resp << std::endl;
             using get_keys_rpc = cryptonote::rpc::output_key_mask_unlocked;
             std::vector <get_keys_rpc> keys{};
             // auto keys_resp = client->receive<get_keys_rpc::Response>(std::chrono::seconds{10}, MLWS_CURRENT_LOCATION);
@@ -579,7 +582,7 @@ namespace lws
               get_keys_rpc key;
               std::string key_p = it["key"];
               tools::hex_to_type(key_p,key.key);
-              tools::hex_to_type((std::string)it["mask"],key.key);
+              tools::hex_to_type((std::string)it["mask"],key.mask);
               key.unlocked = it["unlocked"];
               keys.push_back(key);
             }
