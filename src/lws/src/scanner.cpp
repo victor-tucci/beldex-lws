@@ -192,12 +192,12 @@ namespace lws
             prefix_hash.emplace();
             cryptonote::get_transaction_prefix_hash(tx, *prefix_hash);
           }
-            std::cout <<"--------------------------"<< std::endl;
-            std::cout << "height : " << (uint64_t)user.scan_height() << std::endl;
-            std::cout << "derived_pub : " << derived_pub << std::endl;
-            std::cout << "user.spend_public() : " <<  user.spend_public() << std::endl;
+            // std::cout <<"--------------------------"<< std::endl;
+            // std::cout << "height : " << (uint64_t)user.scan_height() << std::endl;
+            // std::cout << "derived_pub : " << derived_pub << std::endl;
+            // std::cout << "user.spend_public() : " <<  user.spend_public() << std::endl;
           std::uint64_t amount = out.amount;
-          std::cout << "tx.version : " << tx.version << std::endl;
+          // std::cout << "tx.version : " << tx.version << std::endl;
           rct::key mask = rct::identity();
           if (!amount && !(ext & db::coinbase_output) && cryptonote::txversion::v1 < tx.version)
           {
@@ -212,7 +212,7 @@ namespace lws
               continue; // to next output
             }
             amount = decrypted->first;
-            std::cout << "amount after decrypt : " << amount << std::endl;
+            // std::cout << "amount after decrypt : " << amount << std::endl;
             mask = decrypted->second;
             ext = db::extra(ext | db::ringct_output);
           }
@@ -460,7 +460,7 @@ namespace lws
           for(auto &it : bl.transactions)
           {
             // it.version = cryptonote::txversion::v4_tx_types;
-            std::cout << "transaction version : " << it.version << "\n";
+            // std::cout << "transaction version : " << it.version << "\n";
           }
           }
           if (fetched.result.start_height != 1)
@@ -480,12 +480,12 @@ namespace lws
             auto const& txes = boost::get<0>(block_data).transactions;
             for(auto it :txes)
             {
-              std::cout << "tx.version : " << it.version << "\n";
+              // std::cout << "tx.version : " << it.version << "\n";
             }
 
             if (block.tx_hashes.size() != txes.size())
             {
-              std::cout << block.tx_hashes.size() << " " << txes.size() << " " << block.prev_id << std::endl;
+              // std::cout << block.tx_hashes.size() << " " << txes.size() << " " << block.prev_id << std::endl;
               throw std::runtime_error{"Bad daemon response - need same number of txes and tx hashes"};
             }
               

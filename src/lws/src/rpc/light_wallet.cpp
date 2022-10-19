@@ -71,7 +71,7 @@ namespace
       re-computed from the other parts. Same with the rct commitment and rct
       amount. Consider dropping these from the API after client upgrades. Not
       storing them in the DB saves 96-bytes per received out. */
-    std::cout << "called ringct write_bytes\n";
+    // std::cout << "called ringct write_bytes\n";
     rct_bytes rct{};
     rct_bytes const* optional_rct = nullptr;
     if (unpack(self.data.first.extra).first & lws::db::ringct_output)

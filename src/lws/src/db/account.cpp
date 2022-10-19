@@ -147,7 +147,7 @@ namespace lws
 
   void account::add_spend(db::spend const& spend)
   {
-    std::cout <<"inside the spend" << std::endl;
+    // std::cout <<"inside the spend" << std::endl;
     spends_.push_back(spend);
   }
 } // lws

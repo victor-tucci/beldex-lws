@@ -99,14 +99,14 @@ namespace lws
         expect<void> triangular_pick(epee::span<lws::output_ref> out, lws::histogram const& hist)
         {
             MONERO_PRECOND(hist.unlocked_count <= hist.total_count);
-            std::cout << "out.size() : " << out.size() << std::endl;
+            // std::cout << "out.size() : " << out.size() << std::endl;
             if (hist.unlocked_count < out.size())
                 return {lws::error::not_enough_mixin};
 
             if (hist.unlocked_count == out.size())
                 return pick_all(out, hist.amount);
 
-            std::cout <<"function crossed\n";
+            // std::cout <<"function crossed\n";
             /* This does not match the wallet2 selection code - recents are not
             considered. There should be no new recents for this selection
             algorithm because it is only used for non-ringct outputs. */
@@ -170,8 +170,8 @@ namespace lws
         std::vector<output_ref> proposed{};
         std::vector<random_ring> rings{};
         rings.resize(amounts.size());
-        std::cout <<"rings.size() : "<< rings.size() << std::endl;
-        std::cout << "amounts.size() : " << amounts.size() << std::endl;
+        // std::cout <<"rings.size() : "<< rings.size() << std::endl;
+        // std::cout << "amounts.size() : " << amounts.size() << std::endl;
         for (auto ring : boost::combine(amounts, rings))
             boost::get<1>(ring).amount = boost::get<0>(ring);
 
@@ -184,7 +184,7 @@ namespace lws
             // select indexes foreach ring below mixin count
             for (auto ring = rings.begin(); ring != rings.end(); /* handled below */)
             {
-                std::cout << "for loop times\n";
+                // std::cout << "for loop times\n";
                 const std::size_t count = proposed.size();
                 if (ring->ring.size() < mixin)
                 {
@@ -247,7 +247,7 @@ namespace lws
 
                 ++ring;
             }
-            std::cout <<"rings.size() 2: "<< rings.size() << std::endl;
+            // std::cout <<"rings.size() 2: "<< rings.size() << std::endl;
             // all amounts lack enough mixin
             if (rings.empty())
                 return rings;

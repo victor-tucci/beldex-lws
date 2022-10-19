@@ -446,7 +446,7 @@ namespace lws
           json resp = json::parse(histogram_data.text);
           // if (!histogram_resp)
           //   return histogram_resp.error();
-          std::cout << "resp : " << resp << std::endl;
+          // std::cout << "resp : " << resp << std::endl;
           for(auto it :resp["result"]["histogram"])
           {
             lws::histogram histogram_resp{};
@@ -469,7 +469,7 @@ namespace lws
         std::vector<std::uint64_t> distributions{};
         if (ringct_count)
         {
-          std::cout << "print the function " << ringct_count << "\n";
+          // std::cout << "print the function " << ringct_count << "\n";
           distribution_rpc::request distribution_req{};
           if (ringct_count == amounts.size())
             distribution_req.amounts = std::move(amounts);
@@ -537,7 +537,7 @@ namespace lws
 
           expect<std::vector<output_keys>> operator()(std::vector<lws::output_ref> ids) const
           {
-                    std::cout <<"operator overload" << std::endl;
+                    // std::cout <<"operator overload" << std::endl;
 
             // using get_keys_rpc = cryptonote::rpc::GET_OUTPUTS;
 
@@ -559,7 +559,7 @@ namespace lws
             {"params",{{"outputs",amount_index},{"get_txid",false}}}
            };
 
-            std::cout << "ids.size() :" << ids.size() << std::endl;
+            // std::cout << "ids.size() :" << ids.size() << std::endl;
             // expect<rpc::client> client = gclient.clone();
             // if (!client)
             //   return client.error();
@@ -589,21 +589,21 @@ namespace lws
             return {std::move(keys)};
           }
         };
-        std::cout << "before the random_outputs\n";
-        std::cout << "req.count : " << req.count << std::endl;
-        for(auto it : amounts)
-        {
-          std::cout <<"amounts "<< it << std::endl;
-        }
-        std::cout << "distributions.size() : " << distributions.size() << std::endl;
-        std::cout << "histograms.size() : " << histograms.size() << std::endl;
-        for(auto it :histograms)
-        {
-              std::cout <<"amount         " << it.amount        << std::endl;
-              std::cout <<"total_count    " << it.total_count   << std::endl;
-              std::cout <<"unlocked_count " << it.unlocked_count<< std::endl;
-              std::cout <<"recent_count   " << it.recent_count  << std::endl;
-        }
+        // std::cout << "before the random_outputs\n";
+        // std::cout << "req.count : " << req.count << std::endl;
+        // for(auto it : amounts)
+        // {
+        //   std::cout <<"amounts "<< it << std::endl;
+        // }
+        // std::cout << "distributions.size() : " << distributions.size() << std::endl;
+        // std::cout << "histograms.size() : " << histograms.size() << std::endl;
+        // for(auto it :histograms)
+        // {
+        //       std::cout <<"amount         " << it.amount        << std::endl;
+        //       std::cout <<"total_count    " << it.total_count   << std::endl;
+        //       std::cout <<"unlocked_count " << it.unlocked_count<< std::endl;
+        //       std::cout <<"recent_count   " << it.recent_count  << std::endl;
+        // }
         lws::gamma_picker pick_rct{std::move(distributions)};
         auto rings = pick_random_outputs(
           req.count,
@@ -666,7 +666,7 @@ namespace lws
 
       static expect<response> handle(request req, db::storage disk)
       {
-        std::cout <<"inside the login\n";
+        // std::cout <<"inside the login\n";
         if (!key_check(req.creds))
           return {lws::error::bad_view_key};
 
@@ -692,7 +692,7 @@ namespace lws
 
         const auto flags = req.generated_locally ? db::account_generated_locally : db::default_account;
         MONERO_CHECK(disk.creation_request(req.creds.address, req.creds.key, flags));
-        std::cout <<"creation_request called\n";
+        // std::cout <<"creation_request called\n";
         return response{true, req.generated_locally};
       }
     };//login

@@ -47,7 +47,7 @@ namespace rct
     );
 
     // std::cout << "txnFee :" << txnFee << std::endl;
-    std::cout << "self.type != RCTType::Null : " << (self.type != RCTType::Null) << "\n";
+    // std::cout << "self.type != RCTType::Null : " << (self.type != RCTType::Null) << "\n";
     if (ecdhInfo || outPk || txnFee){  //|| txnFee
       self.ecdhInfo = std::move(*ecdhInfo);
       self.outPk = std::move(*outPk);

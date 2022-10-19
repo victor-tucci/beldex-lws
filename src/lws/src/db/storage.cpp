@@ -996,7 +996,7 @@ namespace db
         hashes.push_back(block_info{db::block_id(height), *current});
         ++height;
       }
-      std::cout << " inside the append function" << std::endl;
+      // std::cout << " inside the append function" << std::endl;
     }
   } // anonymous
 
