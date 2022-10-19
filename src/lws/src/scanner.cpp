@@ -336,6 +336,10 @@ namespace lws
             // std::cout << " inside for parsing" << std::endl;
             std::string it = t["block"];
             t["block"] = json::parse(it);
+            if(!t["block"]["miner_tx"].contains("rct_signatures"))
+            {
+              t["block"]["miner_tx"]["rct_signatures"]["type"] = 0;
+            }
             json tx_hash;
             int tx_num =0;
             for(auto data :t["block"]["tx_hashes"])
@@ -361,8 +365,12 @@ namespace lws
                   {
                       it["mask"] = "0000000000000000000000000000000000000000000000000000000000000000";
                       std::string s1=it["amount"];
+                      if (s1.length()!=64)
+                      {
                       s1 = s1+"000000000000000000000000000000000000000000000000";
                       it["amount"]= s1;
+                      }
+
                   }
                   if(data["rct_signatures"].is_null())
                   {

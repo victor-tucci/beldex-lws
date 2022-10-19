@@ -792,7 +792,7 @@ namespace cryptonote { namespace rpc {
 
     PERF_TIMER(on_get_hashes);
 
-    std::cout << "req.start_height : " << req.start_height << std::endl;
+    // std::cout << "req.start_height : " << req.start_height << std::endl;
     
     if (use_bootstrap_daemon_if_necessary<GET_HASHES_FAST_RPC>(req, res))
       return res;
