@@ -437,6 +437,8 @@ namespace lws
           if (fetched.result.blocks.size() <= 1)
           {
             // synced to top of chain, wait for next blocks
+            std::this_thread::sleep_for(30s);
+            continue; // to next get_blocks_fast read
       //       for (;;)
       //       {
       //         const expect<rpc::minimal_chain_pub> new_block = client.wait_for_block();
@@ -449,7 +451,7 @@ namespace lws
       //       // request next chunk of blocks
       //       if (!send(client, block_request.clone()))
       //         return;
-      //       continue; // to next get_blocks_fast read
+      //       continue; 
           }
 
           // request next chunk of blocks
@@ -463,14 +465,7 @@ namespace lws
 
           auto blocks = epee::to_span(fetched.result.blocks);
           auto indices = epee::to_span(fetched.result.output_indices);
-          for(auto &bl : blocks)
-          {
-          for(auto &it : bl.transactions)
-          {
-            // it.version = cryptonote::txversion::v4_tx_types;
-            // std::cout << "transaction version : " << it.version << "\n";
-          }
-          }
+
           if (fetched.result.start_height != 1)
           {
             // skip overlap block
@@ -567,8 +562,6 @@ namespace lws
 
           for (account& user : users)
             user.updated(db::block_id(fetched.result.start_height));
-          // break;  // loops are enabled for make a continuous connection
-          std::this_thread::sleep_for(5s);
         }
       }
       catch (std::exception const& e)
@@ -591,7 +584,8 @@ namespace lws
     {
       assert(0 < thread_count);
       assert(0 < users.size());
-
+      // std::cout << "thread_count : " << thread_count << std::endl;
+      // std::cout << "users.size() : " << users.size() << std::endl;
       thread_sync self{};
       std::vector<boost::thread> threads{};
 
@@ -632,7 +626,7 @@ namespace lws
       attrs.set_stack_size(THREAD_STACK_SIZE);
 
       threads.reserve(thread_count);
-      std::sort(users.begin(), users.end(), by_height{});  //users are sorted by their last height
+      std::sort(users.begin(), users.end(), by_height{});  //users are sorted by their scan height
 
       MINFO("Starting scan loops on " << std::min(thread_count, users.size()) << " thread(s) with " << users.size() << " account(s)");
 
@@ -647,9 +641,8 @@ namespace lws
 
       //   rpc::client client = MONERO_UNWRAP(ctx.connect());
       //   client.watch_scan_signals();
-
-        auto data = std::make_shared<thread_data>(disk.clone(), std::move(thread_users)
-        );
+        //  std::cout << "entered in to the users thereads\n";
+        auto data = std::make_shared<thread_data>(disk.clone(), std::move(thread_users));
         threads.emplace_back(attrs, std::bind(&scan_loop, std::ref(self), std::move(data)));
       }
 
@@ -657,7 +650,7 @@ namespace lws
       {
         // rpc::client client = MONERO_UNWRAP(ctx.connect());
         // client.watch_scan_signals();
-
+        // std::cout << "entered in to the users users\n";
         auto data = std::make_shared<thread_data>(disk.clone(), std::move(users));
         threads.emplace_back(attrs, std::bind(&scan_loop, std::ref(self), std::move(data)));
       }

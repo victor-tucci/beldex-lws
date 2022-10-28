@@ -193,6 +193,10 @@ namespace wire
       reader_()
   {}
 
+  // void json_reader::enumConversion(json_reader& source,int& value)
+  // {
+  //   // std::cout << "source.source_ : " << source.source_ << std::endl;
+  // }
   void json_reader::check_complete() const
   {
     if (depth())

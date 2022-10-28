@@ -34,6 +34,8 @@ namespace wire
   public:
     explicit json_reader(std::string&& source);
 
+    // void enumConversion(json_reader& source,int& value);
+
     //! \throw wire::exception if JSON parsing is incomplete.
     void check_complete() const override final;
 

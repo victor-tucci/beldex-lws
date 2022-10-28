@@ -79,6 +79,9 @@ namespace cryptonote
 {
   static void read_bytes(wire::json_reader& source,cryptonote::txversion& self)
   {
+    // //  wire::object(source, ENUM_FIELD(version));
+    // int value =0;
+    // source.enumConversion(source,value);
     self = cryptonote::txversion::v4_tx_types;
     unsigned long dest;
     wire::read_bytes(source, dest);
