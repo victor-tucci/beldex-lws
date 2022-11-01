@@ -49,7 +49,9 @@
 #include <deque>
 
 #include <boost/asio.hpp>
-
+#include "byte_slice.h"
+#include "net/net_utils_base.h"
+#include "net/net_ssl.h"
 #include "../shared_sv.h"
 
 namespace epee
@@ -59,14 +61,26 @@ namespace net_utils
 
 	class connection_basic_shared_state
 	{
+		ssl_options_t ssl_options_;
 	public:
+		boost::asio::ssl::context ssl_context;
 		std::atomic<long> sock_count;
 		std::atomic<long> sock_number;
 
 		connection_basic_shared_state()
-		  : sock_count(0),
-		    sock_number(0)
+		: ssl_options_(ssl_support_t::e_ssl_support_disabled),
+		  ssl_context(boost::asio::ssl::context::tlsv12),
+		  sock_count(0),
+		  sock_number(0)
 		{}
+
+		void configure_ssl(ssl_options_t src)
+		{
+			ssl_options_ = std::move(src);
+			ssl_context = ssl_options_.create_context();
+		}
+
+		const ssl_options_t& ssl_options() const noexcept { return ssl_options_; }
 	};
 
   /************************************************************************/

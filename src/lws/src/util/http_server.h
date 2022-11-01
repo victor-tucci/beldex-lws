@@ -42,7 +42,7 @@ namespace lws
   
       MGINFO("Binding on " << bind_ip << " (IPv4):" << bind_port);
       // bool res = m_net_server.init_server(bind_port, bind_ip, bind_port, std::string{}, false, true, std::move(ssl_options));
-       bool res = m_net_server.init_server(bind_port, bind_ip, bind_port, std::string{}, false, true);
+       bool res = m_net_server.init_server(bind_port, bind_ip, bind_port, std::string{}, false, true, std::move(ssl_options));
       if(!res)
       {
         LOG_ERROR("Failed to bind server");
