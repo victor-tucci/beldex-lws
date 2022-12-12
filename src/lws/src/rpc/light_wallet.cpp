@@ -275,6 +275,7 @@ namespace lws
       WIRE_FIELD_COPY(flash_fee_per_output),
       WIRE_FIELD_COPY(flash_fee_fixed),
       WIRE_FIELD_COPY(quantization_mask),
+      WIRE_FIELD_COPY(fork_version),
       // WIRE_FIELD_COPY(fee_mask),
       WIRE_FIELD_COPY(amount),
       wire::field("outputs", wire::as_array(std::cref(self.outputs), expand))

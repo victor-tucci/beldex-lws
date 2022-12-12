@@ -131,6 +131,7 @@ namespace rpc
       std::uint64_t flash_fee_per_output;
       std::uint64_t flash_fee_fixed; 
       std::uint64_t quantization_mask;
+      std::uint64_t fork_version;
       // std::uint64_t fee_mask;
       safe_uint64 amount;
       std::vector<std::pair<db::output, std::vector<crypto::key_image>>> outputs;

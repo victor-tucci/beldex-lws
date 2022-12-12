@@ -263,7 +263,7 @@ namespace lws
         const std::uint64_t flash_fee_fixed = resp["result"]["flash_fee_fixed"]; 
         const std::uint64_t quantization_mask = resp["result"]["quantization_mask"]; 
 
-        return response{fee_per_byte, fee_per_output,flash_fee_per_byte,flash_fee_per_output,flash_fee_fixed,quantization_mask, rpc::safe_uint64(received), std::move(unspent), std::move(req.creds.key)};
+        return response{fee_per_byte, fee_per_output,flash_fee_per_byte,flash_fee_per_output,flash_fee_fixed,quantization_mask,13,rpc::safe_uint64(received), std::move(unspent), std::move(req.creds.key)};
       }
     };//get_unspent_outs
 
