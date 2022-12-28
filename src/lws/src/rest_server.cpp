@@ -732,7 +732,7 @@ namespace lws
         // const auto daemon_resp = client->receive<transaction_rpc::Response>(std::chrono::seconds{20}, MLWS_CURRENT_LOCATION);
         // if (!daemon_resp)
         //   return daemon_resp.error();
-        if (!daemon_resp["result"]["not_relayed"] == true)
+        if (daemon_resp["result"]["not_relayed"] == true)
           return {lws::error::tx_relay_failed};
 
         return response{"OK"};
