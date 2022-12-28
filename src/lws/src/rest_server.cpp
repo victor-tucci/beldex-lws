@@ -263,7 +263,7 @@ namespace lws
         const std::uint64_t flash_fee_fixed = resp["result"]["flash_fee_fixed"]; 
         const std::uint64_t quantization_mask = resp["result"]["quantization_mask"]; 
 
-        return response{fee_per_byte, fee_per_output,flash_fee_per_byte,flash_fee_per_output,flash_fee_fixed,quantization_mask,13,rpc::safe_uint64(received), std::move(unspent), std::move(req.creds.key)};
+        return response{fee_per_byte, fee_per_output,flash_fee_per_byte,flash_fee_per_output,flash_fee_fixed,quantization_mask,17,rpc::safe_uint64(received), std::move(unspent), std::move(req.creds.key)};
       }
     };//get_unspent_outs
 
@@ -711,7 +711,7 @@ namespace lws
         //   return client.error();
 
         transaction_rpc::request daemon_req{};
-        daemon_req.do_not_relay = true;
+        daemon_req.do_not_relay = false;
         daemon_req.tx_as_hex = std::move(req.tx);    // Flash Transcation need to be enabled in future 
         
         // epee::byte_slice message = rpc::client::make_message("send_raw_tx_hex", daemon_req);
@@ -720,7 +720,7 @@ namespace lws
             {"jsonrpc","2.0"},
             {"id","0"},
             {"method","send_raw_transaction"},
-            {"params",{{"tx_as_hex",daemon_req.tx_as_hex},{"do_not_relay",daemon_req.tx_as_hex}}}
+            {"params",{{"tx_as_hex",daemon_req.tx_as_hex},{"do_not_relay",daemon_req.do_not_relay}}}
           };
           // std::cout <<"message : " << message.dump() << std::endl;
           auto resp = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},

@@ -1341,7 +1341,17 @@ namespace cryptonote { namespace rpc {
       res.status = "Failed";
       return res;
     }
-
+    cryptonote::transaction tx_lws;
+    if(parse_and_validate_tx_base_from_blob(tx_blob, tx_lws))
+    {
+      std::string block_transactions = obj_to_json_str(tx_lws);
+          auto block_tx = json::parse(block_transactions);
+      std::cout << "block_tx : " << block_tx << std::endl;
+    }
+    else
+    {
+       LOG_PRINT_L0("can't convert into tx object blob" << tx_blob);
+    }
     if (req.do_sanity_checks && !cryptonote::tx_sanity_check(tx_blob, m_core.get_blockchain_storage().get_num_mature_outputs(0)))
     {
       res.status = "Failed";
