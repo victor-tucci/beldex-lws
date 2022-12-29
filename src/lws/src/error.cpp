@@ -68,6 +68,8 @@ namespace lws
         return "System clock is out of range for account storage format";
       case error::tx_relay_failed:
         return "The daemon failed to relay transaction from REST client";
+      case error::status_failed:
+        return "The daemon failed to accept transaction from REST client";
       default:
         break;
       }

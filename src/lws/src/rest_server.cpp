@@ -735,6 +735,9 @@ namespace lws
         if (daemon_resp["result"]["not_relayed"] == true)
           return {lws::error::tx_relay_failed};
 
+        if(daemon_resp["result"]["status"] == "Failed")
+          return {lws::error::status_failed};
+
         return response{"OK"};
       }
     }; //submit_raw_tx

@@ -33,7 +33,8 @@ namespace lws
     signal_abort_scan,          //!< In process ZMQ PUB to abort the scan was received
     signal_unknown,             //!< An unknown in process ZMQ PUB was received
     system_clock_invalid_range, //!< System clock is out of range for storage format
-    tx_relay_failed             //!< Daemon failed to relayed tx from REST client
+    tx_relay_failed,            //!< Daemon failed to relayed tx from REST client
+    status_failed               //!< Daemon failed to approve tx from REST client
   };
 
   std::error_category const& error_category() noexcept;
