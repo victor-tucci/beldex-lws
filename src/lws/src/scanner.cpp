@@ -437,7 +437,7 @@ namespace lws
           if (fetched.result.blocks.size() <= 1)
           {
             // synced to top of chain, wait for next blocks
-            std::this_thread::sleep_for(30s);
+            std::this_thread::sleep_for(10s);
             continue; // to next get_blocks_fast read
       //       for (;;)
       //       {
@@ -562,6 +562,8 @@ namespace lws
 
           for (account& user : users)
             user.updated(db::block_id(fetched.result.start_height));
+            std::this_thread::sleep_for(10s);
+            break; // loops are enabled for make a continuous connection
         }
       }
       catch (std::exception const& e)
