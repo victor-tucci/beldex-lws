@@ -562,8 +562,8 @@ namespace lws
 
           for (account& user : users)
             user.updated(db::block_id(fetched.result.start_height));
-            std::this_thread::sleep_for(10s);
-            break; // loops are enabled for make a continuous connection
+            // std::this_thread::sleep_for(10s);
+            // break; // loops are enabled for make a continuous connection
         }
       }
       catch (std::exception const& e)
