@@ -713,7 +713,12 @@ namespace lws
 
         transaction_rpc::request daemon_req{};
         daemon_req.do_not_relay = false;
-        daemon_req.tx_as_hex = std::move(req.tx);    // Flash Transcation need to be enabled in future 
+        daemon_req.tx_as_hex = std::move(req.tx);     
+        if(req.flash == true){
+          daemon_req.flash = true;
+        }else{
+          daemon_req.flash =false;
+        }// Handles Flash Method from Client
         
         // epee::byte_slice message = rpc::client::make_message("send_raw_tx_hex", daemon_req);
         // MONERO_CHECK(client->send(std::move(message), std::chrono::seconds{10}));
@@ -721,7 +726,7 @@ namespace lws
             {"jsonrpc","2.0"},
             {"id","0"},
             {"method","send_raw_transaction"},
-            {"params",{{"tx_as_hex",daemon_req.tx_as_hex},{"do_not_relay",daemon_req.do_not_relay}}}
+            {"params",{{"tx_as_hex",daemon_req.tx_as_hex},{"do_not_relay",daemon_req.do_not_relay},{"flash",daemon_req.flash}}}
           };
           // std::cout <<"message : " << message.dump() << std::endl;
           auto resp = cpr::Post(cpr::Url{"http://127.0.0.1:19091/json_rpc"},
