@@ -311,7 +311,7 @@ namespace lws
   void rpc::read_bytes(wire::json_reader& source, submit_raw_tx_request& self)
   {
     wire::object(source, WIRE_FIELD(tx),
-    WIRE_OPTIONAL_FIELD(flash)
+    WIRE_FIELD(fee)
     );
   }
   void rpc::write_bytes(wire::json_writer& dest, const submit_raw_tx_response self)

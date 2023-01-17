@@ -170,7 +170,7 @@ namespace rpc
     {
       submit_raw_tx_request() = delete;
       std::string tx;
-      boost::optional<bool> flash;
+      std::string fee;
     };
     void read_bytes(wire::json_reader&, submit_raw_tx_request&);
 

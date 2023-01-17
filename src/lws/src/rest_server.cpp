@@ -713,8 +713,9 @@ namespace lws
 
         transaction_rpc::request daemon_req{};
         daemon_req.do_not_relay = false;
-        daemon_req.tx_as_hex = std::move(req.tx);     
-        if(req.flash == true){
+        daemon_req.tx_as_hex = std::move(req.tx);
+        if(req.fee == "5")
+        {
           daemon_req.flash = true;
         }else{
           daemon_req.flash =false;
